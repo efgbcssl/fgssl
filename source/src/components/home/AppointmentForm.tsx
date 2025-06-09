@@ -1,0 +1,276 @@
+"use client"
+
+import { useState, useEffect } from 'react'
+import { format, addDays, isToday } from 'date-fns'
+import { Calendar as CalendarIcon, Clock, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { useToast } from '@/hooks/use-toast'
+import { TimeSelect } from '@/components/ui/time-select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+
+export default function AppointmentForm() {
+  const [date, setDate] = useState<Date>()
+  const [time, setTime] = useState<string>('09:00')
+  const [medium, setMedium] = useState("in-person")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [bookedSlots, setBookedSlots] = useState<string[]>([])
+  const [isChecking, setIsChecking] = useState(false)
+  const { toast } = useToast()
+
+  // Generate available times (9AM-5PM, every 30 minutes)
+  const generateTimes = () => {
+    const times = []
+    for (let hour = 9; hour <= 17; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        times.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)
+      }
+    }
+    return times
+  }
+
+  const availableTimes = generateTimes()
+
+  useEffect(() => {
+    if (date) {
+      checkBookedSlots()
+    }
+  }, [date])
+
+  const checkBookedSlots = async () => {
+    if (!date) return;
+
+    setIsChecking(true);
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const response = await fetch(`/api/appointments/check?date=${dateStr}`);
+
+      // First check if the request was successful
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      // Verify content type is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new TypeError("Oops, we didn't get JSON!");
+      }
+
+      const data = await response.json();
+      setBookedSlots(data);
+    } catch (error) {
+      console.error('Error checking slots:', error);
+      // Add user feedback here, e.g.:
+      setError(`Failed to load available slots: ${error.message}`);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (!date || !time) {
+      toast({
+        title: "Error",
+        description: "Please select a date and time.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const formData = new FormData(e.currentTarget)
+      const preferredDateTime = `${format(date!, 'yyyy-MM-dd')}T${time}:00.000Z`
+
+      if (!formData.get('fullName') || !formData.get('phoneNumber') || !formData.get('email')) {
+        throw new Error("Please fill in all required fields.")
+      }
+
+      const response = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: formData.get('fullName'),
+          phoneNumber: formData.get('phoneNumber'),
+          email: formData.get('email'),
+          preferredDate: preferredDateTime,
+          medium,
+          status: 'pending'
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to submit appointment request.')
+      }
+
+      toast({
+        title: "Appointment Requested Successfully",
+        description: "We've received your request and will contact you shortly.",
+      })
+      // Reset form
+      e.currentTarget.reset()
+      setDate(undefined)
+      setTime('09:00')
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const isFormValid = () => {
+    return date && time && !bookedSlots.includes(time)
+  }
+
+  return (
+    <section className="py-16 bg-gray-50">
+      <div className="container-custom">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center font-heading text-church-primary">
+            Schedule an Appointment
+          </h2>
+          <p className="text-center text-gray-600 mb-10">
+            Would you like to speak with our pastor or church staff? Schedule an appointment below.
+          </p>
+
+          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg border border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="fullName">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="John Doe"
+                  required
+                  className="border-gray-300 focus:border-church-primary"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="phoneNumber">Phone Number *</Label>
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  placeholder="(123) 456-7890"
+                  required
+                  type="tel"
+                  className="border-gray-300 focus:border-church-primary"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  placeholder="your@email.com"
+                  required
+                  type="email"
+                  className="border-gray-300 focus:border-church-primary"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label>Meeting Type *</Label>
+                <RadioGroup
+                  defaultValue="in-person"
+                  value={medium}
+                  onValueChange={setMedium}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="in-person" id="in-person" />
+                    <Label htmlFor="in-person" className="cursor-pointer font-normal">In-Person</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="online" id="online" />
+                    <Label htmlFor="online" className="cursor-pointer font-normal">Online</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-3">
+                <Label className='flex items-center gap-1'>
+                  Preferred Date and Time <span className='border rounded-lg p-4 bg-white shadow-sm'>*</span>
+                </Label>
+                <div className="border rounded-lg p-4 bg-white shadow-sm">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                    disabled={(date) => {
+                      const now = new Date()
+                      now.setHours(0, 0, 0, 0)
+                      return date < now || date.getDay() === 0
+                    }}
+                    className="w-full"
+                  />
+                </div>
+
+
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-1">
+                    Available Times <span className="text-church-secondary">*</span>
+                    {isChecking && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg bg-white shadow-sm">
+                    {availableTimes.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setTime(slot)}
+                        disabled={bookedSlots.includes(slot)}
+                        className={cn(
+                          'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center',
+                          time === slot
+                            ? 'bg-church-primary text-white shadow-md'
+                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200',
+                          bookedSlots.includes(slot) && 'opacity-50 cursor-not-allowed bg-gray-100'
+                        )}
+                      >
+                        {slot}
+                        {bookedSlots.includes(slot) && (
+                          <span className="sr-only">(Booked)</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <Button
+                type="submit"
+                className="w-full bg-church-primary hover:bg-church-primary/90 h-12 text-lg"
+                disabled={!isFormValid() || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : null}
+                {isSubmitting ? "Submitting..." : "Request Appointment"}
+              </Button>
+              <p className="text-sm text-gray-500 mt-3 text-center">
+                We&apos;ll contact you to confirm your appointment details.
+              </p>
+            </div>
+          </form>
+        </div>
+      </div >
+    </section >
+  )
+}

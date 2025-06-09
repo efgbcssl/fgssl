@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Church theme colors */
+    --church-primary: #E33B25;
+    --church-secondary: #2BBA9E;
+    --church-dark: #1A1F36;
+    --church-light: #F8F9FA;
+
+    /* ShadCN color tokens */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    --primary: 227 59% 37%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 43 74% 62%;
+    --secondary-foreground: 0 0% 9%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 227 59% 37%;
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 227 59% 37%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 43 74% 62%;
+    --secondary-foreground: 0 0% 9%;
+    
+    --muted: 223 47% 20%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    --accent: 223 47% 20%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 223 47% 20%;
+    --input: 223 47% 20%;
+    --ring: 227 59% 37%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-body);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply font-bold;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background;
+  }
+
+  .btn-primary {
+    @apply bg-church-primary text-white hover:bg-church-primary/90;
+  }
+
+  .btn-secondary {
+    @apply bg-church-secondary text-church-dark hover:bg-church-secondary/90;
+  }
+
+  .btn-outline {
+    @apply border border-church-primary text-church-primary hover:bg-church-primary hover:text-white;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-link {
+    @apply underline-offset-4 hover:underline text-primary;
+  }
+
+  .section-title {
+    @apply text-3xl sm:text-4xl font-bold text-church-primary mb-6 relative;
+  }
+
+  .section-title::after {
+    content: '';
+    @apply absolute left-0 -bottom-2 h-1 w-16 bg-church-secondary;
+  }
+
+  .section-title.centered {
+    @apply text-center mx-auto;
+  }
+
+  .section-title.centered::after {
+    @apply left-1/2 -translate-x-1/2;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .navlink {
+    @apply relative font-medium text-gray-600 dark:text-gray-400 hover:text-primary after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full;
+  }
+
+  .navlink.active {
+    @apply text-primary after:w-full;
+  }
+}
+
+/* Font face definitions */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Inter.var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Montserrat.var.woff2') format('woff2');
+}

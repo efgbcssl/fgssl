@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d118ke2do80pli9qrgsg",
+    "operations": [
+      {
+        "add_column": {
+          "up": "''",
+          "table": "appointments",
+          "column": {
+            "name": "fullName",
+            "type": "text",
+            "comment": ""
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d118ke2do80pli9qrgsg",
+  "parent": "mig_d118jaaunsp1brisa0e0",
+  "schema": "public",
+  "startedAt": "2025-06-06T06:27:05.225102Z"
+}

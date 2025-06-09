@@ -1,0 +1,6 @@
+{
+  "databaseURL": "https://Obsidian-workspace-o1sajg.us-east-1.xata.sh/db/fgssl",
+  "codegen": {
+    "output": "src/xata.ts"
+  }
+}

@@ -1,0 +1,49 @@
+{
+    "$schema": "https://ui.shadcn.com/schema.json",
+    "style": "default",
+    "rsc": true,
+    "tsx": true,
+    "tailwind": {
+        "config": "tailwind.config.ts",
+        "css": "app/globals.css",
+        "baseColor": "neutral",
+        "cssVariables": true,
+        "prefix": ""
+    },
+    "aliases": {
+        "components": "@/components",
+        "utils": "@/lib/utils",
+        "ui": "@/components/ui",
+        "lib": "@/lib",
+        "hooks": "@/hooks"
+    }
+}
+{
+    "components": [
+        {
+            "name": "Button",
+            "path": "ui/button.tsx",
+            "type": "component"
+        },
+        {
+            "name": "Input",
+            "path": "ui/input.tsx",
+            "type": "component"
+        },
+        {
+            "name": "Card",
+            "path": "ui/card.tsx",
+            "type": "component"
+        },
+        {
+            "name": "Modal",
+            "path": "ui/modal.tsx",
+            "type": "component"
+        },
+        {
+            "name": "Tooltip",
+            "path": "ui/tooltip.tsx",
+            "type": "component"
+        }
+    ]
+}

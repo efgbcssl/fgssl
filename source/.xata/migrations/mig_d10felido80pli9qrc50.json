@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d10felido80pli9qrc50",
+    "operations": [
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "order",
+            "type": "int",
+            "comment": "",
+            "default": "'0'"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d10felido80pli9qrc50",
+  "parent": "mig_d10fe9iunsp1bris9rkg",
+  "schema": "public",
+  "startedAt": "2025-06-05T01:48:07.126333Z"
+}

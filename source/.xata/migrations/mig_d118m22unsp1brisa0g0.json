@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d118m22unsp1brisa0g0",
+    "operations": [
+      {
+        "add_column": {
+          "up": "now()",
+          "table": "appointments",
+          "column": {
+            "name": "preferredDate",
+            "type": "timestamptz",
+            "comment": ""
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d118m22unsp1brisa0g0",
+  "parent": "mig_d118lhiunsp1brisa0f0",
+  "schema": "public",
+  "startedAt": "2025-06-06T06:30:33.089402Z"
+}
