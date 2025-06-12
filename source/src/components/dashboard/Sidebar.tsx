@@ -10,6 +10,7 @@ const navItems = [
     { name: 'Members', href: '/dashboard/members', icon: Icons.users },
     { name: 'Events', href: '/dashboard/events', icon: Icons.calendar },
     { name: 'Appointments', href: '/dashboard/appointments', icon: Icons.calendar },
+    { name: 'FAQ', href: '/dashboard/faq', icon: Icons.message },
     { name: 'Resources', href: '/dashboard/resources', icon: Icons.calendar },
     { name: 'Groups', href: '/dashboard/groups', icon: Icons.calendar },
     { name: 'Donations', href: '/dashboard/donations', icon: Icons.donate },

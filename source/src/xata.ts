@@ -271,6 +271,114 @@ const tables = [
       },
     ],
   },
+  {
+    name: "faqs",
+    checkConstraints: {
+      faqs_xata_id_length_xata_id: {
+        name: "faqs_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_faqs_xata_id_key: {
+        name: "_pgroll_new_faqs_xata_id_key",
+        columns: ["xata_id"],
+      },
+      faqs__pgroll_new_faq_id_key: {
+        name: "faqs__pgroll_new_faq_id_key",
+        columns: ["faq_id"],
+      },
+      faqs__pgroll_new_question_key: {
+        name: "faqs__pgroll_new_question_key",
+        columns: ["question"],
+      },
+    },
+    columns: [
+      {
+        name: "answer",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "faq_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "order",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+      {
+        name: "question",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
 ] as const;
 
 export type SchemaTables = typeof tables;
@@ -282,9 +390,13 @@ export type AppointmentsRecord = Appointments & XataRecord;
 export type Events = InferredTypes["events"];
 export type EventsRecord = Events & XataRecord;
 
+export type Faqs = InferredTypes["faqs"];
+export type FaqsRecord = Faqs & XataRecord;
+
 export type DatabaseSchema = {
   appointments: AppointmentsRecord;
   events: EventsRecord;
+  faqs: FaqsRecord;
 };
 
 const DatabaseClient = buildClient();

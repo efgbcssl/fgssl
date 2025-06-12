@@ -4,6 +4,7 @@ import '../../styles/globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '@/components/layouts/Navbar';
 import Footer from '@/components/layouts/Footer';
+import { Toaster } from '@/components/ui/toaster';
 
 
 const inter = Inter({
@@ -29,6 +30,15 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
+            <head>
+                <script
+                    src="https://www.youtube.com/iframe_api"
+                    async
+                    defer
+                />
+                <link rel="preconnect" href="https://www.youtube.com" />
+                <link rel="preconnect" href="https://i.ytimg.com" />
+            </head>
             <body className={`${inter.variable} ${montserrat.variable} font-sans`}>
                 <ThemeProvider
                     attribute="class"
@@ -40,6 +50,7 @@ export default function RootLayout({
                         <Navbar />
                         <main className="flex-1">
                             {children}
+                            <Toaster />
                         </main>
                         <Footer />
                     </div>

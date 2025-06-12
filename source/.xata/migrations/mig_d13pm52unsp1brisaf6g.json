@@ -1,0 +1,25 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d13pm52unsp1brisaf6g",
+    "operations": [
+      {
+        "add_column": {
+          "up": "''",
+          "table": "faqs",
+          "column": {
+            "name": "question",
+            "type": "text",
+            "unique": true,
+            "comment": ""
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d13pm52unsp1brisaf6g",
+  "parent": "mig_d13plg2r9e9qaqkp5fh0",
+  "schema": "public",
+  "startedAt": "2025-06-10T02:40:21.118324Z"
+}

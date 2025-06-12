@@ -6,55 +6,76 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-
-const faqs = [
-  {
-    question: "What time are your Sunday services?",
-    answer: "We have two Sunday worship services at 9:00 AM and 11:00 AM. Both services feature the same sermon content but may have slight variations in music and worship style."
-  },
-  {
-    question: "Is there a program for children during services?",
-    answer: "Yes! We have a vibrant Children's Ministry for kids ages 0-12 that runs concurrent with our Sunday services. Children are checked in before service and enjoy age-appropriate Bible teaching, worship, and activities."
-  },
-  {
-    question: "How can I become a member of the church?",
-    answer: "We offer membership classes quarterly that cover our church's beliefs, values, and vision. After completing the class, you'll meet with a pastor for a brief conversation about your faith journey, and then be welcomed as a member during a Sunday service."
-  },
-  {
-    question: "Do I need to dress formally for church services?",
-    answer: "Not at all! We welcome you to come as you are. Our congregation dresses in a range of styles from casual to business casual. We care more about your presence than your appearance."
-  }
-]
+import { useEffect, useState } from 'react'
+import { FAQ } from '@/types/faq'
 
 export default function FAQSection() {
+  const [faqs, setFaqs] = useState<FAQ[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFAQs = async () => {
+      try {
+        const response = await fetch('/api/faq')
+        const data = await response.json()
+        setFaqs(data)
+      } catch (error) {
+        console.error('Error fetching FAQs:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFAQs()
+  }, [])
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-church-light">
+        <div className="container-custom">
+          <h2 className="section-title centered">Frequently Asked Questions</h2>
+          <p className="text-center text-church-muted mb-10 max-w-2xl mx-auto">
+            Loading FAQs...
+          </p>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-church-light">
       <div className="container-custom">
         <h2 className="section-title centered">Frequently Asked Questions</h2>
-        <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
+        <p className="text-center text-church-muted mb-10 max-w-2xl mx-auto">
           Have questions about visiting or joining our church? Find answers to commonly asked questions below.
         </p>
-        
+
         <div className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-200">
-                <AccordionTrigger className="text-lg font-medium text-gray-900 hover:text-church-primary transition-colors py-4">
+          <Accordion type="multiple" className="w-full">
+            {faqs.map((faq) => (
+              <AccordionItem key={faq.faq_id} value={faq.faq_id} className="border-b border-church-muted/20">
+                <AccordionTrigger className="text-lg font-medium text-church-dark hover:text-church-primary transition-colors py-4">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600">
+                <AccordionContent className="text-church-muted">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
-          
+
+          {faqs.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-church-muted">No FAQs found.</p>
+            </div>
+          )}
+
           <div className="mt-10 text-center">
-            <p className="text-gray-600 mb-4">
-              Don't see your question listed? Feel free to reach out to us directly.
+            <p className="text-church-muted mb-4">
+              Don&apos;t see your question listed? Feel free to reach out to us directly.
             </p>
-            <a 
-              href="/contact" 
+            <a
+              href="/contact"
               className="text-church-primary font-medium hover:text-church-primary/80 transition-colors"
             >
               Contact us for more information &rarr;
