@@ -5,6 +5,7 @@ import DonationSection from '@/components/home/DonationSection'
 import AppointmentForm from '@/components/home/AppointmentForm'
 import LatestVideos from '@/components/home/LatestVideos'
 import FAQSection from '@/components/home/FAQSection'
+import LiveStream from '../../components/home/LiveStream';
 
 async function getEvents() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/events`, {
@@ -23,6 +24,7 @@ export default async function Home() {
             <WeeklyMinistries />
             <EventBanner events={events} />
             <DonationSection />
+            <LiveStream />
             <AppointmentForm />
             <LatestVideos />
             <FAQSection />

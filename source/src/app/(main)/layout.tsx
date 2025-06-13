@@ -38,6 +38,7 @@ export default function RootLayout({
                 />
                 <link rel="preconnect" href="https://www.youtube.com" />
                 <link rel="preconnect" href="https://i.ytimg.com" />
+                <link rel="preconnect" href="htpps://www.facebook.com" />
             </head>
             <body className={`${inter.variable} ${montserrat.variable} font-sans`}>
                 <ThemeProvider
