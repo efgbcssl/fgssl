@@ -1,9 +1,12 @@
+/* eslint-disable jsx-a11y/alt-text */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { Editor } from '@tiptap/react'
 import { cn } from '@/lib/utils'
 import { Undo2, Redo2, Bold, Italic, Underline, List, ListOrdered, Quote, Heading1, Heading2, Image, Link } from 'lucide-react'
 import { Underline as U } from '@tiptap/extension-underline'
+import { Link as tLink } from '@tiptap/extension-link';
 
 
 type ToolbarProps = {
@@ -11,9 +14,44 @@ type ToolbarProps = {
     onAddImage: () => void
 }
 
-export function Toolbar({ editor, onAddImage }: ToolbarProps) {
+async function uploadToImageKit(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'your_upload_preset'); // set in ImageKit
+
+    const res = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+        method: 'POST',
+        headers: {
+            Authorization: 'Basic ' + btoa('your_public_key:'),
+        },
+        body: formData,
+    });
+
+    const data = await res.json();
+    return data.url;
+}
+
+export function Toolbar({ editor }: ToolbarProps) {
     if (!editor) return null
 
+
+    const onAddImage = async () => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = 'image/*'
+        input.onchange = async () => {
+            const file = input.files?.[0]
+            if (!file) return
+
+            try {
+                const imageUrl = await uploadToImageKit(file)
+                editor.chain().focus().setImage({ src: imageUrl }).run()
+            } catch (error) {
+                console.error('Image upload failed', error)
+            }
+        }
+        input.click()
+    }
     const buttonClass = (active: boolean) =>
         cn('rounded p-2 hover:bg-gray-100 transition', active && 'bg-gray-200')
 
@@ -96,7 +134,7 @@ export function Toolbar({ editor, onAddImage }: ToolbarProps) {
                 onClick={() => {
                     const url = window.prompt('Enter URL')
                     if (url) {
-                        editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+                        editor.chain().focus().extendMarkRange('link').setMark('link', { href: url }).run()
                     }
                 }}
                 className={buttonClass(editor.isActive('link'))}
