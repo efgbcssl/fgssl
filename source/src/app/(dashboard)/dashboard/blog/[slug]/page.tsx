@@ -2,14 +2,20 @@ import { BlogEditor } from '@/components/blog/BlogEditor'
 import { getBlogPostBySlug, updateBlogPost } from '@/lib/blog'
 import { notFound, redirect } from 'next/navigation'
 
-export default async function EditBlogPost({ params }: { params: { slug: string } }) {
+type Params = {
+    params: {
+        slug: string
+    }
+}
+
+export default async function EditBlogPost({ params }: Params) {
     const post = await getBlogPostBySlug(params.slug)
 
     if (!post.data) {
         return notFound()
     }
 
-    async function handleSubmit(formData: FormData, slug: string) {
+    async function handleSubmit(formData: FormData) {
         'use server'
         const update = {
             title: (formData.get('title') as string) ?? undefined,
@@ -26,17 +32,11 @@ export default async function EditBlogPost({ params }: { params: { slug: string 
         redirect(`/dashboard/blog/${params.slug}`)
     }
 
-    // Create a wrapper function that passes the slug
-    const handleSubmitWithSlug = async (formData: FormData) => {
-        'use server'
-        return handleSubmit(formData, params.slug)
-    }
-
     return (
         <div className="container py-8">
             <h1 className="text-2xl font-bold mb-6">Edit Blog Post</h1>
             <BlogEditor
-                action={handleSubmitWithSlug}
+                action={handleSubmit}
                 defaultValues={{
                     title: post.data!.title,
                     content: post.data!.content,
