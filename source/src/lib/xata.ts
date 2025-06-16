@@ -12,3 +12,10 @@ export const xata = new XataClient({
         }).finally(() => clearTimeout(timeoutId));
     }
 });
+
+// Helper type for API responses
+export type ApiResponse<T> = {
+    data?: T;
+    error?: string;
+    status: number;
+};

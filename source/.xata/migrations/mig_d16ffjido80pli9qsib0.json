@@ -1,0 +1,25 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16ffjido80pli9qsib0",
+    "operations": [
+      {
+        "add_column": {
+          "up": "''",
+          "table": "likes",
+          "column": {
+            "name": "like_id",
+            "type": "text",
+            "unique": true,
+            "comment": ""
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16ffjido80pli9qsib0",
+  "parent": "mig_d16ffaqdo80pli9qsia0",
+  "schema": "public",
+  "startedAt": "2025-06-14T04:17:20.14445Z"
+}

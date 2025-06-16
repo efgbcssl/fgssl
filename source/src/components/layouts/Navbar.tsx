@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Church } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 const navigation = [
     { name: 'Home', href: '/' },
@@ -35,7 +36,12 @@ export default function Navbar() {
             <nav className="container-custom flex items-center justify-between">
                 <div className="flex items-center">
                     <Link href="/" className="flex items-center space-x-2">
-                        <Church size={32} className="text-church-primary" />
+                        <Image
+                            src="/logo.png"
+                            alt="EFGBC Logo"
+                            width={40}
+                            height={40}
+                        />
                         <span className="font-heading text-xl font-bold text-church-primary">EFGBC</span>
                     </Link>
                 </div>
@@ -51,9 +57,11 @@ export default function Navbar() {
                             {item.name}
                         </Link>
                     ))}
-                    <Button className="bg-church-primary hover:bg-church-primary/90 text-white">
-                        Join Us
-                    </Button>
+                    <Link href="/donations">
+                        <Button className="bg-church-primary hover:bg-church-primary/90 text-white">
+                            Donate
+                        </Button>
+                    </Link>
                 </div>
 
                 {/* Mobile menu button */}

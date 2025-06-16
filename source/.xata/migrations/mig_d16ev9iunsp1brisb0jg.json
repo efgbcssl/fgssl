@@ -1,0 +1,20 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16ev9iunsp1brisb0jg",
+    "operations": [
+      {
+        "drop_column": {
+          "down": "now()",
+          "table": "posts",
+          "column": "createdAt"
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16ev9iunsp1brisb0jg",
+  "parent": "mig_d16eunqdo80pli9qsi50",
+  "schema": "public",
+  "startedAt": "2025-06-14T03:42:31.684298Z"
+}

@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16fd8ado80pli9qsi90",
+    "operations": [
+      {
+        "add_column": {
+          "table": "comments",
+          "column": {
+            "name": "isHidden",
+            "type": "bool",
+            "comment": "",
+            "default": "'false'"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16fd8ado80pli9qsi90",
+  "parent": "mig_d16fcbqr9e9qaqkp5vtg",
+  "schema": "public",
+  "startedAt": "2025-06-14T04:12:18.690524Z"
+}

@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16epnaunsp1brisb0b0",
+    "operations": [
+      {
+        "alter_column": {
+          "up": "\"slug\"",
+          "down": "\"slug\"",
+          "table": "posts",
+          "column": "slug",
+          "unique": {
+            "name": "posts_slug_unique"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16epnaunsp1brisb0b0",
+  "parent": "mig_d16epbado80pli9qshvg",
+  "schema": "public",
+  "startedAt": "2025-06-14T03:30:38.659762Z"
+}

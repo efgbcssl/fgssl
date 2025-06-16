@@ -140,6 +140,143 @@ const tables = [
     ],
   },
   {
+    name: "comments",
+    checkConstraints: {
+      comments_xata_id_length_xata_id: {
+        name: "comments_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {
+      parentId_link: {
+        name: "parentId_link",
+        columns: ["parentId"],
+        referencedTable: "comments",
+        referencedColumns: ["comment_id"],
+        onDelete: "CASCADE",
+      },
+      postId_link: {
+        name: "postId_link",
+        columns: ["postId"],
+        referencedTable: "posts",
+        referencedColumns: ["post_id"],
+        onDelete: "CASCADE",
+      },
+    },
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_comments_xata_id_key: {
+        name: "_pgroll_new_comments_xata_id_key",
+        columns: ["xata_id"],
+      },
+      comments__pgroll_new_comment_id_key: {
+        name: "comments__pgroll_new_comment_id_key",
+        columns: ["comment_id"],
+      },
+    },
+    columns: [
+      {
+        name: "comment_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "content",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "isHidden",
+        type: "bool",
+        notNull: true,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
+      },
+      {
+        name: "likes",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+      {
+        name: "name",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "parentId",
+        type: "link",
+        link: { table: "comments" },
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"comments"}',
+      },
+      {
+        name: "postId",
+        type: "link",
+        link: { table: "posts" },
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"posts"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "events",
     checkConstraints: {
       events_xata_id_length_xata_id: {
@@ -379,6 +516,300 @@ const tables = [
       },
     ],
   },
+  {
+    name: "likes",
+    checkConstraints: {
+      likes_xata_id_length_xata_id: {
+        name: "likes_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {
+      commentId_link: {
+        name: "commentId_link",
+        columns: ["commentId"],
+        referencedTable: "comments",
+        referencedColumns: ["comment_id"],
+        onDelete: "CASCADE",
+      },
+      postId_link: {
+        name: "postId_link",
+        columns: ["postId"],
+        referencedTable: "posts",
+        referencedColumns: ["post_id"],
+        onDelete: "SET NULL",
+      },
+    },
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_likes_xata_id_key: {
+        name: "_pgroll_new_likes_xata_id_key",
+        columns: ["xata_id"],
+      },
+      likes__pgroll_new_like_id_key: {
+        name: "likes__pgroll_new_like_id_key",
+        columns: ["like_id"],
+      },
+      likes__pgroll_new_userId_key: {
+        name: "likes__pgroll_new_userId_key",
+        columns: ["userId"],
+      },
+    },
+    columns: [
+      {
+        name: "commentId",
+        type: "link",
+        link: { table: "comments" },
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"comments"}',
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "like_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "postId",
+        type: "link",
+        link: { table: "posts" },
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"posts"}',
+      },
+      {
+        name: "userId",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
+    name: "posts",
+    checkConstraints: {
+      posts_xata_id_length_xata_id: {
+        name: "posts_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_posts_xata_id_key: {
+        name: "_pgroll_new_posts_xata_id_key",
+        columns: ["xata_id"],
+      },
+      posts__pgroll_new_post_id_key: {
+        name: "posts__pgroll_new_post_id_key",
+        columns: ["post_id"],
+      },
+      posts_slug_unique: { name: "posts_slug_unique", columns: ["slug"] },
+    },
+    columns: [
+      {
+        name: "categories",
+        type: "multiple",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "commentCount",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+      {
+        name: "content",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "excerpt",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "featuredImage",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "likes",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+      {
+        name: "metaDescription",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "metaTitle",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "post_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "publishDate",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "slug",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "status",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: "''::text",
+        comment: "",
+      },
+      {
+        name: "title",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
 ] as const;
 
 export type SchemaTables = typeof tables;
@@ -387,16 +818,28 @@ export type InferredTypes = SchemaInference<SchemaTables>;
 export type Appointments = InferredTypes["appointments"];
 export type AppointmentsRecord = Appointments & XataRecord;
 
+export type Comments = InferredTypes["comments"];
+export type CommentsRecord = Comments & XataRecord;
+
 export type Events = InferredTypes["events"];
 export type EventsRecord = Events & XataRecord;
 
 export type Faqs = InferredTypes["faqs"];
 export type FaqsRecord = Faqs & XataRecord;
 
+export type Likes = InferredTypes["likes"];
+export type LikesRecord = Likes & XataRecord;
+
+export type Posts = InferredTypes["posts"];
+export type PostsRecord = Posts & XataRecord;
+
 export type DatabaseSchema = {
   appointments: AppointmentsRecord;
+  comments: CommentsRecord;
   events: EventsRecord;
   faqs: FaqsRecord;
+  likes: LikesRecord;
+  posts: PostsRecord;
 };
 
 const DatabaseClient = buildClient();

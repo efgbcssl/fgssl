@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16feh2r9e9qaqkp5vvg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "comments",
+          "column": {
+            "name": "createdAt",
+            "type": "timestamptz",
+            "comment": "",
+            "default": "now()"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16feh2r9e9qaqkp5vvg",
+  "parent": "mig_d16fe42r9e9qaqkp5vug",
+  "schema": "public",
+  "startedAt": "2025-06-14T04:15:02.2912Z"
+}

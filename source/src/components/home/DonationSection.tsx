@@ -44,7 +44,7 @@ export default function DonationSection() {
 
           <p className="text-lg mb-8 text-gray-100">
             <span className="font-semibold text-church-secondary">Every gift matters</span> - whether large or small.
-            Join <span className="font-semibold">427 donors</span> this month in supporting our mission.
+            Join <span className="font-semibold">hundreds of donors</span> this month in supporting our mission.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
@@ -62,9 +62,9 @@ export default function DonationSection() {
             </Button>
           </div>
 
-          <p className="text-sm text-white/70 mt-6">
+          {/*<p className="text-sm text-white/70 mt-6">
             All donations are tax-deductible. 100% goes directly to ministry work.
-          </p>
+          </p>*/}
         </div>
       </div>
     </section>

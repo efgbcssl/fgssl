@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16esriunsp1brisb0hg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "posts",
+          "column": {
+            "name": "metaTitle",
+            "type": "text",
+            "comment": "",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16esriunsp1brisb0hg",
+  "parent": "mig_d16esaqunsp1brisb0gg",
+  "schema": "public",
+  "startedAt": "2025-06-14T03:37:18.689437Z"
+}

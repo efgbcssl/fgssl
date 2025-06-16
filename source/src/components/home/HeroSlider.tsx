@@ -14,8 +14,8 @@ const slides = [
   {
     id: 1,
     image: slide1,
-    title: "Welcome to Grace Church",
-    subtitle: "A place to grow in faith and community",
+    title: "The Ethiopian Full Gospel Belivers Church (Silver Spring Local)",
+    subtitle: "የኢትዮጵያ ሙሉ ወንጌል አማኞች ቤተ ክርስቲያን (ሲልቨር ስፕሪንግ አጥቢያ)",
     buttonText: "Join Us Sunday",
     buttonLink: "/about",
   },
@@ -33,7 +33,7 @@ const slides = [
     title: "Make a Difference",
     subtitle: "Serve in our community outreach programs",
     buttonText: "Get Involved",
-    buttonLink: "/about",
+    buttonLink: "/contact",
   },
   {
     id: 4,

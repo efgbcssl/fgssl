@@ -21,13 +21,15 @@ export default async function Home() {
     return (
         <>
             <HeroSlider />
-            <WeeklyMinistries />
-            <EventBanner events={events} />
             <DonationSection />
             <LiveStream />
-            <AppointmentForm />
+            <EventBanner events={events} />
+            <WeeklyMinistries />
             <LatestVideos />
+            <AppointmentForm />
+
             <FAQSection />
+
         </>
     );
 }

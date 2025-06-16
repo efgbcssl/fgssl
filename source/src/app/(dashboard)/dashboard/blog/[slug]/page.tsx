@@ -1,0 +1,54 @@
+import { BlogEditor } from '@/components/blog/BlogEditor'
+import { getBlogPostBySlug, updateBlogPost } from '@/lib/blog'
+import { notFound, redirect } from 'next/navigation'
+
+export default async function EditBlogPost({ params }: { params: { slug: string } }) {
+    const post = await getBlogPostBySlug(params.slug)
+
+    if (!post.data) {
+        return notFound()
+    }
+
+    async function handleSubmit(formData: FormData, slug: string) {
+        'use server'
+        const update = {
+            title: (formData.get('title') as string) ?? undefined,
+            content: (formData.get('content') as string) ?? undefined,
+            excerpt: (formData.get('excerpt') as string) ?? undefined,
+            status: (formData.get('status') as "published" | "scheduled" | "draft" | undefined) ?? undefined,
+            publishDate: (formData.get('publishDate') as string) ?? undefined,
+            categories: JSON.parse(formData.get('categories') as string) as string[],
+            featuredImage: (formData.get('featuredImage') as string) ?? undefined,
+            metaTitle: (formData.get('metaTitle') as string) ?? undefined,
+            metaDescription: (formData.get('metaDescription') as string) ?? undefined
+        }
+        await updateBlogPost(params.slug, update)
+        redirect(`/dashboard/blog/${params.slug}`)
+    }
+
+    // Create a wrapper function that passes the slug
+    const handleSubmitWithSlug = async (formData: FormData) => {
+        'use server'
+        return handleSubmit(formData, params.slug)
+    }
+
+    return (
+        <div className="container py-8">
+            <h1 className="text-2xl font-bold mb-6">Edit Blog Post</h1>
+            <BlogEditor
+                action={handleSubmitWithSlug}
+                defaultValues={{
+                    title: post.data!.title,
+                    content: post.data!.content,
+                    excerpt: post.data!.excerpt,
+                    status: post.data!.status,
+                    publishDate: post.data!.publishDate ?? '',
+                    categories: post.data!.categories,
+                    featuredImage: post.data!.featuredImage ?? '',
+                    metaTitle: post.data!.metaTitle ?? '',
+                    metaDescription: post.data!.metaDescription ?? ''
+                }}
+            />
+        </div>
+    )
+}

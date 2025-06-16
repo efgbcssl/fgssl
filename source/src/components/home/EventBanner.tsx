@@ -51,70 +51,79 @@ export default function EventBanner({ events }: { events: Event[] }) {
   const currentEvent = filteredEvents[currentEventIndex]
 
   return (
-    <section className="relative bg-church-primary text-white overflow-hidden">
-      <div className="absolute inset-0 opacity-20">
-        <Image
-          src={currentEvent.imageSrc}
-          alt="Event background"
-          fill
-          sizes="100vw"
-          className="object-cover opacity-40"
-          priority
-        />
-      </div>
+    <section className="relative bg-gray-50 text-gray-900 overflow-hidden rounded-xl shadow-lg">
+      <div className="container-custom py-8 md:py-12">
+        <div className="flex flex-col lg:flex-row items-center gap-8">
+          {/* Event Image */}
+          <div className="w-full lg:w-2/3 h-64 md:h-80 lg:h-96 relative rounded-lg overflow-hidden shadow-md bg-gray-200">
+            <Image
+              src={currentEvent.imageSrc}
+              alt={currentEvent.title}
+              fill
+              sizes="(max-width: 1024px) 100vw, 66vw"
+              className="object-cover"
+              priority
+            />
+            {/* Image overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+          </div>
 
-      <div className="absolute inset-0 bg-gradient-to-r from-church-primary/60 to-church-primary/90" />
-
-      <div className="container-custom relative z-10 py-10 md:py-16">
-        <div className="flex flex-col md:flex-row items-center justify-between">
-          <div className="mb-6 md:mb-0 md:max-w-xl">
-            <Badge variant="featured" />
-            <h2 className="text-2xl md:text-3xl font-bold font-heading mb-3">
+          {/* Event Content */}
+          <div className="w-full lg:w-1/3 flex flex-col justify-center p-4 md:p-6 lg:p-8">
+            <Badge />
+            <h2 className="text-2xl md:text-3xl font-bold font-heading mb-3 mt-2">
               {currentEvent.title}
             </h2>
-            <div className="flex items-center text-church-secondary mb-3">
+
+            <div className="flex items-center text-church-primary mb-3">
               <Calendar className="h-5 w-5 mr-2" />
               <span className="font-medium">
                 {currentEvent.date} • {currentEvent.time}
               </span>
             </div>
-            <p className="mb-2 text-gray-100">
-              Location: {currentEvent.location}
+
+            <p className="mb-2 text-gray-700">
+              <span className="font-semibold">Location:</span> {currentEvent.location}
             </p>
+
             {currentEvent.description && (
-              <p className="mb-4 text-gray-100">{currentEvent.description}</p>
+              <p className="mb-6 text-gray-600">{currentEvent.description}</p>
             )}
-            <Button className="bg-church-secondary text-church-dark hover:bg-church-secondary/90 group"
-              onClick={() => window.open(currentEvent.ctaLink, '_blank')}>
+
+            <Button
+              className="bg-church-primary text-white hover:bg-church-primary/90 group w-full sm:w-auto"
+              onClick={() => window.open(currentEvent.ctaLink, '_blank')}
+            >
               {currentEvent.ctaText}
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-          </div>
 
-          {filteredEvents.length > 1 && (
-            <div className="flex space-x-2">
-              {filteredEvents.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentEventIndex(idx)}
-                  className={`w-3 h-3 rounded-full ${idx === currentEventIndex
-                    ? 'bg-church-secondary'
-                    : 'bg-white/30 hover:bg-white/50'
-                    } transition-colors`}
-                  aria-label={`View event ${idx + 1}`}
-                />
-              ))}
-            </div>
-          )}
+            {/* Navigation dots */}
+            {filteredEvents.length > 1 && (
+              <div className="flex justify-center lg:justify-start space-x-2 mt-6">
+                {filteredEvents.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentEventIndex(idx)}
+                    className={`w-3 h-3 rounded-full ${idx === currentEventIndex
+                      ? 'bg-church-primary'
+                      : 'bg-gray-300 hover:bg-gray-400'
+                      } transition-colors`}
+                    aria-label={`View event ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-function Badge({ variant = "default" }: { variant?: string }) {
+function Badge() {
   return (
-    <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-church-secondary text-church-dark uppercase tracking-wide mb-4">
+    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-church-primary/10 text-church-primary uppercase tracking-wide mb-2">
       Featured Event
     </span>
   )

@@ -1,15 +1,14 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { format, addDays, isToday } from 'date-fns'
-import { Calendar as CalendarIcon, Clock, Loader2 } from 'lucide-react'
+import { format } from 'date-fns'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { TimeSelect } from '@/components/ui/time-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 export default function AppointmentForm() {
@@ -48,12 +47,10 @@ export default function AppointmentForm() {
       const dateStr = format(date, 'yyyy-MM-dd');
       const response = await fetch(`/api/appointments/check?date=${dateStr}`);
 
-      // First check if the request was successful
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      // Verify content type is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new TypeError("Oops, we didn't get JSON!");
@@ -63,8 +60,11 @@ export default function AppointmentForm() {
       setBookedSlots(data);
     } catch (error) {
       console.error('Error checking slots:', error);
-      // Add user feedback here, e.g.:
-      setError(`Failed to load available slots: ${error.message}`);
+      toast({
+        title: "Error",
+        description: "Failed to load available time slots",
+        variant: "destructive"
+      })
     } finally {
       setIsChecking(false);
     }
@@ -138,96 +138,132 @@ export default function AppointmentForm() {
   return (
     <section className="py-16 bg-gray-50">
       <div className="container-custom">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center font-heading text-church-primary">
-            Schedule an Appointment
-          </h2>
-          <p className="text-center text-gray-600 mb-10">
-            Would you like to speak with our pastor or church staff? Schedule an appointment below.
-          </p>
+        <div className="max-w-4xl mx-auto"> {/* Increased max width */}
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3 font-heading text-church-primary">
+              Schedule an Appointment
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Would you like to speak with our pastor or church staff? Schedule an appointment below.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg border border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  placeholder="John Doe"
-                  required
-                  className="border-gray-300 focus:border-church-primary"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="phoneNumber">Phone Number *</Label>
-                <Input
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  placeholder="(123) 456-7890"
-                  required
-                  type="tel"
-                  className="border-gray-300 focus:border-church-primary"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  placeholder="your@email.com"
-                  required
-                  type="email"
-                  className="border-gray-300 focus:border-church-primary"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label>Meeting Type *</Label>
-                <RadioGroup
-                  defaultValue="in-person"
-                  value={medium}
-                  onValueChange={setMedium}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="in-person" id="in-person" />
-                    <Label htmlFor="in-person" className="cursor-pointer font-normal">In-Person</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="online" id="online" />
-                    <Label htmlFor="online" className="cursor-pointer font-normal">Online</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-3">
-                <Label className='flex items-center gap-1'>
-                  Preferred Date and Time <span className='border rounded-lg p-4 bg-white shadow-sm'>*</span>
-                </Label>
-                <div className="border rounded-lg p-4 bg-white shadow-sm">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    disabled={(date) => {
-                      const now = new Date()
-                      now.setHours(0, 0, 0, 0)
-                      return date < now || date.getDay() === 0
-                    }}
-                    className="w-full"
+          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column - Personal Info */}
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    placeholder="John Doe"
+                    required
+                    className="border-gray-300 focus:border-church-primary h-12"
                   />
                 </div>
 
+                <div className="space-y-3">
+                  <Label htmlFor="phoneNumber">Phone Number *</Label>
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    placeholder="(123) 456-7890"
+                    required
+                    type="tel"
+                    className="border-gray-300 focus:border-church-primary h-12"
+                  />
+                </div>
 
                 <div className="space-y-3">
-                  <Label className="flex items-center gap-1">
-                    Available Times <span className="text-church-secondary">*</span>
-                    {isChecking && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    placeholder="your@email.com"
+                    required
+                    type="email"
+                    className="border-gray-300 focus:border-church-primary h-12"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Meeting Type *</Label>
+                  <RadioGroup
+                    defaultValue="in-person"
+                    value={medium}
+                    onValueChange={setMedium}
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="in-person" id="in-person" className="peer hidden" />
+                      <Label
+                        htmlFor="in-person"
+                        className="flex flex-col p-3 border border-gray-300 rounded-lg cursor-pointer peer-data-[state=checked]:border-church-primary peer-data-[state=checked]:bg-church-primary/10"
+                      >
+                        <span className="font-medium">In-Person</span>
+                        <span className="text-sm text-gray-500">At our location</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="online" id="online" className="peer hidden" />
+                      <Label
+                        htmlFor="online"
+                        className="flex flex-col p-3 border border-gray-300 rounded-lg cursor-pointer peer-data-[state=checked]:border-church-primary peer-data-[state=checked]:bg-church-primary/10"
+                      >
+                        <span className="font-medium">Online</span>
+                        <span className="text-sm text-gray-500">Video call</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              {/* Right Column - Date & Time */}
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label>Preferred Date *</Label>
+                  <div className="border rounded-lg overflow-hidden shadow-sm">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      initialFocus
+                      disabled={(date) => {
+                        const now = new Date()
+                        now.setHours(0, 0, 0, 0)
+                        return date < now || date.getDay() === 0
+                      }}
+                      className="w-full"
+                      classNames={{
+                        months: "w-full",
+                        month: "space-y-4 w-full",
+                        caption: "flex justify-between items-center px-4 pt-3",
+                        caption_label: "text-sm font-medium",
+                        nav: "flex gap-1",
+                        nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                        table: "w-full border-collapse",
+                        head_row: "w-full",
+                        head_cell: "text-gray-500 rounded-md w-10 font-normal text-sm",
+                        row: "w-full mt-2",
+                        cell: "text-center p-0 relative [&:has([aria-selected])]:bg-church-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                        day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-gray-100",
+                        day_selected: "bg-church-primary text-white hover:bg-church-primary focus:bg-church-primary",
+                        day_today: "bg-gray-100",
+                        day_disabled: "text-gray-400 opacity-50",
+                        day_outside: "text-gray-400 opacity-50",
+                        day_range_middle: "aria-selected:bg-church-primary/10 aria-selected:text-church-primary",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    Available Times *
+                    {isChecking && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
                   </Label>
-                  <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg bg-white shadow-sm">
+                  <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-gray-50">
                     {availableTimes.map((slot) => (
                       <button
                         key={slot}
@@ -235,10 +271,10 @@ export default function AppointmentForm() {
                         onClick={() => setTime(slot)}
                         disabled={bookedSlots.includes(slot)}
                         className={cn(
-                          'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center',
+                          'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center h-10',
                           time === slot
                             ? 'bg-church-primary text-white shadow-md'
-                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200',
+                            : 'bg-white hover:bg-gray-100 border border-gray-200',
                           bookedSlots.includes(slot) && 'opacity-50 cursor-not-allowed bg-gray-100'
                         )}
                       >
@@ -253,24 +289,28 @@ export default function AppointmentForm() {
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="mt-8">
               <Button
                 type="submit"
-                className="w-full bg-church-primary hover:bg-church-primary/90 h-12 text-lg"
+                className="w-full bg-church-primary hover:bg-church-primary/90 h-14 text-lg font-medium"
                 disabled={!isFormValid() || isSubmitting}
               >
                 {isSubmitting ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : null}
-                {isSubmitting ? "Submitting..." : "Request Appointment"}
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Request Appointment"
+                )}
               </Button>
               <p className="text-sm text-gray-500 mt-3 text-center">
-                We&apos;ll contact you to confirm your appointment details.
+                We'll contact you to confirm your appointment details.
               </p>
             </div>
           </form>
         </div>
-      </div >
-    </section >
+      </div>
+    </section>
   )
 }

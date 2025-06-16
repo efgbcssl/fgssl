@@ -51,10 +51,11 @@ export default function RootLayout({
                         <Navbar />
                         <main className="flex-1">
                             {children}
-                            <Toaster />
+
                         </main>
                         <Footer />
                     </div>
+                    <Toaster />
                 </ThemeProvider>
             </body>
         </html>

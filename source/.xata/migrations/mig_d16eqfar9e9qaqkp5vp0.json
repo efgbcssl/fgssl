@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d16eqfar9e9qaqkp5vp0",
+    "operations": [
+      {
+        "add_column": {
+          "up": "''",
+          "table": "posts",
+          "column": {
+            "name": "excerpt",
+            "type": "text",
+            "comment": ""
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d16eqfar9e9qaqkp5vp0",
+  "parent": "mig_d16eq2iunsp1brisb0c0",
+  "schema": "public",
+  "startedAt": "2025-06-14T03:32:13.327009Z"
+}

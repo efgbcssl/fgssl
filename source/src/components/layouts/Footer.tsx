@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Facebook, Twitter, Instagram, Youtube, MapPin, Phone, Mail, Clock, Church } from 'lucide-react'
+import { Facebook, Twitter, Instagram, Youtube, MapPin, Phone, Mail, Clock } from 'lucide-react'
+import Image from 'next/image'
 
 const navigation = {
     main: [
@@ -25,9 +26,14 @@ const Footer = () => {
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
                     {/* Church Info */}
                     <div>
-                        <Link href="/" className="flex items-center space-x-2 mb-6">
-                            <Church size={32} className="text-white" />
-                            <span className="font-heading text-xl font-bold text-white">Grace Church</span>
+                        <Link href="/" className="flex items-center space-x-2">
+                            <Image
+                                src="/fg-logo.jpg"
+                                alt="EFGBC Logo"
+                                width={40}
+                                height={40}
+                            />
+                            <span className="font-heading text-xl font-bold text-bold">EFGBC</span>
                         </Link>
                         <p className="text-gray-300 mb-6">
                             Transforming lives through faith, hope, and love. Join our community and be part of something greater.
@@ -62,15 +68,15 @@ const Footer = () => {
                         <div className="space-y-4">
                             <div className="flex items-start space-x-3">
                                 <MapPin className="h-5 w-5 text-church-secondary flex-shrink-0 mt-0.5" />
-                                <span className="text-gray-300">123 Faith Street, Grace City, GC 12345</span>
+                                <span className="text-gray-300">914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA</span>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Phone className="h-5 w-5 text-church-secondary flex-shrink-0" />
-                                <span className="text-gray-300">(123) 456-7890</span>
+                                <span className="text-gray-300">(240) 821-0361</span>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Mail className="h-5 w-5 text-church-secondary flex-shrink-0" />
-                                <span className="text-gray-300">info@gracechurch.org</span>
+                                <span className="text-gray-300">info@efgbcssl.org</span>
                             </div>
                             <div className="flex items-start space-x-3">
                                 <Clock className="h-5 w-5 text-church-secondary flex-shrink-0 mt-0.5" />
@@ -107,7 +113,7 @@ const Footer = () => {
 
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     <p className="text-gray-300 text-sm">
-                        &copy; {new Date().getFullYear()} Grace Community Church. All rights reserved.
+                        &copy; {new Date().getFullYear()} Ethiopian Full Gospel Believers Church. All rights reserved.
                     </p>
                     <div className="flex space-x-6 mt-4 md:mt-0 text-sm">
                         <Link href="/privacy-policy" className="text-gray-300 hover:text-church-secondary">

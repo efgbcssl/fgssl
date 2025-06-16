@@ -1,170 +1,293 @@
-"use client"
+'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { formatDistanceToNow } from 'date-fns'
+import { Share2, MessageSquare, ThumbsUp } from 'lucide-react'
 
-type Comment = {
-  id: number
+interface Comment {
+  id: string
   name: string
-  date: string
   content: string
-  replies?: Comment[]
+  createdAt: string
+  replies: Comment[]
+  isHidden?: boolean
+  likes: number
+  liked?: boolean
 }
 
-// Sample comments data
-const initialComments: Comment[] = [
-  {
-    id: 1,
-    name: "James Wilson",
-    date: "June 3, 2023",
-    content: "This was such an insightful article. I've been struggling with anxiety lately and these spiritual practices are exactly what I needed to hear about. Thank you!",
-    replies: [
-      {
-        id: 3,
-        name: "Pastor John Smith",
-        date: "June 4, 2023",
-        content: "Thank you for your kind words, James. I'm so glad the article was helpful. We'll be diving deeper into spiritual practices for anxiety in our upcoming Wednesday night Bible study as well."
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: "Mary Thompson",
-    date: "June 2, 2023",
-    content: "I especially appreciated the section about making time for daily prayer. It's such a simple practice but it makes such a difference in my day when I prioritize it.",
-  }
-]
+interface CommentSectionProps {
+  postId: string
+  userId: string
+  initialComments: Comment[]
+}
 
-export default function CommentSection() {
+export function CommentSection({ postId, userId, initialComments }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>(initialComments)
-  const [newComment, setNewComment] = useState({
-    name: '',
-    email: '',
-    content: ''
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const [name, setName] = useState('')
+  const [content, setContent] = useState('')
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState('')
+  const [showShare, setShowShare] = useState(false)
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    
-    // Simulate API call to post comment
-    setTimeout(() => {
-      const newCommentObj: Comment = {
-        id: Date.now(),
-        name: newComment.name,
-        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        content: newComment.content,
+  // Fetch like status for comments
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      try {
+        const updatedComments = await Promise.all(
+          comments.map(async (comment) => {
+            const response = await fetch(`/api/likes?postId=${postId}&commentId=${comment.id}&userId=${userId}`)
+            const { liked } = await response.json()
+
+            const repliesWithLikes = await Promise.all(
+              comment.replies.map(async (reply) => {
+                const replyResponse = await fetch(`/api/likes?postId=${postId}&commentId=${reply.id}&userId=${userId}`)
+                const { liked: replyLiked } = await replyResponse.json()
+                return { ...reply, liked: replyLiked }
+              })
+            )
+
+            return { ...comment, liked, replies: repliesWithLikes }
+          })
+        )
+        setComments(updatedComments)
+      } catch (error) {
+        console.error('Error fetching like status:', error)
       }
-      
-      setComments([...comments, newCommentObj])
-      setNewComment({ name: '', email: '', content: '' })
-      setIsSubmitting(false)
-      
-      toast({
-        title: "Comment Posted",
-        description: "Your comment has been successfully posted.",
+    }
+
+    if (userId) {
+      fetchLikeStatus()
+    }
+  }, [postId, userId, comments])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !content.trim()) return
+
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId, name, content }),
       })
-    }, 1000)
+
+      if (response.ok) {
+        const newComment = await response.json()
+        setComments([...comments, newComment])
+        setName('')
+        setContent('')
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error)
+    }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setNewComment({ ...newComment, [name]: value })
+  const handleReplySubmit = async (commentId: string) => {
+    if (!replyContent.trim()) return
+
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId,
+          parentId: commentId,
+          name,
+          content: replyContent
+        }),
+      })
+
+      if (response.ok) {
+        const newReply = await response.json()
+        setComments(comments.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              replies: [...comment.replies, newReply]
+            }
+          }
+          return comment
+        }))
+        setReplyContent('')
+        setReplyingTo(null)
+      }
+    } catch (error) {
+      console.error('Error submitting reply:', error)
+    }
   }
 
-  return (
-    <div>
-      <h3 className="text-2xl font-bold mb-6 font-heading">Comments ({comments.length})</h3>
-      
-      {/* Comment List */}
-      <div className="space-y-8 mb-10">
-        {comments.map((comment) => (
-          <div key={comment.id} className="border-b border-gray-200 pb-6 last:pb-0 last:border-b-0">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h4 className="font-bold text-lg">{comment.name}</h4>
-                <p className="text-gray-500 text-sm">{comment.date}</p>
+  const toggleLike = async (commentId: string) => {
+    try {
+      const response = await fetch('/api/likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId,
+          commentId,
+          userId
+        }),
+      })
+
+      if (response.ok) {
+        const { liked } = await response.json()
+
+        setComments(comments.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              likes: liked ? comment.likes + 1 : comment.likes - 1,
+              liked
+            }
+          }
+
+          // Update replies as well
+          const updatedReplies = comment.replies.map(reply => {
+            if (reply.id === commentId) {
+              return {
+                ...reply,
+                likes: liked ? reply.likes + 1 : reply.likes - 1,
+                liked
+              }
+            }
+            return reply
+          })
+
+          return {
+            ...comment,
+            replies: updatedReplies
+          }
+        }))
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error)
+    }
+  }
+
+  const renderComments = (comments: Comment[], depth = 0) => {
+    return comments.map((comment) => (
+      <div
+        key={comment.id}
+        className={`mt-4 ${depth > 0 ? 'ml-8 border-l-2 pl-4 border-gray-200' : ''}`}
+      >
+        <div className={`flex gap-3 ${comment.isHidden ? 'opacity-50' : ''}`}>
+          <Avatar>
+            <AvatarImage src={`https://ui-avatars.com/api/?name=${comment.name}`} />
+            <AvatarFallback>{comment.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="bg-gray-100 rounded-lg p-3">
+              <div className="flex justify-between items-start">
+                <h4 className="font-medium">{comment.name}</h4>
+                <span className="text-xs text-gray-500">
+                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                </span>
               </div>
+              <p className="mt-1 text-sm">{comment.content}</p>
             </div>
-            <p className="text-gray-700 mb-4">{comment.content}</p>
-            
-            {/* Replies */}
-            {comment.replies && comment.replies.length > 0 && (
-              <div className="pl-6 border-l-2 border-gray-200 mt-6 space-y-6">
-                {comment.replies.map((reply) => (
-                  <div key={reply.id}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h5 className="font-bold">{reply.name}</h5>
-                        <p className="text-gray-500 text-sm">{reply.date}</p>
-                      </div>
-                    </div>
-                    <p className="text-gray-700">{reply.content}</p>
-                  </div>
-                ))}
+            <div className="flex gap-4 mt-2 text-xs text-gray-500">
+              <button
+                onClick={() => toggleLike(comment.id)}
+                className={`flex items-center gap-1 ${comment.liked ? 'text-blue-500' : 'hover:text-blue-500'}`}
+              >
+                <ThumbsUp className="h-3 w-3" /> {comment.likes} Like{comment.likes !== 1 ? 's' : ''}
+              </button>
+              <button
+                onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                className="flex items-center gap-1 hover:text-blue-500"
+              >
+                <MessageSquare className="h-3 w-3" /> Reply
+              </button>
+            </div>
+
+            {replyingTo === comment.id && (
+              <div className="mt-3">
+                <Textarea
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Write your reply..."
+                  rows={2}
+                  className="text-sm"
+                />
+                <div className="flex justify-end gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setReplyingTo(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleReplySubmit(comment.id)}
+                  >
+                    Post Reply
+                  </Button>
+                </div>
               </div>
             )}
           </div>
-        ))}
+        </div>
+        {comment.replies && renderComments(comment.replies, depth + 1)}
       </div>
-      
-      {/* Comment Form */}
-      <div className="bg-gray-50 p-6 rounded-lg">
-        <h3 className="text-xl font-bold mb-4 font-heading">Leave a Comment</h3>
-        <form onSubmit={handleCommentSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">
-                Name*
-              </label>
-              <Input 
-                id="name" 
-                name="name" 
-                value={newComment.name}
-                onChange={handleInputChange}
-                required 
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">
-                Email* (will not be published)
-              </label>
-              <Input 
-                id="email" 
-                name="email"
-                type="email"
-                value={newComment.email}
-                onChange={handleInputChange}
-                required 
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="content" className="block text-sm font-medium mb-1">
-              Comment*
-            </label>
-            <Textarea 
-              id="content" 
-              name="content"
-              rows={5}
-              value={newComment.content}
-              onChange={handleInputChange}
-              required 
-            />
-          </div>
-          <Button 
-            type="submit"
-            className="bg-church-primary text-white hover:bg-church-primary/90"
-            disabled={isSubmitting}
+    ))
+  }
+
+  return (
+    <div className="mt-12">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-semibold">Comments ({comments.length})</h3>
+        <div className="relative">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowShare(!showShare)}
           >
-            {isSubmitting ? "Posting Comment..." : "Post Comment"}
+            <Share2 className="h-4 w-4 mr-2" /> Share
           </Button>
-        </form>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            required
+          />
+          <Input
+            type="email"
+            placeholder="Your email (optional)"
+          />
+        </div>
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Write your comment..."
+          rows={4}
+          required
+        />
+        <div className="flex justify-end">
+          <Button type="submit">Post Comment</Button>
+        </div>
+      </form>
+
+      <div className="mt-8">
+        {comments.length > 0 ? (
+          renderComments(comments)
+        ) : (
+          <p className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</p>
+        )}
       </div>
     </div>
   )
