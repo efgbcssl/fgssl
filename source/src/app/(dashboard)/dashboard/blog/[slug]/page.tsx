@@ -4,18 +4,17 @@ import { getBlogPostBySlug } from '@/lib/blog'
 import { notFound } from 'next/navigation'
 import { handleEditBlogSubmit } from '@/actions/blogActions'
 
-export default async function EditBlogPost({ params }: { params: { slug: string } }) {
-    const post = await getBlogPostBySlug(params.slug)
-
+export default async function EditBlogPost({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const post = await getBlogPostBySlug(slug);
     if (!post?.data) {
-        notFound()
+        notFound();
     }
-
     return (
         <div className="container py-8">
             <h1 className="text-2xl font-bold mb-6">Edit Blog Post</h1>
             <BlogEditor
-                action={(formData) => handleEditBlogSubmit(params.slug, formData)}
+                action={(formData) => handleEditBlogSubmit(slug, formData)}
                 defaultValues={{
                     title: post.data.title,
                     content: post.data.content,
