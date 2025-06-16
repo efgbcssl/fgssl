@@ -2,13 +2,15 @@ import { BlogEditor } from '@/components/blog/BlogEditor'
 import { getBlogPostBySlug, updateBlogPost } from '@/lib/blog'
 import { notFound, redirect } from 'next/navigation'
 
-type Params = {
-    params: {
-        slug: string
-    }
+interface Params {
+    slug: string;
 }
 
-export default async function EditBlogPost({ params }: Params) {
+interface PageProps {
+    params: Params;
+}
+
+export default async function EditBlogPost({ params }: PageProps) {
     const post = await getBlogPostBySlug(params.slug)
 
     if (!post.data) {
