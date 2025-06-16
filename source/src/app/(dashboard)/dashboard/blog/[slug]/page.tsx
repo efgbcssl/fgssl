@@ -1,30 +1,9 @@
-// File: src/app/(dashboard)/dashboard/blog/[slug]/page.tsx
-
+// src/app/(dashboard)/dashboard/blog/[slug]/page.tsx
 import { BlogEditor } from '@/components/blog/BlogEditor'
-import { getBlogPostBySlug, updateBlogPost } from '@/lib/blog'
-import { notFound, redirect } from 'next/navigation'
+import { getBlogPostBySlug } from '@/lib/blog'
+import { notFound } from 'next/navigation'
+import { handleEditBlogSubmit } from '@/actions/blogActions'
 
-// ⛳️ ✅ Server action declared OUTSIDE the component
-export async function handleSubmit(slug: string, formData: FormData) {
-    'use server'
-
-    const update = {
-        title: (formData.get('title') as string) ?? undefined,
-        content: (formData.get('content') as string) ?? undefined,
-        excerpt: (formData.get('excerpt') as string) ?? undefined,
-        status: (formData.get('status') as "published" | "scheduled" | "draft" | undefined) ?? undefined,
-        publishDate: (formData.get('publishDate') as string) ?? undefined,
-        categories: JSON.parse(formData.get('categories') as string) as string[],
-        featuredImage: (formData.get('featuredImage') as string) ?? undefined,
-        metaTitle: (formData.get('metaTitle') as string) ?? undefined,
-        metaDescription: (formData.get('metaDescription') as string) ?? undefined
-    }
-
-    await updateBlogPost(slug, update)
-    redirect(`/dashboard/blog/${slug}`)
-}
-
-// ✅ Page component — async is OK here
 export default async function EditBlogPost({ params }: { params: { slug: string } }) {
     const post = await getBlogPostBySlug(params.slug)
 
@@ -36,7 +15,7 @@ export default async function EditBlogPost({ params }: { params: { slug: string 
         <div className="container py-8">
             <h1 className="text-2xl font-bold mb-6">Edit Blog Post</h1>
             <BlogEditor
-                action={(formData) => handleSubmit(params.slug, formData)}
+                action={(formData) => handleEditBlogSubmit(params.slug, formData)}
                 defaultValues={{
                     title: post.data.title,
                     content: post.data.content,
