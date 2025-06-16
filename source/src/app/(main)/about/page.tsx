@@ -71,23 +71,22 @@ export default function AboutPage() {
                 <div className="container-custom">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                         <div>
-                            <h2 className="text-3xl font-bold mb-6">Our Vision</h2>
+                            <h2 className="text-3xl font-bold mb-6">ራዕያችን</h2>
                             <p className="text-lg mb-6">
-                                To be a thriving, Christ-centered community where people discover purpose,
-                                find belonging, and make a difference.
+                                በመንፈስ ቅዱስና በእግዚአብሔር ቃል የተሞሉ፤ የደቀ መዝሙርነትን ሕይወት በወንጌል ስብከትና በኑሮ የሚገልጡ አማኞችን እያፈራች፤ ዘመኑን እየዋጀች፤ የጌታን ምፅዓት እያወጀችና አባላቷንም እያዘጋጀች የእግዚአብሔር ሕልውና የተገለጠባት ቅድስት ቤተክርስቲያን ሆና ማየት
                             </p>
                             <div className="bg-church-primary/5 p-6 rounded-lg border-l-4 border-church-primary">
                                 <p className="italic">
-                                    "Where there is no vision, the people perish..."
+                                    &quot;በእርሱ የሚያምን ሁሉ የዘላለም ሕይወት እንዲኖረው እንጂ እንዳይጠፋ እግዚአብሔር አንድያ ልጁን እስኪሰጥ ድረስ ዓለሙን እንዲሁ ወዶአልና።&quot;
                                 </p>
-                                <p className="text-right mt-2">- Proverbs 29:18</p>
+                                <p className="text-right mt-2">- ዮሐንስ 3:16</p>
                             </div>
                         </div>
 
                         <div>
-                            <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+                            <h2 className="text-3xl font-bold mb-6">ተልዕኳችን</h2>
                             <p className="text-lg mb-6">
-                                To love God, love people, and make disciples who transform communities.
+                                ወንጌልን በመንፈስ ቅዱስ ምሪት በአጥቢያ ቤተክርስቲያኒቱ ክልል ላሉ ሰዎችና በሀገሪቱ ብሎም በዓለም ዙሪያ በልዩ ልዩ መንገድ በመስበክ ሰዎችን ለእግዚአብሔር መንግስት መዋጀትና ያመኑትንም የእግዚአብሔርን ቃል በማስተማርና በማጥመቅ ደቀ መዛሙርት ማድረግ
                             </p>
                             <ul className="space-y-3">
                                 {[
@@ -167,7 +166,12 @@ export default function AboutPage() {
                     <h2 className="text-3xl font-bold text-center mb-10">Our Locations</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {branches.map((branch) => (
-                            <BranchSection key={branch.id} branch={branch} />
+                            <BranchSection
+                                key={branch.id}
+                                {...branch}
+                                branchLocation={branch.coords}
+                                branchName={branch.name}
+                            />
                         ))}
                     </div>
                 </div>

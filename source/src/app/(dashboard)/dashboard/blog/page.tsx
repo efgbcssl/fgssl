@@ -1,45 +1,85 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Edit, Eye } from 'lucide-react'
-import { getBlogPosts } from '@/lib/blog'
+import { Plus, Edit, Eye, MessageCircle, Trash2, RefreshCcw } from 'lucide-react'
+import { toast } from '@/hooks/use-toast' // Assuming you have a toast component
 
-export default async function AdminBlogPage() {
-    const { data: posts = [], error } = await getBlogPosts(true);
-    if (error) {
-        return (
-            <div className="container py-8">
-                <div className="text-red-500">
-                    Error loading posts: {error}
-                </div>
-            </div>
-        );
+// Fake API helper (replace with your real API calls)
+async function fetchPosts({ page, search, status }: { page: number; search: string; status: string }) {
+    const query = new URLSearchParams()
+    query.set('page', String(page))
+    if (search) query.set('search', search)
+    if (status && status !== 'all') query.set('status', status)
+
+    const res = await fetch(`/api/dashboard/blog/posts?${query.toString()}`)
+    if (!res.ok) throw new Error('Failed to fetch posts')
+    return res.json() // expected { posts: Post[], totalPages: number }
+}
+
+async function deletePost(postId: string) {
+    const res = await fetch(`/api/dashboard/blog/posts/${postId}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Failed to delete post')
+}
+
+async function toggleStatus(postId: string, currentStatus: string) {
+    const newStatus = currentStatus === 'published' ? 'draft' : 'published'
+    const res = await fetch(`/api/dashboard/blog/posts/${postId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+    })
+    if (!res.ok) throw new Error('Failed to update status')
+    return newStatus
+}
+
+export default function AdminBlogPage() {
+    const [posts, setPosts] = useState([])
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [search, setSearch] = useState('')
+    const [statusFilter, setStatusFilter] = useState('all')
+    const [loading, setLoading] = useState(false)
+
+    async function loadPosts() {
+        setLoading(true)
+        try {
+            const data = await fetchPosts({ page, search, status: statusFilter })
+            setPosts(data.posts)
+            setTotalPages(data.totalPages)
+        } catch (error: unknown) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        } finally {
+            setLoading(false)
+        }
     }
 
-    if (posts.length === 0) {
-        return (
-            <div className="container py-8">
-                <div className="border rounded-lg p-8 text-center">
-                    <h2 className="text-xl font-semibold mb-2">No Blog Posts Found</h2>
-                    <p className="text-gray-600 mb-4">
-                        Create your first blog post to get started
-                    </p>
-                    <Button asChild>
-                        <Link href="/dashboard/blog/new">
-                            <Plus className="mr-2 h-4 w-4" /> Create New Post
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-        );
+    useEffect(() => {
+        loadPosts()
+    }, [page, search, statusFilter])
+
+    async function handleDelete(postId: string, title: string) {
+        if (!confirm(`Are you sure you want to delete the post "${title}"? This action cannot be undone.`)) return
+        try {
+            await deletePost(postId)
+            toast({ title: 'Deleted', description: `Post "${title}" deleted.` })
+            // Reload posts, reset to page 1 if needed
+            setPage(1)
+            loadPosts()
+        } catch (error) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        }
     }
 
-    // Handle case where posts is not an array
-    if (!Array.isArray(posts)) {
-        return (
-            <div className="container py-8">
-                <div className="text-red-500">Posts data is not in expected format</div>
-            </div>
-        )
+    async function handleToggleStatus(postId: string, currentStatus: string) {
+        try {
+            const newStatus = await toggleStatus(postId, currentStatus)
+            toast({ title: 'Updated', description: `Status changed to "${newStatus}".` })
+            loadPosts()
+        } catch (error) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        }
     }
 
     return (
@@ -53,17 +93,58 @@ export default async function AdminBlogPage() {
                 </Button>
             </div>
 
+            {/* Search & Filter */}
+            <div className="flex gap-4 mb-6">
+                <input
+                    type="search"
+                    placeholder="Search posts..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="border px-3 py-2 rounded-md flex-grow"
+                    disabled={loading}
+                />
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border px-3 py-2 rounded-md"
+                    disabled={loading}
+                >
+                    <option value="all">All Statuses</option>
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                </select>
+                <Button variant="outline" onClick={() => loadPosts()} disabled={loading} title="Reload">
+                    <RefreshCcw className="h-5 w-5" />
+                </Button>
+            </div>
+
+            {/* Table */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Publish Date</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Title
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Publish Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
+                        {posts.length === 0 && (
+                            <tr>
+                                <td colSpan={4} className="text-center py-6 text-gray-500">
+                                    No posts found.
+                                </td>
+                            </tr>
+                        )}
                         {posts.map((post) => (
                             <tr key={post.post_id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -71,34 +152,49 @@ export default async function AdminBlogPage() {
                                     <div className="text-sm text-gray-500">{post.excerpt}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${post.status === 'published' ? 'bg-green-100 text-green-800' :
-                                            post.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                                    <span
+                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.status === 'published'
+                                            ? 'bg-green-100 text-green-800'
+                                            : post.status === 'draft'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-blue-100 text-blue-800'
+                                            }`}
+                                    >
                                         {post.status}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {post.publishDate || 'Not scheduled'}
+                                    {post.publishDate
+                                        ? new Date(post.publishDate).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                        })
+                                        : 'Not scheduled'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div className="flex space-x-2">
+                                        {/* Edit */}
                                         <Button variant="outline" size="sm" asChild>
-                                            <Link href={`/dashboard/blog/${post.slug}`}>
+                                            <Link href={`/dashboard/blog/${post.slug}`} aria-label={`Edit post: ${post.title}`}>
                                                 <Edit className="h-4 w-4" />
                                             </Link>
                                         </Button>
+                                        {/* View */}
                                         <Button variant="outline" size="sm" asChild>
-                                            <Link href={`/blog/${post.slug}`} target="_blank">
+                                            <Link href={`/blog/${post.slug}`} target="_blank" aria-label={`View post: ${post.title}`}>
                                                 <Eye className="h-4 w-4" />
                                             </Link>
                                         </Button>
+                                        {/* Comments */}
                                         <Button variant="outline" size="sm" asChild>
-                                            <Link href={`/dashboard/blog/${post.slug}/comments`}>
+                                            <Link
+                                                href={`/dashboard/blog/${post.slug}/comments`}
+                                                aria-label={`Comments for post: ${post.title}`}
+                                            >
                                                 <span className="relative">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                                    </svg>
-                                                    {post.commentCount > 0 && (
+                                                    <MessageCircle className="h-4 w-4" />
+                                                    {(post.commentCount ?? 0) > 0 && (
                                                         <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                                                             {post.commentCount}
                                                         </span>
@@ -106,12 +202,49 @@ export default async function AdminBlogPage() {
                                                 </span>
                                             </Link>
                                         </Button>
+                                        {/* Toggle Status */}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleToggleStatus(post.post_id, post.status)}
+                                            title={`Toggle status from ${post.status}`}
+                                        >
+                                            {post.status === 'published' ? 'Unpublish' : 'Publish'}
+                                        </Button>
+                                        {/* Delete */}
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => handleDelete(post.post_id, post.title)}
+                                            title="Delete post"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-between items-center mt-6">
+                <Button
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    disabled={page <= 1 || loading}
+                >
+                    Previous
+                </Button>
+                <div>
+                    Page {page} of {totalPages}
+                </div>
+                <Button
+                    onClick={() => setPage((p) => (p < totalPages ? p + 1 : p))}
+                    disabled={page >= totalPages || loading}
+                >
+                    Next
+                </Button>
             </div>
         </div>
     )

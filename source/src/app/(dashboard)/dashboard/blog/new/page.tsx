@@ -1,47 +1,57 @@
+// app/dashboard/blog/new/page.tsx
+
 import { BlogEditor } from '@/components/blog/BlogEditor'
 import { createBlogPost } from '@/lib/blog'
 import { redirect } from 'next/navigation'
 
 type BlogPost = {
-    title: string;
-    content: string;
-    excerpt: string;
-    status: "draft" | "published" | "scheduled";
-    publishDate: string;
-    categories: string[];
-    featuredImage: string;
-    metaTitle: string;
-    metaDescription: string;
-};
+    title: string
+    content: string
+    excerpt: string
+    status: 'draft' | 'published' | 'scheduled'
+    publishDate: string
+    categories: string[]
+    featuredImage: string
+    metaTitle: string
+    metaDescription: string
+}
 
-export default function NewBlogPost() {
+export default function NewBlogPostPage() {
     async function handleSubmit(formData: FormData) {
         'use server'
+
         const blogPost: BlogPost = {
-            title: (formData.get('title') as string) || '',
-            content: (formData.get('content') as string) || '',
-            excerpt: (formData.get('excerpt') as string) || '',
+            title: (formData.get('title') as string)?.trim() || '',
+            content: (formData.get('content') as string)?.trim() || '',
+            excerpt: (formData.get('excerpt') as string)?.trim() || '',
             status: (['draft', 'published', 'scheduled'].includes(formData.get('status') as string)
-                ? (formData.get('status') as "draft" | "published" | "scheduled")
+                ? (formData.get('status') as BlogPost['status'])
                 : 'draft'),
-            publishDate: (formData.get('publishDate') as string) || new Date().toISOString(),
+            publishDate:
+                (formData.get('publishDate') as string) || new Date().toISOString(),
             categories: (formData.getAll('categories') as string[]) || [],
-            featuredImage: (formData.get('featuredImage') as string) || '',
-            metaTitle: (formData.get('metaTitle') as string) || '',
-            metaDescription: (formData.get('metaDescription') as string) || ''
+            featuredImage: (formData.get('featuredImage') as string)?.trim() || '',
+            metaTitle: (formData.get('metaTitle') as string)?.trim() || '',
+            metaDescription: (formData.get('metaDescription') as string)?.trim() || ''
         }
-        const result = await createBlogPost(blogPost)
-        if (result.data && result.data.slug) {
-            redirect(`/dashboard/blog/${result.data.slug}`)
-        } else {
-            // Handle error or fallback here
-            throw new Error('Failed to create blog post or missing slug.')
+
+        try {
+            const result = await createBlogPost(blogPost)
+            if (result?.data?.slug) {
+                redirect(`/dashboard/blog/${result.data.slug}`)
+            } else {
+                throw new Error('Missing slug from blog creation result.')
+            }
+        } catch (err) {
+            console.error('Error creating blog post:', err)
+            throw new Error('Failed to create blog post. Please try again.')
         }
     }
 
     return (
-        <div className="container py-8">
-            <h1 className="text-2xl font-bold mb-6">Create New Blog Post</h1>
+        <div className="container py-10 max-w-4xl">
+            <h1 className="text-3xl font-semibold mb-6">Create New Blog Post</h1>
+
             <BlogEditor
                 action={handleSubmit}
                 defaultValues={{
@@ -49,7 +59,7 @@ export default function NewBlogPost() {
                     content: '',
                     excerpt: '',
                     status: 'draft',
-                    publishDate: '',
+                    publishDate: new Date().toISOString(),
                     categories: [],
                     featuredImage: '',
                     metaTitle: '',

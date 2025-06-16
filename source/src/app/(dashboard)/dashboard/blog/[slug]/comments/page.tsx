@@ -1,5 +1,5 @@
-import { CommentModeration } from '@/components/blog/CommentModeration'
-import { getBlogPostComments } from '@/lib/comments'
+/*import { CommentModeration } from '@/components/blog/CommentModeration'
+import { getCommentsByPostId } from '@/lib/comments'
 
 export default async function BlogPostComments({ params }: { params: { slug: string } }) {
     const comments = await getBlogPostComments(params.slug)
@@ -19,4 +19,4 @@ export default async function BlogPostComments({ params }: { params: { slug: str
             />
         </div>
     )
-}
+}*/
