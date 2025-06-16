@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { ThumbsUp } from 'lucide-react'
 import { CommentSection } from '@/components/blog/CommentSection'
 
@@ -13,14 +14,11 @@ interface Post {
     likes: number
 }
 
-interface BlogPostPageProps {
-    params: { slug: string }
-    searchParams: { [key: string]: string | undefined }
-}
-
-export default function BlogPostPage({ params, searchParams }: BlogPostPageProps) {
-    const { slug } = params
-    const userId = searchParams.userId ?? ''
+export default function BlogPostPage() {
+    const params = useParams<{ slug: string }>()
+    const searchParams = useSearchParams()
+    const slug = params.slug
+    const userId = searchParams.get('userId') ?? ''
 
     const [post, setPost] = useState<Post | null>(null)
     const [comments, setComments] = useState<any[]>([])
