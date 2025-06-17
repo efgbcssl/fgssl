@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const data = await request.json()
         const eventDate = new Date(data.date)
         const expiresAt = new Date(eventDate.getTime() + 15 * 24 * 60 * 60 * 1000)
 
-        const updatedEvent = await xata.db.events.update(params.id, {
+        const updatedEvent = await xata.db.events.update((await params).id, {
             ...data,
             expiresAt: expiresAt.toISOString()
         })
