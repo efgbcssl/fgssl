@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
 
@@ -7,8 +8,8 @@ interface FAQParams {
     }
 }
 // ✅ Update FAQ
-export async function PUT(req: Request, { params }: FAQParams) {
-    const faqId = params.faq_id
+export async function PUT(req: Request, { params }: { params: Promise<{ faq_id: string }> }) {
+    const faqId = (await params).faq_id
 
     try {
         const { question, answer, order } = await req.json()
@@ -57,8 +58,8 @@ export async function PUT(req: Request, { params }: FAQParams) {
 }
 
 // ✅ Delete FAQ
-export async function DELETE(req: Request, { params }: FAQParams) {
-    const faqId = params.faq_id
+export async function DELETE(req: Request, { params }: { params: Promise<{ faq_id: string }> }) {
+    const faqId = (await params).faq_id
 
     try {
         const record = await xata.db.faqs.delete(faqId)
