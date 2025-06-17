@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
+import type { StaticImageData } from 'next/image'
 import slide1 from '@/assets/images/slide1.jpg'
 import slide2 from './../assets/images/slide2.jpg'
 import slide3 from './../assets/images/slide3.jpg'
