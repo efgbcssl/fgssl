@@ -32,10 +32,11 @@ export async function GET(request: Request) {
                 'Cache-Control': 'no-store' // or appropriate caching
             }
         })
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Xata query failed:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         return NextResponse.json(
-            { error: 'Failed to check availability', details: error.message },
+            { error: 'Failed to check availability', details: errorMessage },
             { status: 500 }
         )
     }
