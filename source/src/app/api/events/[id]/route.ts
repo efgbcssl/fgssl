@@ -21,9 +21,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await xata.db.events.delete(params.id)
+        await xata.db.events.delete((await params).id)
         return NextResponse.json({ success: true })
     } catch {
         return NextResponse.json(
