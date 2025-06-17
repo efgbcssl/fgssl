@@ -1,6 +1,7 @@
 import { xata, ApiResponse } from './xata';
 import { BlogPost, BlogPostCreate, BlogPostUpdate } from './types';
 
+
 export const getBlogPosts = async (adminView: boolean = false): Promise<ApiResponse<BlogPost[]>> => {
     try {
         const query = xata.db.posts.select([
@@ -39,6 +40,7 @@ export const getBlogPosts = async (adminView: boolean = false): Promise<ApiRespo
 
         // Transform records to BlogPost format
         const posts = records.map(post => ({
+            post_id: post.post_id,
             id: post.post_id,
             title: post.title || 'Untitled Post',
             slug: post.slug,
@@ -47,7 +49,7 @@ export const getBlogPosts = async (adminView: boolean = false): Promise<ApiRespo
             status: post.status as 'published' | 'scheduled' | 'draft',
             publishDate: post.publishDate?.toISOString(),
             categories: post.categories || [],
-            commentCount: post.commentCount || 0,
+            // commentCount: post.commentCount || 0,
             likes: post.likes || 0,
             createdAt: post.createdAt.toISOString(),
             updatedAt: post.updatedAt?.toISOString(),
@@ -84,7 +86,13 @@ export const getBlogPostBySlug = async (slug: string): Promise<ApiResponse<BlogP
         }
 
         return {
-            data: transformPost(record),
+            data: transformPost({
+                ...record,
+                categories: record.categories ?? undefined,
+                featuredImage: record.featuredImage ?? undefined,
+                metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
+                metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
+            }),
             status: 200,
             error: undefined
         };
@@ -114,11 +122,21 @@ export const createBlogPost = async (postData: BlogPostCreate): Promise<ApiRespo
         });
 
         if (!record) {
-            throw new Error('Failed to create post record');
+            return {
+                data: undefined,
+                status: 500,
+                error: 'Failed to create post'
+            };
         }
 
         return {
-            data: transformPost(record),
+            data: transformPost({
+                ...record,
+                categories: record.categories ?? undefined,
+                featuredImage: record.featuredImage ?? undefined,
+                metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
+                metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
+            }),
             status: 201,
             error: undefined
         };
@@ -154,7 +172,13 @@ export const updateBlogPost = async (
         }
 
         return {
-            data: transformPost(record),
+            data: transformPost({
+                ...record,
+                categories: record.categories ?? undefined,
+                featuredImage: record.featuredImage ?? undefined,
+                metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
+                metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
+            }),
             status: 200,
             error: undefined
         };
@@ -193,20 +217,47 @@ const generateSlug = (title: string): string => {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 };
+// Replace 'PostRecord' with the actual type returned by xata.db.posts, e.g., from Xata codegen
 
-const transformPost = (post: any): BlogPost => ({
-    id: post.post_id,
+// Remove the strict XataPostRecord interface and accept any object with the required fields
+const transformPost = (post: {
+    post_id: string;
+    title?: string;
+    slug: string;
+    content?: string;
+    excerpt?: string;
+    status: string;
+    publishDate?: Date | string | null;
+    categories?: string[];
+    commentCount?: number;
+    likes?: number;
+    createdAt: Date | string;
+    updatedAt?: Date | string;
+    featuredImage?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+}): BlogPost => ({
+    post_id: post.post_id,
     title: post.title || 'Untitled Post',
     slug: post.slug,
     content: post.content || '',
     excerpt: post.excerpt || '',
-    status: post.status as 'published' | 'scheduled' | 'draft',
-    publishDate: post.publishDate?.toISOString(),
+    status: (post.status as 'published' | 'scheduled' | 'draft'),
+    publishDate: post.publishDate
+        ? typeof post.publishDate === 'string'
+            ? post.publishDate
+            : post.publishDate.toISOString()
+        : undefined,
     categories: post.categories || [],
-    commentCount: post.commentCount || 0,
     likes: post.likes || 0,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt?.toISOString(),
+    createdAt: typeof post.createdAt === 'string'
+        ? post.createdAt
+        : post.createdAt.toISOString(),
+    updatedAt: post.updatedAt
+        ? typeof post.updatedAt === 'string'
+            ? post.updatedAt
+            : post.updatedAt.toISOString()
+        : '',
     featuredImage: post.featuredImage || undefined,
     metaTitle: post.metaTitle || undefined,
     metaDescription: post.metaDescription || undefined

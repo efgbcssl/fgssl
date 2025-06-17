@@ -1,4 +1,4 @@
-import { xata, ApiResponse } from './xata';
+/*import { xata, ApiResponse } from './xata';
 import { LikeToggle } from './types';
 
 export const toggleLike = async (
@@ -118,4 +118,4 @@ export const getLikesCount = async (
             status: 500
         };
     }
-};
+};*/

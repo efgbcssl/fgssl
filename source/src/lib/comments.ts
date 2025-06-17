@@ -1,4 +1,4 @@
-import { xata, ApiResponse } from './xata';
+/*import { xata, ApiResponse } from './xata';
 import { Comment, CommentCreate } from './types';
 
 export const getCommentsByPostId = async (postId: string): Promise<ApiResponse<Comment[]>> => {
@@ -17,10 +17,10 @@ export const getCommentsByPostId = async (postId: string): Promise<ApiResponse<C
                     .getAll();
 
                 // Map postId and parentId to string if they are Link objects
-                const mapComment = (c: Comment) => ({
+                const mapComment = (c: Comment): Comment => ({
                     ...c,
-                    postId: typeof c.postId === 'object' && (c.postId as { id?: string })?.id ? (c.postId as { id: string }).id : c.postId,
-                    parentId: typeof c.parentId === 'object' && (c.parentId as { id?: string })?.id ? (c.parentId as { id: string }).id : c.parentId,
+                    postId: typeof c.postId === 'object' && c.postId !== null && 'id' in (c.postId as { id?: string }) ? (c.postId as { id: string }).id : c.postId,
+                    parentId: c.parentId && typeof c.parentId === 'object' && c.parentId !== null && 'id' in (c.parentId as { id?: string }) ? (c.parentId as { id: string }).id : c.parentId,
                 });
 
                 return {
@@ -47,12 +47,12 @@ export const createComment = async (
     commentData: CommentCreate
 ): Promise<ApiResponse<Comment>> => {
     try {
-        // Auto-hide top-level comments for moderation
-        const isHidden = !commentData.parentId;
+        // Ensure parentId is undefined instead of null
+        const parentId = commentData.parentId === null ? undefined : commentData.parentId;
 
         const record = await xata.db.comments.create({
             ...commentData,
-            isHidden,
+            parentId,
             likes: 0
         });
 
@@ -114,4 +114,4 @@ export const deleteComment = async (id: string): Promise<ApiResponse<void>> => {
             status: 500
         };
     }
-};
+};*/
