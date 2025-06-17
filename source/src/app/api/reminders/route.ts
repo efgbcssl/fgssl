@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
 import { Resend } from 'resend'
@@ -47,13 +48,17 @@ export async function GET() {
                 if (error) throw error
 
                 // Update appointment to mark reminder sent
-                await xata.db.appointments.update(appointment.id, {
+                await xata.db.appointments.update(appointment.xata_id, {
                     reminderSent: true
                 })
 
-                results.push({ id: appointment.id, status: 'success' })
+                results.push({ id: appointment.xata_id, status: 'success' })
             } catch (error) {
-                results.push({ id: appointment.id, status: 'failed', error: error.message })
+                results.push({
+                    id: appointment.xata_id,
+                    status: 'failed',
+                    error: typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : String(error)
+                })
             }
         }
 
@@ -64,7 +69,10 @@ export async function GET() {
         })
     } catch (error) {
         return NextResponse.json(
-            { error: 'Failed to send reminders', details: error.message },
+            {
+                error: 'Failed to send reminders',
+                details: typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : String(error)
+            },
             { status: 500 }
         )
     }
