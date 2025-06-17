@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import { xata } from '@/lib/xata';
 import { Like } from '@/types/like';
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
 
         if (existingLike) {
             // Unlike - delete the existing like
-            await xata.db.likes.delete(existingLike.id);
+            await xata.db.likes.delete(existingLike.like_id);
 
             // Decrement like count
             if (commentId) {
@@ -78,11 +79,11 @@ export async function GET(request: Request) {
 
     try {
         const like = await xata.db.likes
-            .filter({
-                postId,
-                ...(commentId ? { commentId } : { commentId: null }),
-                userId,
-            })
+            .filter(
+                commentId
+                    ? { postId, commentId, userId }
+                    : { postId, userId }
+            )
             .getFirst();
 
         return NextResponse.json({ liked: !!like });
