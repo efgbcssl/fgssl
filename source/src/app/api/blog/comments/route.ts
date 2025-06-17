@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import { xata } from '@/lib/xata';
 import { BlogComment } from '@/types/blogComment';

@@ -77,11 +77,13 @@ export default function ContactPage() {
 
             if (response.rows[0].elements[0].status === "OK") {
                 const { distance, duration } = response.rows[0].elements[0]
-                setTravelInfo({
-                    distance: distance.text,
-                    duration: duration.text,
-                    mode: 'driving'
-                })
+                if (distance && duration) {
+                    setTravelInfo({
+                        distance: distance.text,
+                        duration: duration.text,
+                        mode: 'driving'
+                    })
+                }
             }
         } catch (error) {
             console.error("Error calculating travel time:", error)
