@@ -1,4 +1,4 @@
-export interface Comment {
+export interface BlogComment {
     id: string;
     postId: string;
     parentId: string | null;

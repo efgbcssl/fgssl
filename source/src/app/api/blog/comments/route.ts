@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { xata } from '@/lib/xata';
-import { Comment } from '@/types/comment';
+import { BlogComment } from '@/types/blogComment';
 
 // Get comments for a post
 export async function GET(request: Request) {

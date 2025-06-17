@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { ThumbsUp } from 'lucide-react'
-import { CommentSection } from '@/components/blog/CommentSection'
 
 interface Post {
     post_id: string
@@ -14,7 +14,6 @@ interface Post {
     likes: number
 }
 
-
 export default function BlogPostPage() {
     const params = useParams<{ slug: string }>()
     const searchParams = useSearchParams()
@@ -22,9 +21,7 @@ export default function BlogPostPage() {
     const userId = searchParams.get('userId') ?? ''
 
     const [post, setPost] = useState<Post | null>(null)
-    const [comments, setComments] = useState<Comment[]>([])
     const [loadingPost, setLoadingPost] = useState(true)
-    const [loadingComments, setLoadingComments] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
@@ -55,28 +52,6 @@ export default function BlogPostPage() {
 
         fetchPost()
     }, [slug])
-
-    useEffect(() => {
-        if (!post) return
-
-        async function fetchComments() {
-            setLoadingComments(true)
-            try {
-                const res = await fetch(`/api/blog/comments?postId=${post?.post_id}`, {
-                    cache: 'no-store',
-                })
-                if (!res.ok) throw new Error('Failed to fetch comments')
-                const data = await res.json()
-                setComments(data)
-            } catch {
-                setComments([])
-            } finally {
-                setLoadingComments(false)
-            }
-        }
-
-        fetchComments()
-    }, [post])
 
     if (loadingPost) {
         return <p className="text-center py-10">Loading post...</p>
@@ -122,14 +97,6 @@ export default function BlogPostPage() {
                     </button>
                 </div>
             </article>
-
-            <CommentSection
-                postSlug={slug}
-                postId={post.post_id}
-                userId={userId}
-                initialComments={comments}
-                loading={loadingComments}
-            />
         </div>
     )
 }
