@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     try {
         const comments = await xata.db.comments
-            .filter({ postId, parentId: null })
+            .filter({ postId })
             .sort('createdAt', 'desc')
             .getMany();
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         const commentsWithReplies = await Promise.all(
             comments.map(async (comment) => {
                 const replies = await xata.db.comments
-                    .filter({ parentId: comment.id })
+                    .filter({ parentId: comment.comment_id })
                     .sort('createdAt', 'asc')
                     .getMany();
                 return {
