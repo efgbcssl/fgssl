@@ -7,23 +7,24 @@ import LatestVideos from '@/components/home/LatestVideos'
 import FAQSection from '@/components/home/FAQSection'
 import LiveStream from '../../components/home/LiveStream';
 
+// Opt out of prerendering
+export const dynamic = 'force-dynamic';
+
 async function getEvents() {
-    const baseUrl =
-        process.env.NODE_ENV === 'development'
-            ? 'http://localhost:3000'
-            : process.env.NEXT_PUBLIC_SITE_URL;
-
-    const res = await fetch(`${baseUrl}/api/events`, {
-        next: { revalidate: 60 },
-    });
-
-    if (!res.ok) throw new Error('Failed to fetch events');
-    return res.json();
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/events`, {
+            next: { revalidate: 60 },
+        });
+        return res.ok ? res.json() : []; // Return empty array if fetch fails
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        return []; // Fallback empty array
+    }
 }
-
 
 export default async function Home() {
     const events = await getEvents();
+
     return (
         <>
             <HeroSlider />
@@ -33,9 +34,7 @@ export default async function Home() {
             <WeeklyMinistries />
             <LatestVideos />
             <AppointmentForm />
-
             <FAQSection />
-
         </>
     );
 }
