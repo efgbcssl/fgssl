@@ -5,7 +5,12 @@ import { Loader } from '@googlemaps/js-api-loader'
 import { Clock, Navigation } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export default function BranchMap({ branchLocation, branchName }: any) {
+interface BranchMapProps {
+    branchLocation: { lat: number; lng: number };
+    branchName: string;
+}
+
+export default function BranchMap({ branchLocation, branchName }: BranchMapProps) {
     const mapRef = useRef<HTMLDivElement>(null)
     const [travelInfo, setTravelInfo] = useState<{ duration: string, distance: string } | null>(null)
 
@@ -55,8 +60,8 @@ export default function BranchMap({ branchLocation, branchName }: any) {
                         destination: branchLocation,
                         travelMode: google.maps.TravelMode.DRIVING
                     }, (result) => {
-                        directionsRenderer.setDirections(result)
-                        if (result.routes[0].legs[0]) {
+                        if (result && result.routes[0].legs[0]) {
+                            directionsRenderer.setDirections(result)
                             setTravelInfo({
                                 duration: result.routes[0].legs[0].duration?.text || '',
                                 distance: result.routes[0].legs[0].distance?.text || ''
