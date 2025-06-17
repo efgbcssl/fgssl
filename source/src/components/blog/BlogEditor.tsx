@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { useState } from 'react'
@@ -16,20 +17,33 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import Upload from 'imagekit-javascript' // or your wrapper OAuth
 
+interface BlogEditorDefaultValues {
+    title?: string
+    excerpt?: string
+    content?: string
+    featuredImage?: string
+    status?: 'draft' | 'published' | 'scheduled'
+    publishDate?: string | Date
+    metaTitle?: string
+    metaDescription?: string
+}
+
 interface BlogEditorProps {
     action: (formData: FormData) => Promise<void>
-    defaultValues: Record<string, any>
+    defaultValues: BlogEditorDefaultValues
 }
 
 const imagekit = new Upload({
-    publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY,
-    urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT,
+    publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || '',
+    urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || 'public_PEUl1g79PnvCS5xvi49GqgmcmlM=',
 })
 
 export function BlogEditor({ action, defaultValues }: BlogEditorProps) {
     const [featuredImageUrl, setFeaturedImageUrl] = useState(defaultValues.featuredImage || '')
     const [content, setContent] = useState(defaultValues.content || '')
-    const [date, setDate] = useState<Date>(new Date(defaultValues.publishDate) || new Date())
+    const [date, setDate] = useState<Date>(
+        new Date(defaultValues.publishDate ? defaultValues.publishDate : Date.now())
+    )
 
     const editor = useEditor({
         extensions: [
@@ -42,10 +56,17 @@ export function BlogEditor({ action, defaultValues }: BlogEditorProps) {
     })
 
     const uploadImage = async (file: File): Promise<string> => {
+        // Fetch authentication parameters from your backend
+        const authRes = await fetch('/api/imagekit-auth')
+        const { signature, token, expire } = await authRes.json()
+
         const res = await imagekit.upload({
             file,
             fileName: file.name,
             folder: '/blog-images',
+            signature,
+            token,
+            expire,
         })
         return res.url
     }
