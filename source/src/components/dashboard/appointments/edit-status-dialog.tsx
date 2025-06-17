@@ -19,7 +19,7 @@ export function EditStatusDialog({ appointment }: { appointment: Appointment }) 
     const handleSave = async () => {
         setIsSaving(true)
         try {
-            const response = await fetch(`/api/appointments/${appointment.id}`, {
+            const response = await fetch(`/api/appointments/${appointment.phoneNumber}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

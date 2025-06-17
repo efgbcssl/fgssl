@@ -21,7 +21,6 @@ export default async function EditBlogPost({ params }: { params: Promise<{ slug:
                     excerpt: post.data.excerpt,
                     status: post.data.status,
                     publishDate: post.data.publishDate ?? '',
-                    categories: post.data.categories,
                     featuredImage: post.data.featuredImage ?? '',
                     metaTitle: post.data.metaTitle ?? '',
                     metaDescription: post.data.metaDescription ?? ''

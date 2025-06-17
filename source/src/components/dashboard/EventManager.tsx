@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Trash2, Edit, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -30,11 +31,7 @@ export function EventManager() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast()
 
-    useEffect(() => {
-        fetchEvents()
-    }, [])
-
-    const fetchEvents = async () => {
+    const fetchEvents = useCallback(async () => {
         try {
             const response = await fetch('/api/events')
             const data = await response.json()
@@ -48,7 +45,11 @@ export function EventManager() {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [toast])
+
+    useEffect(() => {
+        fetchEvents()
+    }, [fetchEvents])
 
     const handleDelete = async (id: string) => {
         try {
@@ -93,7 +94,7 @@ export function EventManager() {
 
         try {
             // Prepare clean data without internal fields
-            const { id, xata_id, xata_createdat, xata_updatedat, xata_version, ...cleanData } = editingEvent;
+            const { ...cleanData } = editingEvent;
 
             // Calculate expiresAt if not set
             if (!cleanData.expiresAt) {

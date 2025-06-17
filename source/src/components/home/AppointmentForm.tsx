@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -33,13 +33,8 @@ export default function AppointmentForm() {
 
   const availableTimes = generateTimes()
 
-  useEffect(() => {
-    if (date) {
-      checkBookedSlots()
-    }
-  }, [date])
 
-  const checkBookedSlots = async () => {
+  const checkBookedSlots = useCallback(async () => {
     if (!date) return;
 
     setIsChecking(true);
@@ -68,7 +63,13 @@ export default function AppointmentForm() {
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [date, toast]);
+
+  useEffect(() => {
+    if (date) {
+      checkBookedSlots()
+    }
+  }, [date, checkBookedSlots])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -123,7 +124,7 @@ export default function AppointmentForm() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive"
       })
     } finally {
@@ -305,7 +306,7 @@ export default function AppointmentForm() {
                 )}
               </Button>
               <p className="text-sm text-gray-500 mt-3 text-center">
-                We'll contact you to confirm your appointment details.
+                We&apos;ll contact you to confirm your appointment details.
               </p>
             </div>
           </form>

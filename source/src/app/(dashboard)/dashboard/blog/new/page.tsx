@@ -60,7 +60,6 @@ export default function NewBlogPostPage() {
                     excerpt: '',
                     status: 'draft',
                     publishDate: new Date().toISOString(),
-                    categories: [],
                     featuredImage: '',
                     metaTitle: '',
                     metaDescription: ''
