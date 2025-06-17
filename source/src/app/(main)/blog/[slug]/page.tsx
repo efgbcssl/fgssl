@@ -14,6 +14,7 @@ interface Post {
     likes: number
 }
 
+
 export default function BlogPostPage() {
     const params = useParams<{ slug: string }>()
     const searchParams = useSearchParams()
@@ -21,7 +22,7 @@ export default function BlogPostPage() {
     const userId = searchParams.get('userId') ?? ''
 
     const [post, setPost] = useState<Post | null>(null)
-    const [comments, setComments] = useState<any[]>([])
+    const [comments, setComments] = useState<Comment[]>([])
     const [loadingPost, setLoadingPost] = useState(true)
     const [loadingComments, setLoadingComments] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -40,8 +41,12 @@ export default function BlogPostPage() {
                 } else {
                     setPost(data)
                 }
-            } catch (err: any) {
-                setError(err.message || 'Something went wrong')
+            } catch (err) {
+                if (err instanceof Error) {
+                    setError(err.message)
+                } else {
+                    setError('Something went wrong')
+                }
                 setPost(null)
             } finally {
                 setLoadingPost(false)
@@ -57,7 +62,7 @@ export default function BlogPostPage() {
         async function fetchComments() {
             setLoadingComments(true)
             try {
-                const res = await fetch(`/api/blog/comments?postId=${post.post_id}`, {
+                const res = await fetch(`/api/blog/comments?postId=${post?.post_id}`, {
                     cache: 'no-store',
                 })
                 if (!res.ok) throw new Error('Failed to fetch comments')
