@@ -5,7 +5,7 @@ import { Appointment } from '@/types/appointments'
 import { Badge } from '@/components/ui/badge'
 import { EditStatusDialog } from './edit-status-dialog'
 
-export const columns: ColumnDef<Appointment>[] = [
+export const columns: ColumnDef<Appointment, unknown>[] = [
     {
         accessorKey: 'id',
         header: 'ID',

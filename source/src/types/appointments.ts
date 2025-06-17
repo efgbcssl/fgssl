@@ -1,5 +1,4 @@
 export type Appointment = {
-    id: string
     fullName: string
     phoneNumber: string
     email: string

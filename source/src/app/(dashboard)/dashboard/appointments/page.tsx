@@ -5,17 +5,37 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
 import { SendRemindersButton } from '@/components/dashboard/appointments/send-reminder-button'
 import { ErrorComponent } from '@/components/ui/error-component'
+import { Appointment } from '@/types/appointments'
+
+/*export interface Appointment {
+    fullName: string
+    phoneNumber: string
+    email: string
+    preferredDate: string
+    medium: 'in-person' | 'online'
+    status: 'pending' | 'completed' | 'cancelled'
+    remark?: string
+    createdAt: string
+    updatedAt: string
+}*/
 
 export default async function AppointmentsPage() {
     try {
-
-        const appointments = await xata.db.appointments
+        const appointmentsData = await xata.db.appointments
             .sort('preferredDate', 'desc')
             .getAll()
-            .catch(error => {
-                console.error('Error fetching appointments:', error)
-                throw error
-            })
+
+        const appointments: Appointment[] = appointmentsData.map(appt => ({
+            fullName: appt.fullName,
+            phoneNumber: appt.phoneNumber,
+            email: appt.email,
+            preferredDate: appt.preferredDate.toISOString(),
+            medium: appt.medium as 'in-person' | 'online',
+            status: appt.status as 'pending' | 'completed' | 'cancelled',
+            remark: appt.remark ?? '',
+            createdAt: appt.createdAt.toISOString(),
+            updatedAt: appt.updatedAt.toISOString(),
+        }))
 
         return (
             <div className="container-custom py-8">
@@ -41,6 +61,7 @@ export default async function AppointmentsPage() {
             </div>
         )
     } catch (error) {
+        console.log(error);
         return <ErrorComponent
             title="Failed to load appointments"
             message="There was an error fetching the appointments. Please try again later."
