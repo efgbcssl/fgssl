@@ -1,12 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Edit, Eye, MessageCircle, Trash2, RefreshCcw } from 'lucide-react'
-import { toast } from '@/hooks/use-toast' // Assuming you have a toast component
+import { toast } from '@/hooks/use-toast'
 
-// Fake API helper (replace with your real API calls)
+// Post Type
+interface Post {
+    post_id: string
+    title: string
+    excerpt: string
+    slug: string
+    status: 'draft' | 'published'
+    publishDate?: string
+    commentCount?: number
+}
+
+// API: Fetch posts
 async function fetchPosts({ page, search, status }: { page: number; search: string; status: string }) {
     const query = new URLSearchParams()
     query.set('page', String(page))
@@ -15,14 +26,16 @@ async function fetchPosts({ page, search, status }: { page: number; search: stri
 
     const res = await fetch(`/api/dashboard/blog/posts?${query.toString()}`)
     if (!res.ok) throw new Error('Failed to fetch posts')
-    return res.json() // expected { posts: Post[], totalPages: number }
+    return res.json() as Promise<{ posts: Post[]; totalPages: number }>
 }
 
+// API: Delete post
 async function deletePost(postId: string) {
     const res = await fetch(`/api/dashboard/blog/posts/${postId}`, { method: 'DELETE' })
     if (!res.ok) throw new Error('Failed to delete post')
 }
 
+// API: Toggle post status
 async function toggleStatus(postId: string, currentStatus: string) {
     const newStatus = currentStatus === 'published' ? 'draft' : 'published'
     const res = await fetch(`/api/dashboard/blog/posts/${postId}/status`, {
@@ -35,50 +48,58 @@ async function toggleStatus(postId: string, currentStatus: string) {
 }
 
 export default function AdminBlogPage() {
-    const [posts, setPosts] = useState([])
+    const [posts, setPosts] = useState<Post[]>([])
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [loading, setLoading] = useState(false)
 
-    async function loadPosts() {
+    // ✅ useCallback to fix missing dependency warning
+    const loadPosts = useCallback(async () => {
         setLoading(true)
         try {
             const data = await fetchPosts({ page, search, status: statusFilter })
             setPosts(data.posts)
             setTotalPages(data.totalPages)
-        } catch (error: unknown) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        } catch (error) {
+            if (error instanceof Error) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' })
+            } else {
+                toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' })
+            }
         } finally {
             setLoading(false)
         }
-    }
+    }, [page, search, statusFilter])
 
     useEffect(() => {
         loadPosts()
-    }, [page, search, statusFilter])
+    }, [loadPosts])
 
-    async function handleDelete(postId: string, title: string) {
+    const handleDelete = async (postId: string, title: string) => {
         if (!confirm(`Are you sure you want to delete the post "${title}"? This action cannot be undone.`)) return
         try {
             await deletePost(postId)
             toast({ title: 'Deleted', description: `Post "${title}" deleted.` })
-            // Reload posts, reset to page 1 if needed
             setPage(1)
             loadPosts()
         } catch (error) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+            if (error instanceof Error) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' })
+            }
         }
     }
 
-    async function handleToggleStatus(postId: string, currentStatus: string) {
+    const handleToggleStatus = async (postId: string, currentStatus: string) => {
         try {
             const newStatus = await toggleStatus(postId, currentStatus)
             toast({ title: 'Updated', description: `Status changed to "${newStatus}".` })
             loadPosts()
         } catch (error) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+            if (error instanceof Error) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' })
+            }
         }
     }
 
@@ -113,7 +134,7 @@ export default function AdminBlogPage() {
                     <option value="published">Published</option>
                     <option value="draft">Draft</option>
                 </select>
-                <Button variant="outline" onClick={() => loadPosts()} disabled={loading} title="Reload">
+                <Button variant="outline" onClick={loadPosts} disabled={loading} title="Reload">
                     <RefreshCcw className="h-5 w-5" />
                 </Button>
             </div>
@@ -123,18 +144,10 @@ export default function AdminBlogPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Title
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Publish Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Publish Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -154,10 +167,8 @@ export default function AdminBlogPage() {
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span
                                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.status === 'published'
-                                            ? 'bg-green-100 text-green-800'
-                                            : post.status === 'draft'
-                                                ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-blue-100 text-blue-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-yellow-100 text-yellow-800'
                                             }`}
                                     >
                                         {post.status}
@@ -174,24 +185,18 @@ export default function AdminBlogPage() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div className="flex space-x-2">
-                                        {/* Edit */}
                                         <Button variant="outline" size="sm" asChild>
                                             <Link href={`/dashboard/blog/${post.slug}`} aria-label={`Edit post: ${post.title}`}>
                                                 <Edit className="h-4 w-4" />
                                             </Link>
                                         </Button>
-                                        {/* View */}
                                         <Button variant="outline" size="sm" asChild>
                                             <Link href={`/blog/${post.slug}`} target="_blank" aria-label={`View post: ${post.title}`}>
                                                 <Eye className="h-4 w-4" />
                                             </Link>
                                         </Button>
-                                        {/* Comments */}
                                         <Button variant="outline" size="sm" asChild>
-                                            <Link
-                                                href={`/dashboard/blog/${post.slug}/comments`}
-                                                aria-label={`Comments for post: ${post.title}`}
-                                            >
+                                            <Link href={`/dashboard/blog/${post.slug}/comments`} aria-label={`Comments for: ${post.title}`}>
                                                 <span className="relative">
                                                     <MessageCircle className="h-4 w-4" />
                                                     {(post.commentCount ?? 0) > 0 && (
@@ -202,7 +207,6 @@ export default function AdminBlogPage() {
                                                 </span>
                                             </Link>
                                         </Button>
-                                        {/* Toggle Status */}
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -211,7 +215,6 @@ export default function AdminBlogPage() {
                                         >
                                             {post.status === 'published' ? 'Unpublish' : 'Publish'}
                                         </Button>
-                                        {/* Delete */}
                                         <Button
                                             variant="destructive"
                                             size="sm"
@@ -230,19 +233,13 @@ export default function AdminBlogPage() {
 
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6">
-                <Button
-                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                    disabled={page <= 1 || loading}
-                >
+                <Button onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page <= 1 || loading}>
                     Previous
                 </Button>
                 <div>
                     Page {page} of {totalPages}
                 </div>
-                <Button
-                    onClick={() => setPage((p) => (p < totalPages ? p + 1 : p))}
-                    disabled={page >= totalPages || loading}
-                >
+                <Button onClick={() => setPage((p) => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages || loading}>
                     Next
                 </Button>
             </div>
