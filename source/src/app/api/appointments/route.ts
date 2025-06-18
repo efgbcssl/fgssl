@@ -1,5 +1,9 @@
 import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 
 export async function GET() {
     try {
@@ -82,6 +86,26 @@ export async function POST(request: Request) {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         })
+
+        // Send confirmation email
+        try {
+            await resend.emails.send({
+                from: 'appointments@yourdomain.com',
+                to: data.email,
+                subject: 'Appointment Confirmation',
+                html: `
+          <h1>Appointment Scheduled</h1>
+          <p>Hello ${data.fullName},</p>
+          <p>Your appointment has been scheduled for:</p>
+          <p><strong>Date:</strong> ${new Date(data.preferredDate).toLocaleDateString()}</p>
+          <p><strong>Time:</strong> ${new Date(data.preferredDate).toLocaleTimeString()}</p>
+          <p>We'll contact you if there are any changes.</p>
+        `
+            })
+        } catch (emailError) {
+            console.error('Failed to send email:', emailError)
+            // Don't fail the request if email fails
+        }
 
         return NextResponse.json(newAppointment, { status: 201 })
     } catch (error) {
