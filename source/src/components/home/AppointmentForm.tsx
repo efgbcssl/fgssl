@@ -100,6 +100,7 @@ export default function AppointmentForm() {
     setIsSubmitting(true)
 
     try {
+      const form = e.currentTarget; // Store form reference
       const formData = new FormData(e.currentTarget)
       const formValues = Object.fromEntries(formData.entries())
 
@@ -132,16 +133,19 @@ export default function AppointmentForm() {
         throw new Error(errorData.message || 'Failed to submit appointment.')
       }
 
-      if (e.currentTarget) {
+      try {
         e.currentTarget.reset();
+        console.log('Form reset successfully');
+      } catch (resetError) {
+        console.error('Error resetting form:', resetError);
       }
       toast({
         title: "Success!",
         description: "Your appointment request has been submitted.",
       })
-
+      console.log(form)
       // Reset form
-      e.currentTarget.reset()
+      form.reset()
       setDate(undefined)
       setTime('09:00')
       setBookedSlots([])
@@ -272,7 +276,17 @@ export default function AppointmentForm() {
                         head_cell: "text-gray-500 rounded-md w-10 font-normal text-sm",
                         row: "w-full mt-2",
                         cell: "text-center p-0 relative [&:has([aria-selected])]:bg-church-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-                        day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-gray-100",
+                        day: cn(
+                          "h-10 w-10 p-0 font-normal rounded-full",
+                          "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-church-primary",
+                          "aria-selected:opacity-100",
+                          // Current date styling
+                          "data-[today]:bg-gray-100 data-[today]:font-semibold",
+                          // Selected date styling
+                          "data-[selected]:bg-church-primary data-[selected]:text-white",
+                          // Disabled date styling
+                          "data-[disabled]:text-gray-400 data-[disabled]:pointer-events-none"
+                        ),
                         day_selected: "bg-church-primary text-white hover:bg-church-primary focus:bg-church-primary",
                         day_today: "bg-gray-100",
                         day_disabled: "text-gray-400 opacity-50",
