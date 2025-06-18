@@ -33,17 +33,35 @@ export default function ContactPage() {
         e.preventDefault()
         setIsSubmitting(true)
 
-        // Simulate API call
-        setTimeout(() => {
-            toast({
-                title: "Message Sent",
-                description: "Your message has been received. We'll get back to you soon!",
+        const form = e.currentTarget
+        const formData = new FormData(form)
+        const data = Object.fromEntries(formData.entries())
+
+        try {
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             })
-            setIsSubmitting(false)
-            // Reset the form
-            const form = e.target as HTMLFormElement
+
+            if (!response.ok) {
+                throw new Error('Failed to send message')
+            }
+
+            toast({
+                title: "Message Sent!",
+                description: "We've received your message and will respond soon.",
+            })
             form.reset()
-        }, 1000)
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to send message",
+                variant: "destructive"
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const getDirections = () => {

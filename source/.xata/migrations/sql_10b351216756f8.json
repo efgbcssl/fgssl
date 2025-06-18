@@ -1,0 +1,17 @@
+{
+  "done": true,
+  "migration": {
+    "name": "sql_10b351216756f8",
+    "operations": [
+      {
+        "sql": {
+          "up": "DROP SCHEMA IF EXISTS \"bb_ags6okm9n575d9b1a5rlatglrk_o1sajg_mig_d19hccqunsp1brisbk2g\" CASCADE"
+        }
+      }
+    ]
+  },
+  "migrationType": "inferred",
+  "name": "sql_10b351216756f8",
+  "schema": "mig_d19hccqunsp1brisbk2g",
+  "startedAt": "2025-06-18T19:48:09.041017Z"
+}

@@ -634,6 +634,114 @@ const tables = [
     ],
   },
   {
+    name: "messages",
+    checkConstraints: {
+      messages_xata_id_length_xata_id: {
+        name: "messages_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_messages_xata_id_key: {
+        name: "_pgroll_new_messages_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "email",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "message",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "name",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "status",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: "'unread'::text",
+        comment: "",
+      },
+      {
+        name: "subject",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "posts",
     checkConstraints: {
       posts_xata_id_length_xata_id: {
@@ -830,6 +938,9 @@ export type FaqsRecord = Faqs & XataRecord;
 export type Likes = InferredTypes["likes"];
 export type LikesRecord = Likes & XataRecord;
 
+export type Messages = InferredTypes["messages"];
+export type MessagesRecord = Messages & XataRecord;
+
 export type Posts = InferredTypes["posts"];
 export type PostsRecord = Posts & XataRecord;
 
@@ -839,6 +950,7 @@ export type DatabaseSchema = {
   events: EventsRecord;
   faqs: FaqsRecord;
   likes: LikesRecord;
+  messages: MessagesRecord;
   posts: PostsRecord;
 };
 
