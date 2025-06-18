@@ -35,10 +35,15 @@ export default function AppointmentForm() {
   const availableTimes = generateTimes()
 
   const checkBookedSlots = useCallback(async (selectedDate: Date) => {
+    // Handle both development and production environments
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : process.env.NEXT_PUBLIC_SITE_URL || ''
+
     setIsChecking(true)
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const response = await fetch(`/api/appointments/check?date=${dateStr}`)
+      const response = await fetch(`${baseUrl}/api/appointments/check?date=${dateStr}`)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
