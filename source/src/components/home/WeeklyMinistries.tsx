@@ -76,10 +76,10 @@ export default function WeeklyMinistries() {
       <div className="container-custom">
         <h2 className="section-title centered">Weekly Ministries</h2>
         <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-          Join us for our regular weekly ministries and grow in your faith journey. 
+          Join us for our regular weekly ministries and grow in your faith journey.
           Everyone is welcome to participate in these gatherings.
         </p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {ministryItems.map((item) => (
             <Card key={item.id} className="card-hover">
@@ -109,9 +109,9 @@ export default function WeeklyMinistries() {
                 </div>
               </CardContent>
               <CardFooter>
-                <button className="text-church-primary font-medium hover:text-church-primary/80 transition-colors">
+                {/*<button className="text-church-primary font-medium hover:text-church-primary/80 transition-colors">
                   Learn more &rarr;
-                </button>
+                </button>*/}
               </CardFooter>
             </Card>
           ))}

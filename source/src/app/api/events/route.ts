@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
 
+export const dynamic = 'force-dynamic'
 export async function GET() {
     try {
         const now = new Date().toISOString()
+        console.log('Fetching events with filter:', { expiresAt: { $gt: now } });
+
         const events = await xata.db.events
             .filter('expiresAt', { $gt: now })
             .sort('order', 'asc')
             .getAll();
+
+        if (!events) {
+            throw new Error('No events found or query failed');
+        }
 
         // Clean the data before returning
         const cleanedEvents = events.map(event => ({
@@ -22,24 +29,45 @@ export async function GET() {
             ctaLink: event.ctaLink,
             order: event.order,
             expiresAt: event.expiresAt
-            // Explicitly excluding Xata system fields:
-            // xata_createdat, xata_id, xata_updatedat, xata_version
         }));
 
-        return NextResponse.json(cleanedEvents)
+        const response = NextResponse.json(cleanedEvents);
+        response.headers.set('Access-Control-Allow-Origin', '*');
+
+        return response;
     } catch (error) {
-        console.error('Error:', error);
+        let errorMessage = 'Unknown error';
+        let errorStack: string | undefined = undefined;
+        let errorStatus: unknown = undefined;
+
+        if (error && typeof error === 'object') {
+            if ('message' in error && typeof (error as Error).message === 'string') {
+                errorMessage = (error as Error).message;
+            }
+            if ('stack' in error && typeof (error as Error).stack === 'string') {
+                errorStack = (error as Error).stack;
+            }
+            if ('status' in error) {
+                errorStatus = (error as { status?: unknown }).status;
+            }
+        }
+
+        console.error('Detailed error:', {
+            message: errorMessage,
+            stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
+            status: errorStatus,
+        });
+
         return NextResponse.json(
             {
-                error: 'Failed to create event',
-                details: typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : String(error),
-                stack: process.env.NODE_ENV === 'development' && typeof error === 'object' && error !== null && 'stack' in error ? (error as { stack?: string }).stack : undefined
+                error: 'Failed to fetch events',
+                message: errorMessage,
+                ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
             },
             { status: 500 }
         );
     }
 }
-
 export async function POST(request: Request) {
     try {
         const data = await request.json()

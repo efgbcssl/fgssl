@@ -5,17 +5,31 @@ import DonationSection from '@/components/home/DonationSection'
 import AppointmentForm from '@/components/home/AppointmentForm'
 import LatestVideos from '@/components/home/LatestVideos'
 import FAQSection from '@/components/home/FAQSection'
-import LiveStream from '../../components/home/LiveStream';
+import LiveStream from '@/components/home/LiveStream';
 
 // Opt out of prerendering
 export const dynamic = 'force-dynamic';
 
 async function getEvents() {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/events`, {
+        const apiUrl = process.env.NODE_ENV === 'production'
+            ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/events`
+            : 'http://localhost:3000/api/events';
+
+        const res = await fetch(apiUrl, {
             next: { revalidate: 60 },
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            // Add timeout for the fetch request
+            signal: AbortSignal.timeout(5000)
         });
-        return res.ok ? res.json() : []; // Return empty array if fetch fails
+
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        return await res.json();
     } catch (error) {
         console.error('Error fetching events:', error);
         return []; // Fallback empty array
@@ -23,7 +37,13 @@ async function getEvents() {
 }
 
 export default async function Home() {
-    const events = await getEvents();
+    let events = [];
+    try {
+        events = await getEvents();
+    } catch (error) {
+        console.error('Errorin Home component: ', error)
+        events = [];
+    }
 
     return (
         <>
