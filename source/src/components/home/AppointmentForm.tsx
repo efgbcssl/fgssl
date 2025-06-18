@@ -132,6 +132,9 @@ export default function AppointmentForm() {
         throw new Error(errorData.message || 'Failed to submit appointment.')
       }
 
+      if (e.currentTarget) {
+        e.currentTarget.reset();
+      }
       toast({
         title: "Success!",
         description: "Your appointment request has been submitted.",
