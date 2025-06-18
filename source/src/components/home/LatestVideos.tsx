@@ -8,10 +8,23 @@ export const revalidate = Number(process.env.YOUTUBE_CACHE_DURATION) || 1800 // 
 
 async function fetchVideos(): Promise<YouTubeVideo[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/youtube`)
+    // Handle both development and production environments
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : process.env.NEXT_PUBLIC_SITE_URL || ''
+
+    // Validate the base URL
+    if (!baseUrl) {
+      throw new Error('Base URL is not configured')
+    }
+
+    const res = await fetch(`${baseUrl}/api/youtube`, {
+      next: { revalidate: Number(process.env.YOUTUBE_CACHE_DURATION) || 1800 },
+      signal: AbortSignal.timeout(8000) // 8 seconds
+    })
 
     if (!res.ok) {
-      throw new Error('Failed to fetch videos')
+      throw new Error(`Failed to fetch videos: ${res.status} ${res.statusText}`)
     }
 
     return await res.json()
@@ -22,7 +35,13 @@ async function fetchVideos(): Promise<YouTubeVideo[]> {
 }
 
 export default async function LatestVideos() {
-  const videos = await fetchVideos()
+  let videos: YouTubeVideo[] = []
+
+  try {
+    videos = await fetchVideos()
+  } catch (error) {
+    console.log('Error in Latest Videos Component: ', error)
+  }
 
   if (videos.length === 0) {
     return (
@@ -30,10 +49,12 @@ export default async function LatestVideos() {
         <div className="container-custom text-center">
           <h2 className="section-title mb-6">Latest Videos</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            No videos available yet. Check back later!
+            {process.env.NODE_ENV === 'development'
+              ? 'Videos not available (development mode)'
+              : 'No videos available yet. Check back later!'}
           </p>
           <Button asChild variant="outline" className="border-church-primary text-church-primary">
-            <Link href={process.env.NEXT_PUBLIC_YOUTUBE_CHANNEL_URL || '#'}>
+            <Link href={process.env.NEXT_PUBLIC_YOUTUBE_CHANNEL_URL || 'https://youtube.com'}>
               Visit Our YouTube Channel
             </Link>
           </Button>
