@@ -1,9 +1,9 @@
 import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { xata_id: string } }) {
     try {
-        const message = await xata.db.messages.read(params.id)
+        const message = await xata.db.messages.read(params.xata_id)
         if (!message) {
             return NextResponse.json(
                 { error: 'Message not found' },
