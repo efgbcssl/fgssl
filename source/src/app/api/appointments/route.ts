@@ -79,7 +79,8 @@ export async function POST(request: Request) {
             ...data,
             preferredDate: preferredDate.toISOString(), // Ensure ISO format
             status: 'pending',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
         })
 
         return NextResponse.json(newAppointment, { status: 201 })
