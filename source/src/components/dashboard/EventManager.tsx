@@ -32,11 +32,14 @@ export function EventManager() {
     const { toast } = useToast()
 
     const fetchEvents = useCallback(async () => {
+        setIsLoading(true);
         try {
             const response = await fetch('/api/events')
+            if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json()
-            setEvents(data)
-        } catch {
+            setEvents(data);
+        } catch (error) {
+            console.log('Fetch error: ', error);
             toast({
                 title: 'Error',
                 description: 'Failed to fetch events',
@@ -71,68 +74,57 @@ export function EventManager() {
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
-
         e.preventDefault();
+        if (!editingEvent) return;
 
+        // Enhanced validation
+        const errors = [];
+        if (!editingEvent.title) errors.push('Title is required');
+        if (!editingEvent.date) errors.push('Date is required');
+        if (!editingEvent.imageSrc) errors.push('Image URL is required');
 
-
-        // Validate required fields
-        if (!editingEvent?.title || !editingEvent?.date) {
+        if (errors.length > 0) {
             toast({
-                title: 'Error',
-                description: 'Title and date are required',
+                title: 'Validation Error',
+                description: errors.join('\n'),
                 variant: 'destructive'
             });
             return;
         }
 
-        const method = isNewEvent ? 'POST' : 'PUT';
-        const url = isNewEvent ? '/api/events' : `/api/events/${editingEvent.id}`;
-
-        if (isSubmitting) return; // Prevent multiple submissions
         setIsSubmitting(true);
 
         try {
-            // Prepare clean data without internal fields
-            const { ...cleanData } = editingEvent;
-
-            // Calculate expiresAt if not set
-            if (!cleanData.expiresAt) {
-                const eventDate = new Date(cleanData.date);
-                cleanData.expiresAt = new Date(eventDate.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString();
-            }
+            // Prepare clean data
+            const { id, ...payload } = editingEvent;
+            const url = isNewEvent ? '/api/events' : `/api/events/${id}`;
+            const method = isNewEvent ? 'POST' : 'PUT';
 
             const response = await fetch(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(cleanData)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...payload,
+                    expiresAt: payload.expiresAt || new Date(
+                        new Date(payload.date).getTime() + 15 * 24 * 60 * 60 * 1000
+                    ).toISOString()
+                })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to save event');
-            }
-
-            const result = await response.json();
+            if (!response.ok) throw new Error(await response.text());
 
             toast({
                 title: 'Success',
-                description: isNewEvent
-                    ? 'Event created successfully'
-                    : 'Event updated successfully'
+                description: `Event ${isNewEvent ? 'created' : 'updated'} successfully`
             });
 
             setEditingEvent(null);
             setIsNewEvent(false);
-            fetchEvents();
-
+            await fetchEvents();
         } catch (error) {
-            console.error('Error saving event:', error);
             toast({
                 title: 'Error',
-                description: error instanceof Error ? error.message : 'Failed to save event',
+                description: error instanceof Error ? error.message : 'Operation failed',
                 variant: 'destructive'
             });
         } finally {
@@ -141,39 +133,40 @@ export function EventManager() {
     };
 
     const handleDragEnd = async (result: import('@hello-pangea/dnd').DropResult) => {
-        if (!result.destination) return
+        if (!result.destination || result.source.index === result.destination.index) return
 
-        const items = Array.from(events)
-        const [reorderedItem] = items.splice(result.source.index, 1)
-        items.splice(result.destination.index, 0, reorderedItem)
+        const newEvents = reorder(
+            events,
+            result.source.index,
+            result.destination.index
+        ).map((event, index) => ({ ...event, order: index }));
 
-        // Update the order property based on new position
-        const updatedEvents = items.map((event, index) => ({
-            ...event,
-            order: index
-        }))
+        setEvents(newEvents);
 
-        setEvents(updatedEvents)
-
-        // Save the new order to the database
         try {
-            await fetch('/api/events/reorder', {
+            const response = await fetch('/api/events/reorder', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedEvents)
-            })
-        } catch {
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newEvents)
+            });
+            if (!response.ok) throw new Error('Reorder failed');
+        } catch (error) {
             toast({
                 title: 'Error',
-                description: 'Failed to update event order',
+                description: 'Failed to save new order',
                 variant: 'destructive'
-            })
-            // Revert if failed
-            fetchEvents()
+            });
+            fetchEvents(); // Revert to server state
         }
     }
+
+    // Helper function
+    const reorder = <T,>(list: T[], startIndex: number, endIndex: number): T[] => {
+        const result = Array.from(list);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+        return result;
+    };
 
     if (isLoading) return <div>Loading...</div>
 
