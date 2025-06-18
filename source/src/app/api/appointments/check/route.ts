@@ -1,7 +1,7 @@
 // app/api/appointments/check/route.ts
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
-import { format } from 'date-fns'
+//import { format } from 'date-fns'
 
 export async function GET(request: Request) {
     try {
@@ -15,15 +15,22 @@ export async function GET(request: Request) {
             )
         }
 
-        // Query your database for booked slots on this date
+        // Create date range for filtering
+        const startDate = new Date(`${date}T00:00:00.000Z`)
+        const endDate = new Date(`${date}T23:59:59.999Z`)
+
+        // Query appointments for the entire day
         const bookedAppointments = await xata.db.appointments
-            .filter('preferredDate', { $contains: date })
+            .filter('preferredDate', {
+                $ge: startDate.toISOString(),
+                $le: endDate.toISOString()
+            })
             .getAll()
 
-        // Extract just the time slots (HH:MM format)
+        // Extract time slots
         const bookedSlots = bookedAppointments.map(appt => {
-            const date = new Date(appt.preferredDate)
-            return format(date, 'HH:mm')
+            const apptDate = new Date(appt.preferredDate)
+            return apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
         })
 
         return NextResponse.json({ bookedSlots })

@@ -103,6 +103,10 @@ export default function AppointmentForm() {
       const formData = new FormData(e.currentTarget)
       const formValues = Object.fromEntries(formData.entries())
 
+      // Create proper ISO string with timezone
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const dateTime = new Date(`${dateStr}T${time}:00.000Z`)
+
       // Validate required fields
       if (!formValues.fullName || !formValues.phoneNumber || !formValues.email) {
         throw new Error("Please fill in all required fields.")
@@ -117,7 +121,7 @@ export default function AppointmentForm() {
           fullName: formValues.fullName,
           phoneNumber: formValues.phoneNumber,
           email: formValues.email,
-          preferredDate: `${format(date, 'yyyy-MM-dd')}T${time}:00.000Z`,
+          preferredDate: dateTime.toISOString(),
           medium,
           status: 'pending'
         })
