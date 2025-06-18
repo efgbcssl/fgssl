@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { format } from 'date-fns'
+import { format, isBefore, isToday, addDays } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,7 @@ export default function AppointmentForm() {
   const { toast } = useToast()
 
   // Generate available times (9AM-5PM, every 30 minutes)
-  const generateTimes = () => {
+  const generateTimes = useCallback(() => {
     const times = []
     for (let hour = 9; hour <= 17; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
@@ -29,47 +30,46 @@ export default function AppointmentForm() {
       }
     }
     return times
-  }
+  }, [])
 
   const availableTimes = generateTimes()
 
-
-  const checkBookedSlots = useCallback(async () => {
-    if (!date) return;
-
-    setIsChecking(true);
+  const checkBookedSlots = useCallback(async (selectedDate: Date) => {
+    setIsChecking(true)
     try {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const response = await fetch(`/api/appointments/check?date=${dateStr}`);
+      const dateStr = format(selectedDate, 'yyyy-MM-dd')
+      const response = await fetch(`/api/appointments/check?date=${dateStr}`)
 
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new TypeError("Oops, we didn't get JSON!");
-      }
-
-      const data = await response.json();
-      setBookedSlots(data);
+      const data = await response.json()
+      setBookedSlots(data.bookedSlots || [])
     } catch (error) {
-      console.error('Error checking slots:', error);
+      console.error('Error checking slots:', error)
+      setBookedSlots([])
       toast({
         title: "Error",
-        description: "Failed to load available time slots",
+        description: "Failed to check available slots. Please try again.",
         variant: "destructive"
       })
     } finally {
-      setIsChecking(false);
+      setIsChecking(false)
     }
-  }, [date, toast]);
+  }, [toast])
 
-  useEffect(() => {
-    if (date) {
-      checkBookedSlots()
+  const handleDateSelect = useCallback((selectedDate: Date | undefined) => {
+    if (!selectedDate) return
+
+    setDate(selectedDate)
+    setTime('09:00') // Reset time when date changes
+
+    // Only check slots if date is in the future
+    if (!isBefore(selectedDate, new Date())) {
+      checkBookedSlots(selectedDate)
     }
-  }, [date, checkBookedSlots])
+  }, [checkBookedSlots])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -83,13 +83,23 @@ export default function AppointmentForm() {
       return
     }
 
+    if (bookedSlots.includes(time)) {
+      toast({
+        title: "Error",
+        description: "The selected time slot is already booked.",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const formData = new FormData(e.currentTarget)
-      const preferredDateTime = `${format(date!, 'yyyy-MM-dd')}T${time}:00.000Z`
+      const formValues = Object.fromEntries(formData.entries())
 
-      if (!formData.get('fullName') || !formData.get('phoneNumber') || !formData.get('email')) {
+      // Validate required fields
+      if (!formValues.fullName || !formValues.phoneNumber || !formValues.email) {
         throw new Error("Please fill in all required fields.")
       }
 
@@ -99,28 +109,30 @@ export default function AppointmentForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fullName: formData.get('fullName'),
-          phoneNumber: formData.get('phoneNumber'),
-          email: formData.get('email'),
-          preferredDate: preferredDateTime,
+          fullName: formValues.fullName,
+          phoneNumber: formValues.phoneNumber,
+          email: formValues.email,
+          preferredDate: `${format(date, 'yyyy-MM-dd')}T${time}:00.000Z`,
           medium,
           status: 'pending'
         })
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to submit appointment request.')
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to submit appointment.')
       }
 
       toast({
-        title: "Appointment Requested Successfully",
-        description: "We've received your request and will contact you shortly.",
+        title: "Success!",
+        description: "Your appointment request has been submitted.",
       })
+
       // Reset form
       e.currentTarget.reset()
       setDate(undefined)
       setTime('09:00')
+      setBookedSlots([])
     } catch (error) {
       toast({
         title: "Error",
@@ -132,9 +144,13 @@ export default function AppointmentForm() {
     }
   }
 
-  const isFormValid = () => {
-    return date && time && !bookedSlots.includes(time)
+  const isDateDisabled = (date: Date) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return isBefore(date, today) || date.getDay() === 0 // Disable Sundays
   }
+
+  const isFormValid = date && time && !bookedSlots.includes(time)
 
   return (
     <section className="py-16 bg-gray-50">
@@ -228,13 +244,9 @@ export default function AppointmentForm() {
                     <Calendar
                       mode="single"
                       selected={date}
-                      onSelect={setDate}
+                      onSelect={handleDateSelect}
                       initialFocus
-                      disabled={(date) => {
-                        const now = new Date()
-                        now.setHours(0, 0, 0, 0)
-                        return date < now || date.getDay() === 0
-                      }}
+                      disabled={isDateDisabled}
                       className="w-full"
                       classNames={{
                         months: "w-full",
@@ -255,6 +267,7 @@ export default function AppointmentForm() {
                         day_outside: "text-gray-400 opacity-50",
                         day_range_middle: "aria-selected:bg-church-primary/10 aria-selected:text-church-primary",
                       }}
+                      hidden={{ before: new Date() }} // only allow dates from tomorrow
                     />
                   </div>
                 </div>
@@ -270,13 +283,13 @@ export default function AppointmentForm() {
                         key={slot}
                         type="button"
                         onClick={() => setTime(slot)}
-                        disabled={bookedSlots.includes(slot)}
+                        disabled={bookedSlots.includes(slot) || !date}
                         className={cn(
                           'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center h-10',
                           time === slot
                             ? 'bg-church-primary text-white shadow-md'
                             : 'bg-white hover:bg-gray-100 border border-gray-200',
-                          bookedSlots.includes(slot) && 'opacity-50 cursor-not-allowed bg-gray-100'
+                          (bookedSlots.includes(slot) || !date) && 'opacity-50 cursor-not-allowed bg-gray-100'
                         )}
                       >
                         {slot}
@@ -286,6 +299,11 @@ export default function AppointmentForm() {
                       </button>
                     ))}
                   </div>
+                  {date && bookedSlots.length === availableTimes.length && (
+                    <p className="text-sm text-red-500 mt-2">
+                      All slots are booked for this date. Please choose another date.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -294,7 +312,7 @@ export default function AppointmentForm() {
               <Button
                 type="submit"
                 className="w-full bg-church-primary hover:bg-church-primary/90 h-14 text-lg font-medium"
-                disabled={!isFormValid() || isSubmitting}
+                disabled={!isFormValid || isSubmitting}
               >
                 {isSubmitting ? (
                   <>
