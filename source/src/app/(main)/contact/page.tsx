@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,16 +28,13 @@ export default function ContactPage() {
     } | null>(null)
     const [loadingTravelInfo, setLoadingTravelInfo] = useState(false)
     const { toast } = useToast()
-    const formRef = useRef<HTMLFormElement>(null);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setIsSubmitting(true)
 
-        if (!formRef.current) return;
-
         const form = e.currentTarget
-        const formData = new FormData(formRef.current);
+        const formData = new FormData(form);
         const data = {
             name: formData.get('name') as string,
             email: formData.get('email') as string,
@@ -50,25 +47,16 @@ export default function ContactPage() {
 
 
         try {
-            // Convert FormData to JSON
-            const jsonData = {
-                name: formData.get('name') as string,
-                email: formData.get('email') as string,
-                subject: formData.get('subject') as string,
-                message: formData.get('message') as string
-            };
-
-            // Debug: Log the data being sent
-            console.log('Submitting:', jsonData);
 
             const response = await fetch('/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(jsonData)
+                body: JSON.stringify(data)
             })
 
             if (!response.ok) {
-                throw new Error('Failed to send message')
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to send message')
             }
 
             toast({

@@ -23,17 +23,6 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
 
-        console.log("Incoming request headers:", request.headers);
-        const contentType = request.headers.get('content-type');
-
-        if (!contentType?.includes('application/json')) {
-            console.error("Invalid content type:", contentType);
-            return NextResponse.json(
-                { error: "Content-Type must be application/json" },
-                { status: 400 }
-            );
-        }
-
         const data = await request.json()
         // Enhanced validation
         console.log("Received data:", data);
@@ -66,25 +55,32 @@ export async function POST(request: Request) {
             message_id,
             name: data.name.trim(),
             email: data.email.trim(),
-            subject: data.subject?.trim() || null,
+            subject: data.subject?.trim() || 'No Subject',
             message: data.message.trim(),
             status: 'unread',
             createdAt: new Date().toISOString()
-        })
+        });
 
         // Send notification email
-        await resend.emails.send({
-            from: 'notifications@yourdomain.com',
-            to: process.env.ADMIN_EMAIL || 'admin@yourdomain.com',
-            subject: `New Contact Message: ${data.subject || 'No Subject'}`,
-            html: `
+        if (process.env.RESEND_API_KEY && process.env.ADMIN_EMAIL) {
+            try {
+                await resend.emails.send({
+                    from: 'notifications@yourdomain.com',
+                    to: process.env.ADMIN_EMAIL || 'admin@yourdomain.com',
+                    subject: `New Contact Message: ${data.subject || 'No Subject'}`,
+                    html: `
         <h1>New Contact Form Submission</h1>
         <p><strong>From:</strong> ${data.name} (${data.email})</p>
         <p><strong>Subject:</strong> ${data.subject || 'None'}</p>
         <p><strong>Message:</strong></p>
         <p>${data.message}</p>
       `
-        })
+                });
+
+            } catch (emailError) {
+                console.error('Failed to send notification email:', emailError);
+            }
+        }
 
         return NextResponse.json(newMessage, { status: 201 })
     } catch (error) {

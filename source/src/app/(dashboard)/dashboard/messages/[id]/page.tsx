@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -120,9 +121,18 @@ export default function MessageDetail() {
                         <p>{message.name} &lt;{message.email}&gt;</p>
                     </div>
 
-                    <div>
-                        <h2 className="text-sm font-medium text-gray-500">Message</h2>
-                        <div className="mt-1 whitespace-pre-line">{message.message}</div>
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h2 className="text-lg font-semibold mb-2">Message Content</h2>
+                        <div className="whitespace-pre-line text-gray-700">
+                            {message.message}
+                        </div>
+                    </div>
+                    <div className="mt-6">
+                        <Button asChild>
+                            <a href={`mailto:${message.email}?subject=Re: ${message.subject || 'Your Message'}`}>
+                                Reply via Email
+                            </a>
+                        </Button>
                     </div>
                 </div>
             </div>

@@ -10,7 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MailOpen, Archive, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
@@ -23,6 +22,11 @@ type Message = {
     message: string
     status: 'unread' | 'read' | 'archived'
     createdAt: string
+}
+const statusColors = {
+    unread: 'bg-red-100 text-red-800',
+    read: 'bg-blue-100 text-blue-800',
+    archived: 'bg-gray-100 text-gray-800'
 }
 
 export default function MessagesDashboard() {
@@ -113,16 +117,11 @@ export default function MessagesDashboard() {
                             </TableRow>
                         ) : (
                             messages.map((message) => (
-                                <TableRow key={message.message_id}>
+                                <TableRow key={message.message_id} className='hover:bg-gray-50'>
                                     <TableCell>
-                                        <Badge
-                                            variant={
-                                                message.status === 'unread' ? 'destructive' :
-                                                    message.status === 'read' ? 'default' : 'secondary'
-                                            }
-                                        >
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
                                             {message.status}
-                                        </Badge>
+                                        </span>
                                     </TableCell>
                                     <TableCell>
                                         <div className="font-medium">{message.name}</div>

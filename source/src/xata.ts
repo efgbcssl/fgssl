@@ -277,6 +277,66 @@ const tables = [
     ],
   },
   {
+    name: "donations",
+    checkConstraints: {
+      donations_xata_id_length_xata_id: {
+        name: "donations_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_donations_xata_id_key: {
+        name: "_pgroll_new_donations_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "amount",
+        type: "float",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "events",
     checkConstraints: {
       events_xata_id_length_xata_id: {
@@ -941,6 +1001,9 @@ export type AppointmentsRecord = Appointments & XataRecord;
 export type Comments = InferredTypes["comments"];
 export type CommentsRecord = Comments & XataRecord;
 
+export type Donations = InferredTypes["donations"];
+export type DonationsRecord = Donations & XataRecord;
+
 export type Events = InferredTypes["events"];
 export type EventsRecord = Events & XataRecord;
 
@@ -959,6 +1022,7 @@ export type PostsRecord = Posts & XataRecord;
 export type DatabaseSchema = {
   appointments: AppointmentsRecord;
   comments: CommentsRecord;
+  donations: DonationsRecord;
   events: EventsRecord;
   faqs: FaqsRecord;
   likes: LikesRecord;
