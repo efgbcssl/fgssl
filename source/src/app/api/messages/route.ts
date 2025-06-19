@@ -23,13 +23,26 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const data = await request.json()
+        // Enhanced validation
+        const errors = [];
+        if (!data.name?.trim()) errors.push("Name is required");
+        if (!data.email?.trim()) errors.push("Email is required");
+        if (!data.message?.trim()) errors.push("Message is required");
 
-        // Validate required fields
-        if (!data.name || !data.email || !data.message) {
+        if (errors.length > 0) {
             return NextResponse.json(
-                { error: 'Name, email, and message are required' },
+                { error: "Validation failed", details: errors },
                 { status: 400 }
-            )
+            );
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(data.email)) {
+            return NextResponse.json(
+                { error: "Invalid email format" },
+                { status: 400 }
+            );
         }
 
         const message_id = uuidv4();
@@ -37,10 +50,11 @@ export async function POST(request: Request) {
         // Save to database
         const newMessage = await xata.db.messages.create({
             message_id,
-            name: data.name,
-            email: data.email,
-            subject: data.subject || null,
-            message: data.message,
+            name: data.name.trim(),
+            email: data.email.trim(),
+            subject: data.subject?.trim() || null,
+            message: data.message.trim(),
+            status: 'unread',
             createdAt: new Date().toISOString()
         })
 

@@ -35,13 +35,27 @@ export default function ContactPage() {
 
         const form = e.currentTarget
         const formData = new FormData(form)
-        const data = Object.fromEntries(formData.entries())
+        //const data = Object.fromEntries(formData.entries())
+
+
+
 
         try {
+            // Convert FormData to JSON
+            const jsonData = {
+                name: formData.get('name') as string,
+                email: formData.get('email') as string,
+                subject: formData.get('subject') as string,
+                message: formData.get('message') as string
+            };
+
+            // Debug: Log the data being sent
+            console.log('Submitting:', jsonData);
+
             const response = await fetch('/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(jsonData)
             })
 
             if (!response.ok) {
