@@ -649,6 +649,10 @@ const tables = [
         name: "_pgroll_new_messages_xata_id_key",
         columns: ["xata_id"],
       },
+      messages__pgroll_new_message_id_key: {
+        name: "messages__pgroll_new_message_id_key",
+        columns: ["message_id"],
+      },
     },
     columns: [
       {
@@ -672,6 +676,14 @@ const tables = [
         type: "text",
         notNull: true,
         unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "message_id",
+        type: "text",
+        notNull: true,
+        unique: true,
         defaultValue: null,
         comment: "",
       },

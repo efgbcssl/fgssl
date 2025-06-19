@@ -16,7 +16,7 @@ import { MailOpen, Archive, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 
 type Message = {
-    id: string
+    message_id: string
     name: string
     email: string
     subject: string
@@ -49,9 +49,9 @@ export default function MessagesDashboard() {
         }
     }
 
-    const updateMessageStatus = async (id: string, status: string) => {
+    const updateMessageStatus = async (message_id: string, status: string) => {
         try {
-            const response = await fetch(`/api/messages/${id}`, {
+            const response = await fetch(`/api/messages/${message_id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
@@ -113,7 +113,7 @@ export default function MessagesDashboard() {
                             </TableRow>
                         ) : (
                             messages.map((message) => (
-                                <TableRow key={message.id}>
+                                <TableRow key={message.message_id}>
                                     <TableCell>
                                         <Badge
                                             variant={
@@ -137,14 +137,14 @@ export default function MessagesDashboard() {
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={() => updateMessageStatus(message.id, 'read')}
+                                                onClick={() => updateMessageStatus(message.message_id, 'read')}
                                             >
                                                 <MailOpen className="h-4 w-4" />
                                             </Button>
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                onClick={() => updateMessageStatus(message.id, 'archived')}
+                                                onClick={() => updateMessageStatus(message.message_id, 'archived')}
                                             >
                                                 <Archive className="h-4 w-4" />
                                             </Button>

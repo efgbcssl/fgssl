@@ -1,6 +1,7 @@
 import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { v4 as uuidv4 } from 'uuid';
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -31,10 +32,15 @@ export async function POST(request: Request) {
             )
         }
 
+        const message_id = uuidv4();
+
         // Save to database
         const newMessage = await xata.db.messages.create({
-            ...data,
-            status: 'unread',
+            message_id,
+            name: data.name,
+            email: data.email,
+            subject: data.subject || null,
+            message: data.message,
             createdAt: new Date().toISOString()
         })
 

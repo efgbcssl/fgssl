@@ -8,7 +8,7 @@ import { Archive, ArrowLeft } from 'lucide-react'
 import { format } from 'date-fns'
 
 type Message = {
-    id: string
+    message_id: string
     name: string
     email: string
     subject: string
@@ -18,7 +18,7 @@ type Message = {
 }
 
 export default function MessageDetail() {
-    const { id } = useParams()
+    const { message_id } = useParams()
     const [message, setMessage] = useState<Message | null>(null)
     const [loading, setLoading] = useState(true)
     const { toast } = useToast()
@@ -26,14 +26,14 @@ export default function MessageDetail() {
     useEffect(() => {
         const fetchMessage = async () => {
             try {
-                const response = await fetch(`/api/messages/${id}`)
+                const response = await fetch(`/api/messages/${message_id}`)
                 if (!response.ok) throw new Error('Failed to fetch message')
                 const data = await response.json()
                 setMessage(data)
 
                 // Mark as read when opened
                 if (data.status === 'unread') {
-                    await fetch(`/api/messages/${id}`, {
+                    await fetch(`/api/messages/${message_id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'read' })
@@ -52,11 +52,11 @@ export default function MessageDetail() {
         }
 
         fetchMessage()
-    }, [id, toast])
+    }, [message_id, toast])
 
     const updateStatus = async (status: string) => {
         try {
-            const response = await fetch(`/api/messages/${id}`, {
+            const response = await fetch(`/api/messages/${message_id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
