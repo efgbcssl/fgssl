@@ -146,6 +146,18 @@
   .navlink.active {
     @apply text-primary after:w-full;
   }
+
+  tr {
+    transition: background-color 0.2s ease;
+}
+
+tr:hover {
+    background-color: #f9fafb;
+}
+
+.action-buttons {
+    transition: opacity 0.2s ease;
+}
 }
 
 /* Font face definitions */
