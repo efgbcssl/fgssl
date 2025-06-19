@@ -37,6 +37,9 @@ export default function ThankYouPage() {
                 const response = await fetch(`/api/stripe/verify-payment?payment_intent=${paymentIntent}`)
                 const data = await response.json()
 
+                console.log("Payment verification response:", data)
+
+
                 if (!data.status) {
                     throw new Error('Invalid response from server')
                 }
