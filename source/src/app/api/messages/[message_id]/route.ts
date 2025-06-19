@@ -1,25 +1,39 @@
 import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request, { params }: { params: Promise<{ message_id: string }> }) {
+export async function GET(
+    request: Request,
+    { params }: { params: { message_id: string } }
+) {
     try {
-        const { message_id } = await params
-        const message = await xata.db.messages.read(message_id)
+        console.log('Fetching message with ID:', params.message_id)
+
+        // Use filter() instead of read() for better error handling
+        const message = await xata.db.messages
+            .filter('message_id', params.message_id)
+            .getFirst()
+
         if (!message) {
+            console.log('Message not found in database')
             return NextResponse.json(
                 { error: 'Message not found' },
                 { status: 404 }
             )
         }
+
         return NextResponse.json(message)
     } catch (error) {
-        console.error('Error fetching message:', error)
+        console.error('Database error:', error)
         return NextResponse.json(
-            { error: 'Failed to fetch message' },
+            {
+                error: 'Internal server error',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500 }
         )
     }
 }
+
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ message_id: string }> }) {
     try {
