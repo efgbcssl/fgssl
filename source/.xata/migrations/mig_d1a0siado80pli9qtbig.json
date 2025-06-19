@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1a0siado80pli9qtbig",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donations",
+          "column": {
+            "name": "stripeChargeId",
+            "type": "text",
+            "comment": "",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1a0siado80pli9qtbig",
+  "parent": "mig_d1a0ru2do80pli9qtbhg",
+  "schema": "public",
+  "startedAt": "2025-06-19T13:19:06.169194Z"
+}

@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1a0p7qunsp1brisbmkg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donations",
+          "column": {
+            "name": "paymentStatus",
+            "type": "text",
+            "comment": "",
+            "default": "'pending'"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1a0p7qunsp1brisbmkg",
+  "parent": "mig_d1a0oqido80pli9qtbgg",
+  "schema": "public",
+  "startedAt": "2025-06-19T13:12:00.134481Z"
+}

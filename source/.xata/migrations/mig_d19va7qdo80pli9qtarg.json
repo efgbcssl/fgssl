@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d19va7qdo80pli9qtarg",
+    "operations": [
+      {
+        "add_column": {
+          "up": "0",
+          "table": "donations",
+          "column": {
+            "name": "amount",
+            "type": "float",
+            "comment": ""
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d19va7qdo80pli9qtarg",
+  "parent": "mig_d19v9iido80pli9qtaqg",
+  "schema": "public",
+  "startedAt": "2025-06-19T11:31:46.416009Z"
+}

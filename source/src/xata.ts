@@ -292,6 +292,10 @@ const tables = [
         name: "_pgroll_new_donations_xata_id_key",
         columns: ["xata_id"],
       },
+      donations__pgroll_new_stripePaymentIntentId_key: {
+        name: "donations__pgroll_new_stripePaymentIntentId_key",
+        columns: ["stripePaymentIntentId"],
+      },
     },
     columns: [
       {
@@ -300,6 +304,198 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "currency",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: "'USD'::text",
+        comment: "",
+      },
+      {
+        name: "donationType",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "donorEmail",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "donorName",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "donorPhone",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "isRecurring",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
+      },
+      {
+        name: "notes",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "paymentMethod",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "paymentStatus",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: "'pending'::text",
+        comment: "",
+      },
+      {
+        name: "receiptUrl",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "stripeChargeId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "stripePaymentIntentId",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
+    name: "donors",
+    checkConstraints: {
+      donors_xata_id_length_xata_id: {
+        name: "donors_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_donors_xata_id_key: {
+        name: "_pgroll_new_donors_xata_id_key",
+        columns: ["xata_id"],
+      },
+      donors__pgroll_new_email_key: {
+        name: "donors__pgroll_new_email_key",
+        columns: ["email"],
+      },
+    },
+    columns: [
+      {
+        name: "email",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "lastDonationDate",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "name",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "phone",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "totalDonations",
+        type: "float",
+        notNull: false,
+        unique: false,
+        defaultValue: "'0'::double precision",
         comment: "",
       },
       {
@@ -1004,6 +1200,9 @@ export type CommentsRecord = Comments & XataRecord;
 export type Donations = InferredTypes["donations"];
 export type DonationsRecord = Donations & XataRecord;
 
+export type Donors = InferredTypes["donors"];
+export type DonorsRecord = Donors & XataRecord;
+
 export type Events = InferredTypes["events"];
 export type EventsRecord = Events & XataRecord;
 
@@ -1023,6 +1222,7 @@ export type DatabaseSchema = {
   appointments: AppointmentsRecord;
   comments: CommentsRecord;
   donations: DonationsRecord;
+  donors: DonorsRecord;
   events: EventsRecord;
   faqs: FaqsRecord;
   likes: LikesRecord;

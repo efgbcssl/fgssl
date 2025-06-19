@@ -34,42 +34,35 @@ export default function ThankYouPage() {
             }
 
             try {
-                const response = await fetch(`/api/stripe/verify-payment?payment_intent=${paymentIntent}`)
-                const data = await response.json()
-
+                const res = await fetch(`/api/stripe/verify-payment?payment_intent=${paymentIntent}`)
+                const data = await res.json()
                 console.log("Payment verification response:", data)
 
-
-                if (!data.status) {
+                if (!data || typeof data.status !== 'string') {
                     throw new Error('Invalid response from server')
                 }
 
-                setPaymentResult({
-                    status: data.status,
-                    amount: data.amount ? data.amount / 100 : undefined,
-                    donationType: data.donationType,
-                    receiptUrl: data.receipt_url,
-                    date: data.created
-                })
-
                 if (data.status !== 'succeeded') {
-                    toast({
-                        title: "Payment Not Completed",
-                        description: `Your payment is in '${data.status}' status. Please contact support if this persists.`,
-                        variant: "destructive"
+                    setPaymentResult({ status: data.status, error: data.error })
+                } else {
+                    setPaymentResult({
+                        status: 'succeeded',
+                        amount: data.amount ? data.amount / 100 : undefined,
+                        donationType: data.donationType,
+                        receiptUrl: data.receipt_url,
+                        date: data.created
                     })
                 }
-
-            } catch (error: unknown) {
-                console.error('Payment verification error:', error)
-                let errorMessage = "Couldn't verify your payment. Please contact support."
-                if (error instanceof Error) {
-                    errorMessage = error.message
+            } catch (err: unknown) {
+                console.error('Payment verification error:', err)
+                let message = "Couldn't verify your payment. Please contact support."
+                if (err instanceof Error) {
+                    message = err.message
                 }
                 toast({
-                    title: "Verification Error",
-                    description: errorMessage,
-                    variant: "destructive"
+                    title: 'Verification Error',
+                    description: message,
+                    variant: 'destructive'
                 })
                 setPaymentResult({ status: 'verification_failed' })
             } finally {

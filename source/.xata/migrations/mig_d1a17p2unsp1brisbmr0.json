@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1a17p2unsp1brisbmr0",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "phone",
+            "type": "text",
+            "comment": "",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1a17p2unsp1brisbmr0",
+  "parent": "mig_d1a108qdo80pli9qtbog",
+  "schema": "public",
+  "startedAt": "2025-06-19T13:43:02.539302Z"
+}

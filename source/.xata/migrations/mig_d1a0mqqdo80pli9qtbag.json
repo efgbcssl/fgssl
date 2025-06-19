@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1a0mqqdo80pli9qtbag",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donations",
+          "column": {
+            "name": "currency",
+            "type": "text",
+            "comment": "",
+            "default": "'USD'"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1a0mqqdo80pli9qtbag",
+  "parent": "mig_d19va7qdo80pli9qtarg",
+  "schema": "public",
+  "startedAt": "2025-06-19T13:06:52.55913Z"
+}
