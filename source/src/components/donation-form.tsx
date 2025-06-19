@@ -75,9 +75,16 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
             const { error } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
-                    return_url: `${window.location.origin}/donation/thank-you`,
+                    return_url: `${window.location.origin}/donations/thank-you`,
                     receipt_email: values.email,
-                },
+                    payment_method_data: {
+                        billing_details: {
+                            name: values.name,
+                            email: values.email,
+                            phone: values.phone || undefined,
+                        },
+                    }
+                }
             })
 
             if (error) {
