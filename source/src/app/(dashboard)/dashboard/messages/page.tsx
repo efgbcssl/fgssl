@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { MailOpen, Archive, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
 type Message = {
@@ -29,6 +30,7 @@ export default function MessagesDashboard() {
     const [messages, setMessages] = useState<Message[]>([])
     const [loading, setLoading] = useState(true)
     const { toast } = useToast()
+    const router = useRouter()
 
     const fetchMessages = async () => {
         setLoading(true)
@@ -119,7 +121,7 @@ export default function MessagesDashboard() {
                             </TableRow>
                         ) : (
                             messages.map((message) => (
-                                <TableRow key={message.message_id} className="hover:bg-gray-50">
+                                <TableRow key={message.message_id} className="hover:bg-gray-50" onClick={() => router.push(`/dashboard/messages/${message.message_id}`)}>
                                     <TableCell>
                                         <Link href={`/dashboard/messages/${message.message_id}`} className="block">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
