@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,16 +28,25 @@ export default function ContactPage() {
     } | null>(null)
     const [loadingTravelInfo, setLoadingTravelInfo] = useState(false)
     const { toast } = useToast()
+    const formRef = useRef<HTMLFormElement>(null);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setIsSubmitting(true)
 
+        if (!formRef.current) return;
+
         const form = e.currentTarget
-        const formData = new FormData(form)
+        const formData = new FormData(formRef.current);
+        const data = {
+            name: formData.get('name') as string,
+            email: formData.get('email') as string,
+            subject: formData.get('subject') as string,
+            message: formData.get('message') as string
+        }
         //const data = Object.fromEntries(formData.entries())
 
-        console.log("Form data to submit:", formData);
+        console.log("Form data to submit:", data);
 
 
         try {
@@ -321,22 +330,22 @@ export default function ContactPage() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <Label htmlFor="name">Full Name</Label>
-                                                <Input id="name" required />
+                                                <Input id="name" name="name" required />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="email">Email Address</Label>
-                                                <Input id="email" type="email" required />
+                                                <Input id="email" name="email" type="email" required />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label htmlFor="subject">Subject</Label>
-                                            <Input id="subject" required />
+                                            <Input id="subject" name='subject' required />
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label htmlFor="message">Message</Label>
-                                            <Textarea id="message" rows={5} required />
+                                            <Textarea id="message" name="message" rows={5} required />
                                         </div>
 
                                         <Button
