@@ -37,7 +37,7 @@ export default function ContactPage() {
         const formData = new FormData(form)
         //const data = Object.fromEntries(formData.entries())
 
-
+        console.log("Form data to submit:", formData);
 
 
         try {

@@ -22,8 +22,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+
+        console.log("Incoming request headers:", request.headers);
+        const contentType = request.headers.get('content-type');
+
+        if (!contentType?.includes('application/json')) {
+            console.error("Invalid content type:", contentType);
+            return NextResponse.json(
+                { error: "Content-Type must be application/json" },
+                { status: 400 }
+            );
+        }
+
         const data = await request.json()
         // Enhanced validation
+        console.log("Received data:", data);
+
         const errors = [];
         if (!data.name?.trim()) errors.push("Name is required");
         if (!data.email?.trim()) errors.push("Email is required");
