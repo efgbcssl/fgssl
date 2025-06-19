@@ -12,6 +12,8 @@ interface PaymentResult {
     amount?: number
     donationType?: string
     receiptUrl?: string
+    date?: number
+    error?: string
 }
 
 export default function ThankYouPage() {
@@ -34,14 +36,25 @@ export default function ThankYouPage() {
             try {
                 // Verify payment with your backend
                 const response = await fetch(`/api/stripe/verify-payment?payment_intent=${paymentIntent}`)
+
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    throw new Error(errorData.error || 'Failed to verify payment')
+                }
+
                 const data = await response.json()
+
+                if (!data.status) {
+                    throw new Error('Invalid response from server')
+                }
 
                 if (response.ok) {
                     setPaymentResult({
-                        status,
-                        amount: data.amount / 100, // Convert from cents to dollars
-                        donationType: data.metadata.donationType,
-                        receiptUrl: data.receipt_url
+                        status: status || data.status,
+                        amount: data.amount ? data.amount / 100 : undefined, // Convert from cents to dollars
+                        donationType: data.donationType,
+                        receiptUrl: data.receipt_url,
+                        date: data.created
                     })
                 } else {
                     throw new Error(data.error || 'Payment verification failed')

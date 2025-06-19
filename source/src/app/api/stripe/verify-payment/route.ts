@@ -34,10 +34,15 @@ export async function GET(request: Request) {
         }
 
         return NextResponse.json({
+            status: paymentIntent.status,
             amount: paymentIntent.amount,
             currency: paymentIntent.currency,
+            donationType: paymentIntent.metadata?.donationType || 'Offering',
             metadata: paymentIntent.metadata,
-            receipt_url: paymentIntent.charges.data[0]?.receipt_url || null
+            receipt_url: paymentIntent.charges.data[0]?.receipt_url || null,
+            created: paymentIntent.created,
+            chargeId: paymentIntent.charges.data[0]?.id,
+            balanceTransactionId: paymentIntent.charges.data[0]?.balance_transaction
         })
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
