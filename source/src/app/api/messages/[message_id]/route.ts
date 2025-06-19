@@ -21,10 +21,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ mess
     }
 }
 
-export async function PATCH(request: Request, { params }: { params: { message_id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ message_id: string }> }) {
     try {
         const data = await request.json()
-        const updatedMessage = await xata.db.messages.update(params.message_id, data)
+        const updatedMessage = await xata.db.messages.update((await params).message_id, data)
         return NextResponse.json(updatedMessage)
     } catch (error) {
         console.error('Error updating message:', error)
@@ -37,11 +37,11 @@ export async function PATCH(request: Request, { params }: { params: { message_id
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { message_id: string } }
+    { params }: { params: Promise<{ message_id: string }> }
 ) {
     try {
         const deletedMessage = await xata.db.messages
-            .filter({ message_id: params.message_id })
+            .filter({ message_id: (await params).message_id })
             .getFirst()
             .then(record => record?.delete())
 
