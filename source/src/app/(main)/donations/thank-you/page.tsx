@@ -33,7 +33,7 @@ export default function ThankYouPage() {
 
             try {
                 // Verify payment with your backend
-                const response = await fetch(`/api/verify-payment?payment_intent=${paymentIntent}`)
+                const response = await fetch(`/api/stripe/verify-payment?payment_intent=${paymentIntent}`)
                 const data = await response.json()
 
                 if (response.ok) {
