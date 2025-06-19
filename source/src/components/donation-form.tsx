@@ -1,3 +1,4 @@
+// components/donation-form.tsx
 "use client"
 
 import { useState } from 'react'
@@ -9,11 +10,8 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-// Move your FormSchema here
 const FormSchema = z.object({
     donationType: z.string().min(1, "Please select a donation type"),
     amount: z.string().min(1, "Please enter an amount"),
@@ -44,12 +42,20 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
     })
 
     async function onSubmit(values: z.infer<typeof FormSchema>) {
-        if (!stripe || !elements) return
+        if (!stripe || !elements) {
+            toast({
+                title: "Payment system not ready",
+                description: "Please wait while we initialize the payment system",
+                variant: "destructive"
+            })
+            return
+        }
 
         setIsSubmitting(true)
 
         try {
-            const response = await fetch('/api/create-payment-intent', {
+            // First create or update the payment intent with the actual amount
+            const response = await fetch('/api/stripe/update-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -63,11 +69,11 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                 }),
             })
 
-            const { clientSecret } = await response.json()
+            if (!response.ok) throw new Error('Failed to update payment amount')
 
+            // Then confirm the payment
             const { error } = await stripe.confirmPayment({
                 elements,
-                clientSecret,
                 confirmParams: {
                     return_url: `${window.location.origin}/donation/thank-you`,
                     receipt_email: values.email,
@@ -75,18 +81,16 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
             })
 
             if (error) {
-                toast({ title: "Payment Failed", description: error.message, variant: "destructive" })
-            } else {
-                toast({
-                    title: "Donation Successful",
-                    description: `Thank you for your ${values.donationType} donation of $${values.amount}.`,
-                })
+                throw error
             }
-        } catch (error) {
-            console.log('Error while processing payment:', error)
+        } catch (err: unknown) {
+            let message = "An error occurred during payment";
+            if (err instanceof Error) {
+                message = err.message;
+            }
             toast({
-                title: "Error",
-                description: "An error occurred while processing your donation.",
+                title: "Payment Failed",
+                description: message,
                 variant: "destructive"
             })
         } finally {
@@ -97,7 +101,6 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Your form fields here */}
                 {/* Donation Type */}
                 <FormField
                     control={form.control}
@@ -203,73 +206,22 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                     />
                 </div>
 
-                {/* Payment Method */}
-                <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                            <FormLabel>Payment Method</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-col space-y-1"
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="card" id="card" />
-                                        <Label htmlFor="card">Credit/Debit Card</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="paypal" id="paypal" />
-                                        <Label htmlFor="paypal">PayPal</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="bank" id="bank" />
-                                        <Label htmlFor="bank">Bank Transfer</Label>
-                                    </div>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                {/* Stripe Payment Element */}
-                {form.watch('paymentMethod') !== 'bank' && (
-                    <div className="border rounded-lg p-4">
-                        <PaymentElement
-                            options={{
-                                wallets: {
-                                    applePay: 'auto',
-                                    googlePay: 'auto'
-                                }
-                            }}
-                        />
-                    </div>
-                )}
-
-                {/* Bank Transfer Info (shown when selected) */}
-                {form.watch('paymentMethod') === 'bank' && (
-                    <div className="border rounded-lg p-4 space-y-2">
-                        <h3 className="font-medium">Bank Transfer Instructions</h3>
-                        <p className="text-sm text-gray-600">
-                            Please transfer your donation to:
-                        </p>
-                        <div className="bg-gray-50 p-3 rounded-md text-sm">
-                            <p><strong>Bank Name:</strong> Your Church Bank</p>
-                            <p><strong>Account Name:</strong> Your Church Name</p>
-                            <p><strong>Account Number:</strong> 123456789</p>
-                            <p><strong>Routing Number:</strong> 987654321</p>
-                            <p><strong>Reference:</strong> Donation - {form.watch('donationType') || 'General'}</p>
-                        </div>
-                    </div>
-                )}
+                {/* Payment Element */}
+                <div className="border rounded-lg p-4">
+                    <PaymentElement
+                        options={{
+                            wallets: {
+                                applePay: 'auto',
+                                googlePay: 'auto'
+                            }
+                        }}
+                    />
+                </div>
 
                 {/* Submit Button */}
                 <Button
                     type="submit"
-                    className="w-full bg-church-primary text-white hover:bg-church-primary/90 py-6 text-lg"
+                    className="w-full bg-blue-600 text-white hover:bg-blue-700 py-6 text-lg"
                     disabled={isSubmitting || !stripe}
                 >
                     {isSubmitting ? "Processing Donation..." : "Complete Donation"}
