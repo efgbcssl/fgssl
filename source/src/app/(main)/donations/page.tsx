@@ -78,6 +78,9 @@ const FormSchema = z.object({
     paymentMethod: z.string().min(1, "Please select a payment method"),
 })
 
+// Add this export to disable prerendering
+export const dynamic = 'force-dynamic'
+
 export default function DonationPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { toast } = useToast()
