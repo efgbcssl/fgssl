@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { MailOpen, Archive, RefreshCw } from 'lucide-react'
-import { useRouter } from 'next/router'
+import Link from 'next/link'
+import { format } from 'date-fns'
 
 type Message = {
     message_id: string
@@ -24,17 +25,10 @@ type Message = {
     createdAt: string
 }
 
-const statusColors = {
-    unread: 'bg-red-100 text-red-800',
-    read: 'bg-blue-100 text-blue-800',
-    archived: 'bg-gray-100 text-gray-800'
-}
-
 export default function MessagesDashboard() {
     const [messages, setMessages] = useState<Message[]>([])
     const [loading, setLoading] = useState(true)
     const { toast } = useToast()
-    const router = useRouter()
 
     const fetchMessages = async () => {
         setLoading(true)
@@ -44,7 +38,7 @@ export default function MessagesDashboard() {
             const data = await response.json()
             setMessages(data)
         } catch (error) {
-            console.error('Error fetching messages!: ', error)
+            console.error('Error fetching messages:', error)
             toast({
                 title: "Error",
                 description: "Failed to load messages",
@@ -83,6 +77,12 @@ export default function MessagesDashboard() {
         fetchMessages()
     }, [])
 
+    const statusColors = {
+        unread: 'bg-red-100 text-red-800',
+        read: 'bg-blue-100 text-blue-800',
+        archived: 'bg-gray-100 text-gray-800'
+    }
+
     return (
         <div className="container py-8">
             <div className="flex justify-between items-center mb-6">
@@ -119,40 +119,36 @@ export default function MessagesDashboard() {
                             </TableRow>
                         ) : (
                             messages.map((message) => (
-                                <TableRow key={message.message_id} className="hover:bg-gray-50 group">
-                                    <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/messages/${message.message_id}`)}>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
-                                            {message.status}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell
-                                        className="cursor-pointer"
-                                        onClick={() => router.push(`/dashboard/messages/${message.message_id}`)}
-                                    >
-                                        <div className="font-medium">{message.name}</div>
-                                        <div className="text-sm text-gray-500">{message.email}</div>
-                                    </TableCell>
-                                    <TableCell
-                                        className="cursor-pointer"
-                                        onClick={() => router.push(`/dashboard/messages/${message.message_id}`)}
-                                    >
-                                        {message.subject || 'No Subject'}
-                                    </TableCell>
-                                    <TableCell
-                                        className="cursor-pointer"
-                                        onClick={() => router.push(`/dashboard/messages/${message.message_id}`)}
-                                    >
-                                        {new Date(message.createdAt).toLocaleString()}
+                                <TableRow key={message.message_id} className="hover:bg-gray-50">
+                                    <TableCell>
+                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
+                                                {message.status}
+                                            </span>
+                                        </Link>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
+                                            <div className="font-medium">{message.name}</div>
+                                            <div className="text-sm text-gray-500">{message.email}</div>
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
+                                            {message.subject || 'No Subject'}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
+                                            {format(new Date(message.createdAt), 'MMM d, yyyy h:mm a')}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-2">
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    updateMessageStatus(message.message_id, 'read')
-                                                }}
+                                                onClick={() => updateMessageStatus(message.message_id, 'read')}
                                                 disabled={message.status === 'read'}
                                             >
                                                 <MailOpen className="h-4 w-4" />
@@ -160,10 +156,7 @@ export default function MessagesDashboard() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    updateMessageStatus(message.message_id, 'archived')
-                                                }}
+                                                onClick={() => updateMessageStatus(message.message_id, 'archived')}
                                                 disabled={message.status === 'archived'}
                                             >
                                                 <Archive className="h-4 w-4" />
