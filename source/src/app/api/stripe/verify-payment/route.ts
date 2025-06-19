@@ -26,13 +26,6 @@ export async function GET(request: Request) {
 
         const paymentIntent = response as unknown as PaymentIntentWithCharges
 
-        if (paymentIntent.status !== 'succeeded') {
-            return NextResponse.json(
-                { error: 'Payment not succeeded' },
-                { status: 400 }
-            )
-        }
-
         return NextResponse.json({
             status: paymentIntent.status,
             amount: paymentIntent.amount,
