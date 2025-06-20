@@ -1,5 +1,4 @@
 export interface Donation {
-    donation_id: string;
     amount: number;
     currency: string;
     donationType: string;

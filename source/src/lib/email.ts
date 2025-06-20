@@ -1,7 +1,8 @@
-// lib/email.ts
-import { resend } from './resend';
-import { DonationReceiptEmail } from '@/emails/DonationReceipt';
-import { render } from '@react-email/render';
+import { Resend } from 'resend'
+import { DonationReceiptEmail } from '@/emails/DonationReceipt'
+import { render } from '@react-email/components'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendDonationEmail({
     to,
@@ -10,22 +11,31 @@ export async function sendDonationEmail({
     donationType,
     receiptUrl
 }: {
-    to: string;
-    donorName: string;
-    amount: number;
-    donationType: string;
-    receiptUrl?: string;
+    to: string
+    donorName: string
+    amount: number
+    donationType: string
+    receiptUrl?: string
 }) {
-    const html = await render(
-        <DonationReceiptEmail donorName={ donorName } amount = { amount } donationType = { donationType } receiptUrl = { receiptUrl } />
-    );
+    const emailHtml = await render(
+        DonationReceiptEmail({
+            donorName,
+            amount,
+            donationType,
+            receiptUrl,
+        })
+    )
 
-    const { error } = await resend.emails.send({
-        from: 'donations@yourchurch.org',
-        to,
-        subject: 'Thank You for Your Donation',
-        html,
-    });
+    try {
+        const response = await resend.emails.send({
+            from: 'Church Donations <donations@yourdomain.com>',
+            to,
+            subject: `Thank You for Your ${donationType} Donation`,
+            html: emailHtml,
+        })
 
-    if (error) throw new Error(`Resend error: ${error.message}`);
+        return response
+    } catch (error) {
+        console.error('Email sending error:', error)
+    }
 }

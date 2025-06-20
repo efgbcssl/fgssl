@@ -2,15 +2,12 @@
 import { xata } from '@/lib/xata';
 import type { DonationsRecord } from '@/xata'; // from Xata codegen
 import type { Donation } from '@/types/donations';
-import { v4 as uuidv4 } from 'uuid';
 
 function mapRecord(record: DonationsRecord): Donation {
     return {
-        donation_id: uuidv4(),
         amount: record.amount!,
         currency: record.currency ?? 'USD',
         donationType: record.donationType!,
-        donor_id: uuidv4(),
         donorName: record.donorName!,
         donorEmail: record.donorEmail!,
         donorPhone: record.donorPhone ?? '',

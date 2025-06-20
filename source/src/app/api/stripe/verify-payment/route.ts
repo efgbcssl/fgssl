@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail } from '@/lib/email'
-import { v4 as uuidv4 } from 'uuid';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -39,7 +38,7 @@ export async function GET(request: Request) {
         const existingDonor = await xata.db.donors.filter({ email: donorEmail }).getFirst()
 
         if (existingDonor) {
-            await xata.db.donors.update(existingDonor.donor_id, {
+            await xata.db.donors.update(existingDonor.xata_id, {
                 name: donorName,
                 phone: donorPhone,
                 totalDonations: (existingDonor.totalDonations || 0) + amount,
@@ -57,8 +56,6 @@ export async function GET(request: Request) {
 
         // 2. Save donation
         await xata.db.donations.create({
-            donation_id: paymentIntent.id,
-            donor_id: existingDonor ? existingDonor.donor_id : uuidv4(),
             amount,
             currency: paymentIntent.currency.toUpperCase(),
             donationType,

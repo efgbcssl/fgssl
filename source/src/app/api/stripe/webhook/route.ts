@@ -34,15 +34,13 @@ export async function POST(req: Request) {
             donor = await xata.db.donors.create({ name, email, phone: meta?.donorPhone })
         }
 
-        await xata.db.donors.update(donor.donor_id, {
+        await xata.db.donors.update(donor.xata_id, {
             totalDonations: (donor.totalDonations || 0) + (paymentIntent.amount / 100),
             lastDonationDate: new Date(paymentIntent.created * 1000),
         })
 
         // Save donation
         await xata.db.donations.create({
-            donation_id: paymentIntent.id,
-            donor_id: donor.donor_id,
             amount: paymentIntent.amount / 100,
             currency: paymentIntent.currency,
             donationType: meta?.donationType || 'Unknown',
