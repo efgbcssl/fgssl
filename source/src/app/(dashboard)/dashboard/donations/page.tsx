@@ -122,8 +122,8 @@ export default function DonationsDashboard() {
                 </thead>
                 <tbody>
                     {paged.map((d) => (
-                        <tr key={d.donation_id}>
-                            <td className="border px-2 py-1">{d.donation_id}</td>
+                        <tr key={d.donorEmail} className="hover:bg-gray-100">
+                            <td className="border px-2 py-1">{d.donorEmail}</td>
                             <td className="border px-2 py-1">{d.donorName}</td>
                             <td className="border px-2 py-1">${d.amount.toFixed(2)}</td>
                             <td className="border px-2 py-1">{d.donationType}</td>
