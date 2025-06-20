@@ -33,7 +33,7 @@ export default function DonationReportPage() {
             <h1 className="text-2xl font-bold mb-4">Donation Reports</h1>
             <div className="grid gap-4">
                 {donations.map((donation) => (
-                    <div key={donation.id} className="p-4 border rounded">
+                    <div key={donation.donorEmail} className="p-4 border rounded">
                         <p><strong>Donor:</strong> {donation.donorName} ({donation.donorEmail})</p>
                         <p><strong>Amount:</strong> ${donation.amount.toFixed(2)} ({donation.currency})</p>
                         <p><strong>Type:</strong> {donation.donationType}</p>
