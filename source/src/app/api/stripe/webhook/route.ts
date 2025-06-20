@@ -1,103 +1,63 @@
-import { Webhook } from 'svix'
 import { headers } from 'next/headers'
-import { WebhookEvent } from '@clerk/nextjs/server'
-import { XataClient } from '@/xata'
+import { NextResponse } from 'next/server'
+import Stripe from 'stripe'
+import { xata } from '@/lib/xata'
 
-const xata = new XataClient()
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
 export async function POST(req: Request) {
-    const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
-    if (!WEBHOOK_SECRET) {
-        throw new Error('STRIPE_WEBHOOK_SECRET is not set')
-    }
+    const body = await req.text()
+    const sig = (await headers()).get('stripe-signature')
 
-    const headerPayload = await headers()
-    const svix_id = headerPayload.get("svix-id")
-    const svix_timestamp = headerPayload.get("svix-timestamp")
-    const svix_signature = headerPayload.get("svix-signature")
-
-    if (!svix_id || !svix_timestamp || !svix_signature) {
-        return new Response('Error occured -- no svix headers', {
-            status: 400
-        })
-    }
-
-    const payload = await req.json()
-    const wh = new Webhook(WEBHOOK_SECRET)
-    let evt: WebhookEvent
+    let event: Stripe.Event
 
     try {
-        evt = wh.verify(JSON.stringify(payload), {
-            "svix-id": svix_id,
-            "svix-timestamp": svix_timestamp,
-            "svix-signature": svix_signature,
-        }) as WebhookEvent
-    } catch (err) {
-        console.error('Error verifying webhook:', err)
-        return new Response('Error verifying webhook', {
-            status: 400
+        event = stripe.webhooks.constructEvent(body, sig!, endpointSecret)
+    } catch {
+        return NextResponse.json({ error: 'Webhook Error' }, { status: 400 })
+    }
+
+    if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        // Retrieve the associated charge using the Stripe API
+        const chargesList = await stripe.charges.list({ payment_intent: paymentIntent.id, limit: 1 })
+        const charge = chargesList.data[0]
+
+        const meta = paymentIntent.metadata
+        const email = meta?.donorEmail
+        const name = meta?.donorName
+
+        // Save donor
+        let donor = await xata.db.donors.filter({ email }).getFirst()
+        if (!donor) {
+            donor = await xata.db.donors.create({ name, email, phone: meta?.donorPhone })
+        }
+
+        await xata.db.donors.update(donor.donor_id, {
+            totalDonations: (donor.totalDonations || 0) + (paymentIntent.amount / 100),
+            lastDonationDate: new Date(paymentIntent.created * 1000),
+        })
+
+        // Save donation
+        await xata.db.donations.create({
+            donation_id: paymentIntent.id,
+            donor_id: donor.donor_id,
+            amount: paymentIntent.amount / 100,
+            currency: paymentIntent.currency,
+            donationType: meta?.donationType || 'Unknown',
+            donorName: name,
+            donorEmail: email,
+            donorPhone: meta?.donorPhone,
+            paymentMethod: 'card',
+            paymentStatus: 'succeeded',
+            stripePaymentIntentId: paymentIntent.id,
+            stripeChargeId: charge?.id,
+            receiptUrl: charge?.receipt_url,
+            isRecurring: false,
+            notes: meta?.notes || '',
         })
     }
 
-    const eventType = evt.type
-
-    // Handle payment intent succeeded
-    if (eventType === 'payment_intent.succeeded') {
-        const paymentIntent = evt.data.object
-        const amount = paymentIntent.amount / 100
-        const currency = paymentIntent.currency
-        const donationType = paymentIntent.metadata.donationType || 'General'
-        const donorEmail = paymentIntent.receipt_email || paymentIntent.metadata.donorEmail
-        const donorName = paymentIntent.metadata.donorName
-        const donorPhone = paymentIntent.metadata.donorPhone || ''
-        const paymentMethod = paymentIntent.payment_method_types?.[0] || 'card'
-        const charge = paymentIntent.charges?.data?.[0]
-        const receiptUrl = charge?.receipt_url
-
-        try {
-            // Save donation to Xata
-            const donation = await xata.db.donations.create({
-                amount,
-                currency,
-                donationType,
-                donorName,
-                donorEmail,
-                donorPhone,
-                paymentMethod,
-                paymentStatus: 'succeeded',
-                stripePaymentIntentId: paymentIntent.id,
-                stripeChargeId: charge?.id,
-                receiptUrl,
-                isRecurring: paymentIntent.setup_future_usage !== null
-            })
-
-            // Update or create donor record
-            const donor = await xata.db.donors.filter({ email: donorEmail }).getFirst()
-            if (donor) {
-                await donor.update({
-                    totalDonations: (donor.totalDonations || 0) + amount,
-                    lastDonationDate: new Date().toISOString()
-                })
-            } else {
-                await xata.db.donors.create({
-                    name: donorName,
-                    email: donorEmail,
-                    phone: donorPhone,
-                    totalDonations: amount,
-                    lastDonationDate: new Date().toISOString()
-                })
-            }
-
-            return new Response(JSON.stringify({ success: true, donationId: donation.id }), {
-                status: 200
-            })
-        } catch (error) {
-            console.error('Error saving donation:', error)
-            return new Response('Error saving donation', {
-                status: 500
-            })
-        }
-    }
-
-    return new Response('', { status: 200 })
+    return NextResponse.json({ received: true })
 }

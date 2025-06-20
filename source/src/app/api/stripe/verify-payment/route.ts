@@ -1,6 +1,8 @@
-// src/app/api/stripe/verify-payment/route.ts
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { xata } from '@/lib/xata'
+import { sendDonationEmail } from '@/lib/email'
+import { v4 as uuidv4 } from 'uuid';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -9,34 +11,89 @@ export async function GET(request: Request) {
     const paymentIntentId = searchParams.get('payment_intent')
 
     if (!paymentIntentId) {
-        return NextResponse.json({ status: 'failed', error: 'Missing payment intent ID' })
+        return NextResponse.json({ error: 'Payment intent ID is required' }, { status: 400 })
     }
 
     try {
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+        const paymentIntent: Stripe.PaymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
             expand: ['charges'],
         })
 
-        const charges = (paymentIntent as any)?.charges?.data
-        const firstCharge = Array.isArray(charges) ? charges[0] : null
-
+        // Validate payment success
         if (paymentIntent.status !== 'succeeded') {
-            return NextResponse.json({ status: paymentIntent.status }) // still return 200
+            return NextResponse.json({ error: 'Payment not succeeded' }, { status: 400 })
         }
 
+        const charge = paymentIntent.charges?.data[0]
+        const metadata = paymentIntent.metadata || {}
+
+        const amount = paymentIntent.amount / 100
+        const donationType = metadata.donationType || 'General'
+        const donorName = metadata.donorName || 'Anonymous'
+        const donorEmail = metadata.donorEmail
+        const donorPhone = metadata.donorPhone || ''
+        const paymentMethod = paymentIntent.payment_method_types[0]
+        const receiptUrl = charge?.receipt_url || ''
+
+        // 1. Save donor
+        const existingDonor = await xata.db.donors.filter({ email: donorEmail }).getFirst()
+
+        if (existingDonor) {
+            await xata.db.donors.update(existingDonor.donor_id, {
+                name: donorName,
+                phone: donorPhone,
+                totalDonations: (existingDonor.totalDonations || 0) + amount,
+                lastDonationDate: new Date(),
+            })
+        } else {
+            await xata.db.donors.create({
+                name: donorName,
+                email: donorEmail,
+                phone: donorPhone,
+                totalDonations: amount,
+                lastDonationDate: new Date(),
+            })
+        }
+
+        // 2. Save donation
+        await xata.db.donations.create({
+            donation_id: paymentIntent.id,
+            donor_id: existingDonor ? existingDonor.donor_id : uuidv4(),
+            amount,
+            currency: paymentIntent.currency.toUpperCase(),
+            donationType,
+            donorName,
+            donorEmail,
+            donorPhone,
+            paymentMethod,
+            paymentStatus: 'succeeded',
+            stripePaymentIntentId: paymentIntent.id,
+            stripeChargeId: charge?.id,
+            receiptUrl,
+            isRecurring: false,
+        })
+
+        // 3. Send email
+        await sendDonationEmail({
+            to: donorEmail,
+            donorName,
+            amount,
+            donationType,
+            receiptUrl,
+        })
+
+        // 4. Return success response
         return NextResponse.json({
-            status: paymentIntent.status,
+            status: 'succeeded',
             amount: paymentIntent.amount,
             currency: paymentIntent.currency,
-            donationType: paymentIntent.metadata?.donationType || 'Offering',
-            metadata: paymentIntent.metadata,
-            receipt_url: firstCharge?.receipt_url || null,
+            donationType,
+            receipt_url: receiptUrl,
             created: paymentIntent.created,
-            chargeId: firstCharge?.id || null,
-            balanceTransactionId: firstCharge?.balance_transaction || null,
         })
-    } catch (err: any) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-        return NextResponse.json({ status: 'failed', error: errorMessage })
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'An unknown error occurred'
+        console.error('Payment verification failed:', message)
+        return NextResponse.json({ error: message }, { status: 400 })
     }
 }
