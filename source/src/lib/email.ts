@@ -6,7 +6,7 @@ import { generateDonationReceiptPDF } from './pdf'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-async function renderTemplate(templateName: string, data: Record<string, any>) {
+async function renderTemplate(templateName: string, data: Record<string, unknown>) {
     const templatePath = path.join(process.cwd(), 'src', 'email', `${templateName}.ejs`)
     const html = await fs.readFile(templatePath, 'utf8')
     return ejs.render(html, data, {
@@ -55,7 +55,6 @@ export async function sendDonationEmail({
             {
                 filename: `Donation_Receipt_${donorName.replace(/\s+/g, '_')}.pdf`,
                 content: base64PDF,
-                type: 'application/pdf',
             },
         ],
     })
