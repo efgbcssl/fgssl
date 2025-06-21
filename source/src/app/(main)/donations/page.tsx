@@ -6,9 +6,19 @@ import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements } from '@stripe/react-stripe-js'
 
-// Define donationTypes array
-const donationTypes = [
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+type DonationType = {
+    id: string
+    name: string
+    description: string
+    icon: React.ComponentType<{ className?: string }>
+}
+
+const donationTypes: DonationType[] = [
     {
         id: 'tithe',
         name: 'Tithe',
@@ -46,15 +56,6 @@ const donationTypes = [
         icon: Lightbulb
     },
 ]
-
-// Dynamically import the Stripe provider and form components
-const StripeProvider = dynamic(
-    () => import('@/components/stripe-provider').then((mod) => mod.StripeProvider),
-    {
-        ssr: false,
-        loading: () => <div className="text-center py-8">Initializing secure payment system...</div>
-    }
-)
 
 const DonationForm = dynamic(
     () => import('@/components/donation-form').then((mod) => mod.DonationForm),
@@ -144,9 +145,9 @@ export default function DonationPage() {
 
                         <Card>
                             <CardContent className="p-6 md:p-8">
-                                <StripeProvider>
+                                <Elements stripe={stripePromise}>
                                     <DonationForm donationTypes={donationTypes} />
-                                </StripeProvider>
+                                </Elements>
                             </CardContent>
                         </Card>
                     </div>

@@ -3,94 +3,164 @@ import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail } from '@/lib/email'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+interface PaymentIntentWithCharges extends Stripe.PaymentIntent {
+    charges: Stripe.ApiList<Stripe.Charge>;
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-05-28.basil'
+})
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const paymentIntentId = searchParams.get('payment_intent')
 
     if (!paymentIntentId) {
-        return NextResponse.json({ error: 'Payment intent ID is required' }, { status: 400 })
+        return NextResponse.json(
+            { error: 'Payment intent ID is required' },
+            { status: 400 }
+        )
     }
 
     try {
-        const paymentIntent: Stripe.PaymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-            expand: ['charges'],
+        // Retrieve payment intent with expanded charges
+        const response = await stripe.paymentIntents.retrieve(paymentIntentId, {
+            expand: ['charges']
         })
+        const paymentIntent = response as unknown as PaymentIntentWithCharges
 
         // Validate payment success
         if (paymentIntent.status !== 'succeeded') {
-            return NextResponse.json({ error: 'Payment not succeeded' }, { status: 400 })
+            return NextResponse.json(
+                {
+                    status: paymentIntent.status,
+                    error: 'Payment not completed successfully'
+                },
+                { status: 400 }
+            )
         }
 
         const charge = paymentIntent.charges?.data[0]
         const metadata = paymentIntent.metadata || {}
+        const billingDetails = charge?.billing_details || {}
 
-        const amount = paymentIntent.amount / 100
-        const donationType = metadata.donationType || 'General'
-        const donorName = metadata.donorName || 'Anonymous'
-        const donorEmail = metadata.donorEmail
-        const donorPhone = metadata.donorPhone || ''
-        const paymentMethod = paymentIntent.payment_method_types[0]
-        const receiptUrl = charge?.receipt_url || ''
-
-        // 1. Save donor
-        const existingDonor = await xata.db.donors.filter({ email: donorEmail }).getFirst()
-
-        if (existingDonor) {
-            await xata.db.donors.update(existingDonor.xata_id, {
-                name: donorName,
-                phone: donorPhone,
-                totalDonations: (existingDonor.totalDonations || 0) + amount,
-                lastDonationDate: new Date(),
-            })
-        } else {
-            await xata.db.donors.create({
-                name: donorName,
-                email: donorEmail,
-                phone: donorPhone,
-                totalDonations: amount,
-                lastDonationDate: new Date(),
-            })
+        // Compose receipt data matching your thank-you page interface
+        const receiptData = {
+            donorName: metadata.donorName || billingDetails.name || 'Anonymous',
+            donorEmail: metadata.donorEmail || billingDetails.email || paymentIntent.receipt_email || '',
+            donorPhone: metadata.donorPhone || billingDetails.phone || '',
+            amount: paymentIntent.amount / 100,
+            currency: paymentIntent.currency.toUpperCase(),
+            donationType: metadata.donationType || 'General',
+            paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
+            receiptUrl: charge?.receipt_url || '',
+            created: paymentIntent.created
         }
 
-        // 2. Save donation
-        await xata.db.donations.create({
-            amount,
-            currency: paymentIntent.currency.toUpperCase(),
-            donationType,
-            donorName,
-            donorEmail,
-            donorPhone,
-            paymentMethod,
-            paymentStatus: 'succeeded',
-            stripePaymentIntentId: paymentIntent.id,
-            stripeChargeId: charge?.id,
-            receiptUrl,
-            isRecurring: false,
-        })
+        // Validate required fields
+        if (!receiptData.donorEmail) {
+            return NextResponse.json(
+                { error: "Email is required for donation processing" },
+                { status: 400 }
+            )
+        }
 
-        // 3. Send email
-        await sendDonationEmail({
-            to: donorEmail,
-            donorName,
-            amount,
-            donationType,
-            receiptUrl,
-        })
+        // 1. Save/update donor in Xata
+        try {
+            const existingDonor = await xata.db.donors
+                .filter({ email: receiptData.donorEmail })
+                .getFirst()
 
-        // 4. Return success response
+            if (existingDonor) {
+                await xata.db.donors.update(existingDonor.xata_id, {
+                    name: receiptData.donorName,
+                    phone: receiptData.donorPhone,
+                    totalDonations: (existingDonor.totalDonations || 0) + receiptData.amount,
+                    lastDonationDate: new Date().toISOString(),
+                })
+            } else {
+                await xata.db.donors.create({
+                    name: receiptData.donorName,
+                    email: receiptData.donorEmail,
+                    phone: receiptData.donorPhone,
+                    totalDonations: receiptData.amount,
+                    lastDonationDate: new Date().toISOString(),
+                })
+            }
+        } catch (dbError) {
+            console.error('Failed to save donor:', dbError)
+            // Continue even if donor save fails
+        }
+
+        // 2. Save donation record
+        try {
+            await xata.db.donations.create({
+                // Only include fields that exist in DonationsRecord
+                amount: receiptData.amount,
+                currency: receiptData.currency,
+                donationType: receiptData.donationType,
+                donorName: receiptData.donorName,
+                donorEmail: receiptData.donorEmail,
+                donorPhone: receiptData.donorPhone,
+                paymentMethod: receiptData.paymentMethod,
+                paymentStatus: 'succeeded',
+                stripePaymentIntentId: paymentIntent.id,
+                stripeChargeId: charge?.id,
+                receiptUrl: receiptData.receiptUrl,
+                isRecurring: false,
+                // Remove 'date' if not present in DonationsRecord
+                // date: new Date().toISOString(),
+            })
+        } catch (dbError) {
+            console.error('Failed to save donation:', dbError)
+            // Continue even if donation save fails
+        }
+
+        // 3. Send confirmation email
+        try {
+            if (receiptData.donorEmail) {
+                await sendDonationEmail({
+                    to: receiptData.donorEmail,
+                    donorName: receiptData.donorName,
+                    amount: receiptData.amount,
+                    donationType: receiptData.donationType,
+                    receiptUrl: receiptData.receiptUrl,
+                })
+            }
+        } catch (emailError) {
+            console.error('Failed to send email:', emailError)
+            // Continue even if email fails
+        }
+
+        // Return response matching your thank-you page expectations
         return NextResponse.json({
             status: 'succeeded',
+            metadata: {
+                donorName: receiptData.donorName,
+                donorEmail: receiptData.donorEmail,
+                donorPhone: receiptData.donorPhone,
+                donationType: receiptData.donationType
+            },
             amount: paymentIntent.amount,
             currency: paymentIntent.currency,
-            donationType,
-            receipt_url: receiptUrl,
-            created: paymentIntent.created,
+            payment_method_types: paymentIntent.payment_method_types,
+            charges: paymentIntent.charges?.data.length ? {
+                data: [{
+                    receipt_url: receiptData.receiptUrl
+                }]
+            } : undefined,
+            created: paymentIntent.created
         })
+
     } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'An unknown error occurred'
-        console.error('Payment verification failed:', message)
-        return NextResponse.json({ error: message }, { status: 400 })
+        const message = err instanceof Error ? err.message : 'Payment verification failed'
+        console.error('Payment verification error:', message)
+        return NextResponse.json(
+            {
+                status: 'error',
+                error: message
+            },
+            { status: 500 }
+        )
     }
 }

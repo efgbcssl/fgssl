@@ -2,23 +2,33 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-05-28.basil',
+})
 
 export async function POST(request: Request) {
     try {
-        const { amount, currency, metadata } = await request.json()
+        const body = await request.json()
+
+        if (!body.amount || typeof body.amount !== 'number' || isNaN(body.amount)) {
+            return NextResponse.json({ error: 'Invalid amount provided' }, { status: 400 })
+        }
+
 
         // Create a new payment intent with the actual amount
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount,
-            currency,
-            automatic_payment_methods: {
-                enabled: true,
+        const updateIntent = await stripe.paymentIntents.update(body.id, {
+            amount: body.amount,
+            metadata: {
+                donorName: body.metadata?.donorName || 'Anonymous',
+                donorEmail: body.metadata?.donorEmail || '',
+                donorPhone: body.metadata?.donorPhone || '',
+                donationType: body.metadata?.donationType || 'General',
+                paymentMethod: body.metadata?.paymentMethod || ''
             },
-            metadata
+            receipt_email: body.metadata?.donorEmail
         })
 
-        return NextResponse.json({ clientSecret: paymentIntent.client_secret })
+        return NextResponse.json({ clientSecret: updateIntent.client_secret, paymentIntentId: updateIntent.id }, { status: 200 })
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
         return NextResponse.json(
