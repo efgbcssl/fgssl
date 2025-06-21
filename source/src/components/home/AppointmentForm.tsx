@@ -1,3 +1,4 @@
+//src/components/home/AppointmentForm.tsx
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
@@ -100,8 +101,8 @@ export default function AppointmentForm() {
     setIsSubmitting(true)
 
     try {
-      const form = e.currentTarget; // Store form reference
-      const formData = new FormData(e.currentTarget)
+      const formElement = e.currentTarget; // Store form reference
+      const formData = new FormData(formElement)
       const formValues = Object.fromEntries(formData.entries())
 
       // Create proper ISO string with timezone
@@ -134,8 +135,11 @@ export default function AppointmentForm() {
       }
 
       try {
-        e.currentTarget.reset();
+        formElement.reset();
         console.log('Form reset successfully');
+        setDate(undefined)
+        setTime('09:00')
+        setBookedSlots([])
       } catch (resetError) {
         console.error('Error resetting form:', resetError);
       }
@@ -143,12 +147,9 @@ export default function AppointmentForm() {
         title: "Success!",
         description: "Your appointment request has been submitted.",
       })
-      console.log(form)
-      // Reset form
-      form.reset()
-      setDate(undefined)
-      setTime('09:00')
-      setBookedSlots([])
+      console.log(formElement)
+
+
     } catch (error) {
       toast({
         title: "Error",

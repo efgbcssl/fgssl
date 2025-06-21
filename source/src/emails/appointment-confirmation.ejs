@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Appointment Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            background-color: #f9f9f9;
+            padding: 2rem;
+        }
+
+        .container {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .info {
+            margin-top: 1rem;
+        }
+
+        .info p {
+            margin: 0.5rem 0;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">Your Appointment is Confirmed</div>
+
+        <p>Hi <strong>
+                <%= fullName %>
+            </strong>,</p>
+        <p>Thank you for booking with us. Here are your appointment details:</p>
+
+        <div class="info">
+            <p><strong>Date:</strong>
+                <%= preferredDate %>
+            </p>
+            <p><strong>Time:</strong>
+                <%= preferredTime %>
+            </p>
+            <p><strong>Medium:</strong>
+                <%= medium %>
+            </p>
+        </div>
+
+        <p>We’ll get in touch if anything changes. Until then, take care!</p>
+
+        <div class="footer">
+            Church Name • 123 Main Street • your@email.com
+        </div>
+    </div>
+</body>
+
+</html>

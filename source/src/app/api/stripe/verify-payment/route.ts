@@ -119,17 +119,18 @@ export async function GET(request: Request) {
         // 3. Send confirmation email
         try {
             if (receiptData.donorEmail) {
-                await sendDonationEmail({
+                const emailResponse = await sendDonationEmail({
                     to: receiptData.donorEmail,
                     donorName: receiptData.donorName,
                     amount: receiptData.amount,
                     donationType: receiptData.donationType,
                     receiptUrl: receiptData.receiptUrl,
+                    createdDate: new Date(receiptData.created * 1000).toLocaleString(),
                 })
+                console.log("✅ Email sent successfully:", emailResponse)
             }
         } catch (emailError) {
-            console.error('Failed to send email:', emailError)
-            // Continue even if email fails
+            console.error("❌ Failed to send donation email:", emailError)            // Continue even if email fails
         }
 
         // Return response matching your thank-you page expectations

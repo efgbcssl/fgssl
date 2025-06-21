@@ -1,9 +1,7 @@
 import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
-
+import { sendAppointmentEmail } from '@/lib/email'
+import { format } from 'date-fns'
 
 export async function GET() {
     try {
@@ -26,9 +24,10 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const data = await request.json()
+        const { preferredDate, fullName, email, phoneNumber, medium } = data
 
         // Validate required fields
-        if (!data.preferredDate || !data.fullName || !data.email) {
+        if (!preferredDate || !fullName || !email) {
             return NextResponse.json(
                 { error: 'Missing required fields (preferredDate, fullName, email)' },
                 { status: 400 }
@@ -36,8 +35,8 @@ export async function POST(request: Request) {
         }
 
         // Parse and validate the date
-        const preferredDate = new Date(data.preferredDate)
-        if (isNaN(preferredDate.getTime())) {
+        const date = new Date(data.preferredDate)
+        if (isNaN(date.getTime())) {
             return NextResponse.json(
                 { error: 'Invalid date format' },
                 { status: 400 }
@@ -45,10 +44,10 @@ export async function POST(request: Request) {
         }
 
         // Create time range for conflict checking (1 hour buffer)
-        const startTime = new Date(preferredDate)
+        const startTime = new Date(date)
         startTime.setHours(startTime.getHours() - 1)
 
-        const endTime = new Date(preferredDate)
+        const endTime = new Date(date)
         endTime.setHours(endTime.getHours() + 1)
 
         // Check for conflicting appointments
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
                         }
                     },
                     {
-                        preferredDate: data.preferredDate // Exact match fallback
+                        preferredDate: date // Exact match fallback
                     }
                 ]
             })
@@ -80,32 +79,28 @@ export async function POST(request: Request) {
 
         // Create new appointment
         const newAppointment = await xata.db.appointments.create({
-            ...data,
-            preferredDate: preferredDate.toISOString(), // Ensure ISO format
+            fullName,
+            email,
+            phoneNumber,
+            preferredDate: date.toISOString(),
+            medium: medium || 'in-person',
             status: 'pending',
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         })
 
+        // Extract formatted date/time for email
+        const localDate = format(date, 'EEEE, MMMM do, yyyy')
+        const localTime = format(date, 'hh:mm a')
+
         // Send confirmation email
-        try {
-            await resend.emails.send({
-                from: 'appointments@yourdomain.com',
-                to: data.email,
-                subject: 'Appointment Confirmation',
-                html: `
-          <h1>Appointment Scheduled</h1>
-          <p>Hello ${data.fullName},</p>
-          <p>Your appointment has been scheduled for:</p>
-          <p><strong>Date:</strong> ${new Date(data.preferredDate).toLocaleDateString()}</p>
-          <p><strong>Time:</strong> ${new Date(data.preferredDate).toLocaleTimeString()}</p>
-          <p>We'll contact you if there are any changes.</p>
-        `
-            })
-        } catch (emailError) {
-            console.error('Failed to send email:', emailError)
-            // Don't fail the request if email fails
-        }
+        await sendAppointmentEmail({
+            to: email,
+            fullName,
+            preferredDate: localDate,
+            preferredTime: localTime,
+            medium
+        })
 
         return NextResponse.json(newAppointment, { status: 201 })
     } catch (error) {
@@ -118,4 +113,5 @@ export async function POST(request: Request) {
             { status: 500 }
         )
     }
+
 }

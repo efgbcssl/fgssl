@@ -1,0 +1,22 @@
+-<%- include('layout', { title: 'Donation Receipt' }) %>
+
+    <h2>Thank you, <%= donorName %>!</h2>
+
+    <p>We’ve received your <strong>
+            <%= donationType %>
+        </strong> donation of <strong>$<%= amount.toFixed(2) %></strong>.</p>
+
+    <% if (receiptUrl) { %>
+        <p>You can view your receipt here: <a href="<%= receiptUrl %>">
+                <%= receiptUrl %>
+            </a></p>
+        <% } %>
+
+            <p>We deeply appreciate your support.</p>
+
+            <p>With gratitude,<br>Your Organization</p>
+
+            </div> <!-- close container -->
+            </body>
+
+            </html>

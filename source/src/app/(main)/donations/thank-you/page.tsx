@@ -31,12 +31,12 @@ export default function ThankYouPage() {
 
     const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null)
     const [loading, setLoading] = useState(true)
-    const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading')
+    //const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading')
 
     useEffect(() => {
         async function verifyPayment() {
             const paymentIntentId = searchParams.get("payment_intent")
-            const redirectStatus = searchParams.get("redirect_status")
+            //const redirectStatus = searchParams.get("redirect_status")
 
             if (!paymentIntentId) {
                 setPaymentResult({ status: "missing_params" })
