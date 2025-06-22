@@ -58,18 +58,19 @@ export default function ThankYouPage() {
                         error: data.error
                     })
                 } else {
+                    const donation = data.donation || {};
                     setPaymentResult({
                         status: "succeeded",
                         receipt: {
-                            donorName: data.metadata.donorName,
-                            donorEmail: data.metadata.donorEmail,
-                            donorPhone: data.metadata.donorPhone,
-                            amount: data.amount / 100,
-                            currency: data.currency,
-                            donationType: data.metadata.donationType,
-                            paymentMethod: data.payment_method_types?.[0] || "card",
-                            receiptUrl: data.charges?.data[0]?.receipt_url,
-                            created: data.created
+                            donorName: donation.donorName || "Anonymous",
+                            donorEmail: donation.donorEmail,
+                            donorPhone: donation.donorPhone,
+                            amount: donation.amount || 0,
+                            currency: donation.currency || 'USD',
+                            donationType: donation.donationType || 'Offering',
+                            paymentMethod: donation.paymentMethod || 'card',
+                            receiptUrl: donation.receiptUrl || '',
+                            created: donation.created || Date.now()
                         }
                     })
                 }
