@@ -7,10 +7,10 @@ import { generateDonationReceiptPDF } from './pdf'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 async function renderTemplate(templateName: string, data: Record<string, unknown>) {
-    const templatePath = path.join(process.cwd(), 'src', 'email', `${templateName}.ejs`)
+    const templatePath = path.join(process.cwd(), 'src', 'emails', `${templateName}.ejs`)
     const html = await fs.readFile(templatePath, 'utf8')
     return ejs.render(html, data, {
-        root: path.join(process.cwd(), 'src', 'email'), // for includes
+        root: path.join(process.cwd(), 'src', 'emails'), // for includes
     })
 }
 
@@ -47,7 +47,7 @@ export async function sendDonationEmail({
     const base64PDF = Buffer.from(pdfBytes).toString('base64')
 
     const response = await resend.emails.send({
-        from: 'Church Donations <donations@yourdomain.com>',
+        from: process.env.FROM_EMAIL! || 'onboarding@resend.dev',
         to,
         subject: `Your ${donationType} Donation Receipt`,
         html,
@@ -83,6 +83,8 @@ export async function sendAppointmentEmail({
 }) {
     try {
         const templatePath = path.join(process.cwd(), 'src/emails/appointment-confirmation.ejs')
+        console.log('🟡 Reading email template from:', templatePath)
+
         const template = await fs.readFile(templatePath, 'utf-8')
 
         const html = ejs.render(template, {
@@ -91,13 +93,15 @@ export async function sendAppointmentEmail({
             preferredTime,
             medium
         })
-
-        await resend.emails.send({
-            from: 'appointments@yourdomain.com',
+        console.log('📤 Sending email to:', to)
+        const res = await resend.emails.send({
+            from: process.env.FROM_EMAIL! || 'onboarding@resend.dev',
             to,
             subject: 'Your Appointment is Confirmed',
             html
         })
+
+        console.log('✅ Email sent:', res)
     } catch (error) {
         console.error('Failed to send appointment confirmation email:', error)
     }

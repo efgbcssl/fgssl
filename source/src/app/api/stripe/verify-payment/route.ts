@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail } from '@/lib/email'
+import { generateDonationReceiptPDF } from '@/lib/pdf';
 
 interface PaymentIntentWithCharges extends Stripe.PaymentIntent {
     charges: Stripe.ApiList<Stripe.Charge>;
@@ -89,7 +90,6 @@ export async function GET(request: Request) {
             }
         } catch (dbError) {
             console.error('Failed to save donor:', dbError)
-            // Continue even if donor save fails
         }
 
         // 2. Save donation record
@@ -108,15 +108,22 @@ export async function GET(request: Request) {
                 stripeChargeId: charge?.id,
                 receiptUrl: receiptData.receiptUrl,
                 isRecurring: false,
-                // Remove 'date' if not present in DonationsRecord
-                // date: new Date().toISOString(),
             })
         } catch (dbError) {
             console.error('Failed to save donation:', dbError)
-            // Continue even if donation save fails
         }
+        console.log('🟡 Receipt data:', receiptData, receiptData.donorEmail)
+        await generateDonationReceiptPDF({
+            donorName: receiptData.donorName,
+            amount: receiptData.amount,
+            donationType: receiptData.donationType,
+            receiptUrl: receiptData.receiptUrl,
+            createdDate: new Date(receiptData.created * 1000).toLocaleString(),
+        })
+        console.log('✅ PDF generated for', receiptData.donorName)
 
-        // 3. Send confirmation email
+
+        // 4. Send confirmation email
         try {
             if (receiptData.donorEmail) {
                 const emailResponse = await sendDonationEmail({

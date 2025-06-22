@@ -26,6 +26,7 @@ export async function POST(request: Request) {
         const data = await request.json()
         const { preferredDate, fullName, email, phoneNumber, medium } = data
 
+        console.log('📥 Received appointment data:', data)
         // Validate required fields
         if (!preferredDate || !fullName || !email) {
             return NextResponse.json(
@@ -53,17 +54,10 @@ export async function POST(request: Request) {
         // Check for conflicting appointments
         const conflictingAppointments = await xata.db.appointments
             .filter({
-                $any: [
-                    {
-                        preferredDate: {
-                            $ge: startTime.toISOString(),
-                            $le: endTime.toISOString()
-                        }
-                    },
-                    {
-                        preferredDate: date // Exact match fallback
-                    }
-                ]
+                preferredDate: {
+                    $ge: startTime,
+                    $le: endTime
+                }
             })
             .getAll()
 
