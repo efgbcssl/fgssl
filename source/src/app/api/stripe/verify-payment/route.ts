@@ -137,10 +137,10 @@ export async function GET(request: Request) {
                 console.log("✅ Email sent successfully:", emailResponse)
             }
         } catch (emailError) {
-            console.error("❌ Failed to send donation email:", emailError)            // Continue even if email fails
+            console.error("❌ Failed to send donation email:", emailError)
         }
 
-        // Return response matching your thank-you page expectations
+        // Return response 
         return NextResponse.json({
             status: 'succeeded',
             metadata: {
