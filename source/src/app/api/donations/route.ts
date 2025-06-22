@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { XataClient } from '@/xata'
-
-const xata = new XataClient()
+import { xata } from '@/lib/xata'
 
 export async function GET() {
     const donations = await xata.db.donations.getMany()
