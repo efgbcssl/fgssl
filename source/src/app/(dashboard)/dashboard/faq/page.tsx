@@ -109,23 +109,29 @@ export default function FAQAdminPage() {
         }
     }
 
-    const handleDeleteFAQ = async (faq_id: string) => {
-        setIsDeleting(faq_id)
+    const handleDeleteFAQ = async (xata_id: string) => {
+        setIsDeleting(xata_id)
         try {
-            const response = await fetch(`/api/faq/${faq_id}`, {
+            console.log('Sending delete request for FAQ:', xata_id);
+            const response = await fetch(`/api/faq/${xata_id}`, {
                 method: 'DELETE',
             })
 
+            console.log('Delete response status:', response.status);
+
             if (!response.ok) {
                 const data = await response.json()
+                console.log('Delete error response:', data);
                 throw new Error(data.error || 'Failed to delete FAQ')
             }
+            console.log('Deletion successful, updating UI...');
 
-            setFaqs(faqs.filter(faq => faq.faq_id !== faq_id))
+            setFaqs(faqs.filter(faq => faq.faq_id !== xata_id))
             toast.success('FAQ deleted successfully')
         } catch (error) {
             console.error('Delete FAQ error:', error)
             toast.error(error instanceof Error ? error.message : 'Failed to delete FAQ')
+            fetchFAQs();
         } finally {
             setIsDeleting(null)
         }

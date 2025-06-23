@@ -11,7 +11,7 @@ export async function GET() {
     } catch (error) {
         console.error('FAQ GET Error:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch FAQs' },
+            [],
             { status: 500 }
         )
     }

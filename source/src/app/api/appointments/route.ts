@@ -1,3 +1,145 @@
+// src/app/api/appointments/check/route.ts
+/*import { NextResponse } from 'next/server'
+import { xata } from '@/lib/xata'
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
+
+const TIMEZONE = 'America/New_York'
+
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url)
+        const date = searchParams.get('date')
+        const timezone = searchParams.get('timezone') || TIMEZONE
+
+        if (!date) {
+            return NextResponse.json(
+                { error: 'Date parameter is required' },
+                { status: 400 }
+            )
+        }
+
+        console.log('🔍 Checking appointments for:', { date, timezone })
+
+        // Create date range for the entire day in the specified timezone
+        const startOfDay = fromZonedTime(new Date(`${date}T00:00:00`), timezone)
+        const endOfDay = fromZonedTime(new Date(`${date}T23:59:59`), timezone)
+
+        console.log('📅 Date range (UTC):', {
+            start: startOfDay.toISOString(),
+            end: endOfDay.toISOString()
+        })
+
+        // Query appointments for the entire day
+        const bookedAppointments = await xata.db.appointments
+            .filter('preferredDate', {
+                $ge: startOfDay.toISOString(),
+                $le: endOfDay.toISOString()
+            })
+            .getAll()
+
+        console.log('📋 Found appointments:', bookedAppointments.map(a => ({
+            id: a.xata_id,
+            utcTime: a.preferredDate,
+            localTime: a.preferredDateLocal,
+            name: a.fullName
+        })))
+
+        // Extract time slots in the requested timezone
+        const bookedSlots = bookedAppointments.map(appt => {
+            const apptDate = new Date(appt.preferredDate)
+            // Format the time in the requested timezone
+            return formatInTimeZone(apptDate, timezone, 'HH:mm')
+        })
+
+        console.log('⏰ Booked slots:', bookedSlots)
+
+        return NextResponse.json({
+            bookedSlots,
+            totalBooked: bookedSlots.length,
+            appointments: bookedAppointments.map(a => ({
+                id: a.xata_id,
+                time: formatInTimeZone(new Date(a.preferredDate), timezone, 'HH:mm'),
+                name: a.fullName
+            }))
+        })
+    } catch (error) {
+        console.error('❌ Error checking appointments:', error)
+        return NextResponse.json(
+            {
+                error: 'Failed to check appointments',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        )
+    }
+}
+
+export async function POST(req: Request) {
+    try {
+        const body = await req.json()
+
+        const {
+            fullName,
+            phoneNumber,
+            email,
+            preferredDate,
+            //preferredDateLocal,
+            //timezone = TIMEZONE,
+            medium = 'in-person',
+            status = 'pending'
+        } = body
+
+        if (!fullName || !phoneNumber || !email || !preferredDate) {
+            return NextResponse.json(
+                { error: 'Missing required fields' },
+                { status: 400 }
+            )
+        }
+
+        const utcDate = new Date(preferredDate)
+        const localTime = formatInTimeZone(utcDate, timezone, 'yyyy-MM-dd HH:mm')
+
+        console.log('📥 Received appointment request:')
+        console.log({
+            fullName,
+            phoneNumber,
+            email,
+            utcDate: utcDate.toISOString(),
+            localTime,
+            medium,
+            status
+        })
+
+        // Save appointment to Xata
+        const record = await xata.db.appointments.create({
+            fullName,
+            phoneNumber,
+            email,
+            preferredDate: utcDate.toISOString(),
+            //preferredDateLocal: preferredDateLocal || localTime,
+            timezone,
+            medium,
+            status
+        })
+
+        console.log('✅ Appointment saved:', record?.xata_id)
+
+        return NextResponse.json(
+            { message: 'Appointment saved successfully', appointmentId: record?.xata_id },
+            { status: 201 }
+        )
+    } catch (error) {
+        console.error('❌ Error saving appointment:', error)
+        return NextResponse.json(
+            {
+                error: 'Failed to save appointment',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        )
+    }
+}*/
+
 import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
 import { sendAppointmentEmail } from '@/lib/email'

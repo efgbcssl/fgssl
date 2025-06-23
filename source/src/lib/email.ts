@@ -1,3 +1,5 @@
+"use server"
+
 import { Resend } from 'resend'
 import ejs from 'ejs'
 import path from 'path'
@@ -104,5 +106,36 @@ export async function sendAppointmentEmail({
         console.log('✅ Email sent:', res)
     } catch (error) {
         console.error('Failed to send appointment confirmation email:', error)
+    }
+}
+
+export async function sendReminderEmail({
+    to,
+    fullName,
+    preferredDateTime,
+    medium
+}: {
+    to: string
+    fullName: string
+    preferredDateTime: string
+    medium: string
+}) {
+    try {
+        const templatePath = path.join(process.cwd(), 'src', 'emails', 'reminder.ejs')
+        const template = await fs.readFile(templatePath, 'utf-8')
+        const html = ejs.render(template, { fullName, preferredDateTime, medium })
+
+        const res = await resend.emails.send({
+            from: process.env.FROM_EMAIL || 'no-reply@yourdomain.com',
+            to,
+            subject: 'Appointment Reminder',
+            html
+        })
+
+        console.log('✅ Reminder email sent to:', to)
+        return res
+    } catch (error) {
+        console.error('❌ Failed to send reminder email:', error)
+        throw error
     }
 }

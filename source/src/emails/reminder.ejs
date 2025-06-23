@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Appointment Reminder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            color: #333;
+        }
+
+        h2 {
+            color: #2a3990;
+        }
+
+        .details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Appointment Reminder</h2>
+    <p>Dear <%= fullName %>,</p>
+    <p>This is a friendly reminder about your upcoming appointment:</p>
+    <div class="details">
+        <p><strong>Date & Time:</strong>
+            <%= preferredDateTime %>
+        </p>
+        <p><strong>Meeting Type:</strong>
+            <%= medium==='in-person' ? 'In-Person' : 'Online' %>
+        </p>
+    </div>
+    <p>Please contact us if you need to reschedule.</p>
+    <p>Blessings,<br>The Church Team</p>
+</body>
+
+</html>

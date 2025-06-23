@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, isBefore, isToday, addDays } from 'date-fns'
+import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+
+const TIMEZONE = 'America/New_York' // Eastern Time for Silver Spring, MD
 
 export default function AppointmentForm() {
   const [date, setDate] = useState<Date>()
@@ -22,7 +25,7 @@ export default function AppointmentForm() {
   const [isChecking, setIsChecking] = useState(false)
   const { toast } = useToast()
 
-  // Generate available times (9AM-5PM, every 30 minutes)
+  // Generate available times (9AM-5PM, every 30 minutes) in Eastern Time
   const generateTimes = useCallback(() => {
     const times = []
     for (let hour = 9; hour <= 17; hour++) {
@@ -36,15 +39,15 @@ export default function AppointmentForm() {
   const availableTimes = generateTimes()
 
   const checkBookedSlots = useCallback(async (selectedDate: Date) => {
-    // Handle both development and production environments
     const baseUrl = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
       : process.env.NEXT_PUBLIC_SITE_URL || ''
 
     setIsChecking(true)
     try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const response = await fetch(`${baseUrl}/api/appointments/check?date=${dateStr}`)
+      // Format date in Eastern Time
+      const dateStr = formatInTimeZone(selectedDate, TIMEZONE, 'yyyy-MM-dd')
+      const response = await fetch(`${baseUrl}/api/appointments/check?date=${dateStr}&timezone=${TIMEZONE}`)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -71,8 +74,12 @@ export default function AppointmentForm() {
     setDate(selectedDate)
     setTime('09:00') // Reset time when date changes
 
-    // Only check slots if date is in the future
-    if (!isBefore(selectedDate, new Date())) {
+    // Get current date in Eastern Time for comparison
+    const nowInEastern = toZonedTime(new Date(), TIMEZONE)
+    const selectedInEastern = toZonedTime(selectedDate, TIMEZONE)
+
+    // Only check slots if date is today or in the future (in Eastern Time)
+    if (!isBefore(selectedInEastern, nowInEastern) || isToday(selectedInEastern)) {
       checkBookedSlots(selectedDate)
     }
   }, [checkBookedSlots])
@@ -101,18 +108,22 @@ export default function AppointmentForm() {
     setIsSubmitting(true)
 
     try {
-      const formElement = e.currentTarget; // Store form reference
+      const formElement = e.currentTarget
       const formData = new FormData(formElement)
       const formValues = Object.fromEntries(formData.entries())
-
-      // Create proper ISO string with timezone
-      const dateStr = format(date, 'yyyy-MM-dd')
-      const dateTime = new Date(`${dateStr}T${time}:00.000Z`)
 
       // Validate required fields
       if (!formValues.fullName || !formValues.phoneNumber || !formValues.email) {
         throw new Error("Please fill in all required fields.")
       }
+
+      // Create date in Eastern Time, then convert to UTC for storage
+      const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')
+      const easternDateTime = new Date(`${dateStr}T${time}:00`)
+      const utcDateTime = fromZonedTime(easternDateTime, TIMEZONE)
+
+      console.log('Selected date/time (Eastern):', `${dateStr} ${time}`)
+      console.log('UTC date/time for storage:', utcDateTime.toISOString())
 
       const response = await fetch('/api/appointments', {
         method: 'POST',
@@ -123,34 +134,48 @@ export default function AppointmentForm() {
           fullName: formValues.fullName,
           phoneNumber: formValues.phoneNumber,
           email: formValues.email,
-          preferredDate: dateTime.toISOString(),
+          preferredDate: utcDateTime.toISOString(),
+          preferredDateLocal: `${dateStr} ${time}`, // Keep local time for reference
+          timezone: TIMEZONE,
           medium,
           status: 'pending'
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to submit appointment.')
-      }
+        const errorText = await response.text()
+        let errorMessage = 'Failed to submit appointment.'
 
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.message || errorMessage
+        } catch (jsonErr) {
+          console.warn('Response is not JSON:', errorText)
+        }
+
+        throw new Error(errorMessage)
+      }
+      console.log('Server returned:', response.status, response.statusText)
+
+
+      // Reset form on success
       try {
-        formElement.reset();
-        console.log('Form reset successfully');
+        formElement.reset()
         setDate(undefined)
         setTime('09:00')
+        setMedium('in-person')
         setBookedSlots([])
       } catch (resetError) {
-        console.error('Error resetting form:', resetError);
+        console.error('Error resetting form:', resetError)
       }
+
       toast({
         title: "Success!",
-        description: "Your appointment request has been submitted.",
+        description: "Your appointment request has been submitted. We'll contact you to confirm the details.",
       })
-      console.log(formElement)
-
 
     } catch (error) {
+      console.error('Submit error:', error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An unexpected error occurred.",
@@ -162,23 +187,59 @@ export default function AppointmentForm() {
   }
 
   const isDateDisabled = (date: Date) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return isBefore(date, today) || date.getDay() === 0 // Disable Sundays
+    // Get current date in Eastern Time
+    const nowInEastern = toZonedTime(new Date(), TIMEZONE)
+    const todayInEastern = new Date(nowInEastern)
+    todayInEastern.setHours(0, 0, 0, 0)
+
+    const checkDate = toZonedTime(date, TIMEZONE)
+    checkDate.setHours(0, 0, 0, 0)
+
+    return isBefore(checkDate, todayInEastern) || date.getDay() === 0 // Disable past dates and Sundays
   }
 
-  const isFormValid = date && time && !bookedSlots.includes(time)
+  // Filter out past time slots if selected date is today
+  const getAvailableTimesForDate = useCallback(() => {
+    if (!date) return availableTimes
+
+    const nowInEastern = toZonedTime(new Date(), TIMEZONE)
+    const selectedInEastern = toZonedTime(date, TIMEZONE)
+
+    // If selected date is today, filter out past times
+    if (isToday(selectedInEastern)) {
+      const currentHour = nowInEastern.getHours()
+      const currentMinute = nowInEastern.getMinutes()
+
+      return availableTimes.filter(timeSlot => {
+        const [hour, minute] = timeSlot.split(':').map(Number)
+        const slotTime = hour * 60 + minute
+        const currentTime = currentHour * 60 + currentMinute
+
+        // Add 30 minute buffer for booking
+        return slotTime > currentTime + 30
+      })
+    }
+
+    return availableTimes
+  }, [date, availableTimes])
+
+  const availableTimesForDate = getAvailableTimesForDate()
+  const isFormValid = date && time && !bookedSlots.includes(time) && availableTimesForDate.includes(time)
 
   return (
     <section className="py-16 bg-gray-50">
       <div className="container-custom">
-        <div className="max-w-4xl mx-auto"> {/* Increased max width */}
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-3 font-heading text-church-primary">
               Schedule an Appointment
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Would you like to speak with our pastor or church staff? Schedule an appointment below.
+              <br />
+              <span className="text-sm text-gray-500 mt-2 block">
+                All times are in Eastern Time (Silver Spring, MD)
+              </span>
             </p>
           </div>
 
@@ -224,7 +285,6 @@ export default function AppointmentForm() {
                 <div className="space-y-3">
                   <Label>Meeting Type *</Label>
                   <RadioGroup
-                    defaultValue="in-person"
                     value={medium}
                     onValueChange={setMedium}
                     className="grid grid-cols-2 gap-3"
@@ -281,11 +341,8 @@ export default function AppointmentForm() {
                           "h-10 w-10 p-0 font-normal rounded-full",
                           "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-church-primary",
                           "aria-selected:opacity-100",
-                          // Current date styling
                           "data-[today]:bg-gray-100 data-[today]:font-semibold",
-                          // Selected date styling
                           "data-[selected]:bg-church-primary data-[selected]:text-white",
-                          // Disabled date styling
                           "data-[disabled]:text-gray-400 data-[disabled]:pointer-events-none"
                         ),
                         day_selected: "bg-church-primary text-white hover:bg-church-primary focus:bg-church-primary",
@@ -294,41 +351,50 @@ export default function AppointmentForm() {
                         day_outside: "text-gray-400 opacity-50",
                         day_range_middle: "aria-selected:bg-church-primary/10 aria-selected:text-church-primary",
                       }}
-                      hidden={{ before: new Date() }} // only allow dates from tomorrow
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
-                    Available Times *
+                    Available Times * (Eastern Time)
                     {isChecking && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
                   </Label>
                   <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-gray-50">
-                    {availableTimes.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setTime(slot)}
-                        disabled={bookedSlots.includes(slot) || !date}
-                        className={cn(
-                          'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center h-10',
-                          time === slot
-                            ? 'bg-church-primary text-white shadow-md'
-                            : 'bg-white hover:bg-gray-100 border border-gray-200',
-                          (bookedSlots.includes(slot) || !date) && 'opacity-50 cursor-not-allowed bg-gray-100'
-                        )}
-                      >
-                        {slot}
-                        {bookedSlots.includes(slot) && (
-                          <span className="sr-only">(Booked)</span>
-                        )}
-                      </button>
-                    ))}
+                    {availableTimesForDate.map((slot) => {
+                      const isBooked = bookedSlots.includes(slot)
+                      const isDisabled = isBooked || !date
+
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setTime(slot)}
+                          disabled={isDisabled}
+                          className={cn(
+                            'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center h-10',
+                            time === slot
+                              ? 'bg-church-primary text-white shadow-md'
+                              : 'bg-white hover:bg-gray-100 border border-gray-200',
+                            isDisabled && 'opacity-50 cursor-not-allowed bg-gray-100'
+                          )}
+                        >
+                          {slot}
+                          {isBooked && (
+                            <span className="sr-only">(Booked)</span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
-                  {date && bookedSlots.length === availableTimes.length && (
+                  {date && availableTimesForDate.length === 0 && (
                     <p className="text-sm text-red-500 mt-2">
-                      All slots are booked for this date. Please choose another date.
+                      No available slots for this date. Please choose another date.
+                    </p>
+                  )}
+                  {date && bookedSlots.length === availableTimesForDate.length && availableTimesForDate.length > 0 && (
+                    <p className="text-sm text-red-500 mt-2">
+                      All remaining slots are booked for this date. Please choose another date.
                     </p>
                   )}
                 </div>

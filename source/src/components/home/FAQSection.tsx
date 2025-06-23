@@ -18,7 +18,12 @@ export default function FAQSection() {
       try {
         const response = await fetch('/api/faq')
         const data = await response.json()
-        setFaqs(data)
+        if (Array.isArray(data)) {
+          setFaqs(data)
+        } else {
+          console.error('Unexpected data format:', data)
+          setFaqs([])
+        }
       } catch (error) {
         console.error('Error fetching FAQs:', error)
       } finally {

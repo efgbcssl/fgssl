@@ -22,15 +22,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ faq_id: 
         }
 
         const existingFAQ = await xata.db.faqs
-            .filter({
-                $all: [
-                    { question: { $is: question } },
-                    { faq_id: { $not: { $is: faqId } } }
-                ]
-            })
+            .filter({ question })
             .getFirst()
 
-        if (existingFAQ) {
+        if (existingFAQ && existingFAQ.faq_id !== faqId) {
             return NextResponse.json(
                 { error: 'This question already exists' },
                 { status: 400 }
@@ -60,16 +55,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ faq_id: 
 // ✅ Delete FAQ
 export async function DELETE(req: Request, { params }: { params: Promise<{ faq_id: string }> }) {
     const faqId = (await params).faq_id
+    console.log(`Attempting to delete FAQ with ID: ${faqId}`);
 
     try {
-        const record = await xata.db.faqs.delete(faqId)
-
-        if (!record) {
-            return NextResponse.json(
-                { error: 'FAQ not found' },
-                { status: 404 }
-            )
+        // Check if FAQ exists
+        const existingFAQ = await xata.db.faqs.filter({ faq_id: faqId }).getFirst()
+        console.log('Existing FAQ found:', existingFAQ);
+        if (!existingFAQ) {
+            console.log('FAQ not found');
+            return NextResponse.json({ error: 'FAQ not found' }, { status: 404 })
         }
+
+        // Delete FAQ
+        const deletionResult = await xata.db.faqs.delete([faqId])
+        console.log('FAQ deleted successfully', deletionResult)
+
         return NextResponse.json({ message: 'FAQ deleted successfully' })
     } catch (error) {
         console.error('DELETE FAQ error:', error)
