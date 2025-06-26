@@ -2,43 +2,228 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointment Reminder</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
             color: #333;
+            line-height: 1.6;
         }
 
-        h2 {
-            color: #2a3990;
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .details {
+        .header {
+            background: #4a6fa5;
+            padding: 25px;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            height: 50px;
+            margin-bottom: 10px;
+        }
+
+        .church-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 5px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .reminder-box {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            border-left: 4px solid #4a6fa5;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .detail-row {
+            margin-bottom: 12px;
+            display: flex;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #4a6fa5;
+        }
+
+        .action-buttons {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #4a6fa5;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #4a6fa5;
+            color: #4a6fa5;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #a3c4ff;
+            text-decoration: none;
+        }
+
+        .location {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .btn {
+                display: block;
+                margin: 10px 0;
+            }
+
+            .detail-row {
+                flex-direction: column;
+            }
+
+            .detail-label {
+                margin-bottom: 5px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h2>Appointment Reminder</h2>
-    <p>Dear <%= fullName %>,</p>
-    <p>This is a friendly reminder about your upcoming appointment:</p>
-    <div class="details">
-        <p><strong>Date & Time:</strong>
-            <%= preferredDateTime %>
-        </p>
-        <p><strong>Meeting Type:</strong>
-            <%= medium==='in-person' ? 'In-Person' : 'Online' %>
-        </p>
+    <div class="container">
+        <div class="header">
+            <!-- Replace with your church logo -->
+            <img src="/source//public/fg-logo.jpg" alt="Church Logo" class="logo">
+            <div class="church-name">Ethiopian Full Gospel Believers Church <br>
+                (Silver Spring Local)
+            </div>
+        </div>
+
+        <div class="content">
+            <h1>Appointment Reminder</h1>
+
+            <p>Dear <%= fullName %>,</p>
+
+            <p>This is a friendly reminder about your upcoming appointment with us. We're looking forward to connecting
+                with you!</p>
+
+            <div class="reminder-box">
+                <div class="detail-row">
+                    <div class="detail-label">Date & Time:</div>
+                    <div>
+                        <%= preferredDateTime %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Meeting Type:</div>
+                    <div>
+                        <%= medium==='in-person' ? 'In-Person Meeting' : 'Online Meeting' %>
+                    </div>
+                </div>
+
+                <% if (medium==='in-person' ) { %>
+                    <div class="location">
+                        <div class="detail-row">
+                            <div class="detail-label">Location:</div>
+                            <div>Ethiopian Full Gospel Believers Church<br>
+                                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA<br>
+                                (Main Office, Room 201)</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Parking:</div>
+                            <div>Visitor parking available in the west lot</div>
+                        </div>
+                    </div>
+                    <% } else { %>
+                        <div class="location">
+                            <div class="detail-row">
+                                <div class="detail-label">Meeting Link:</div>
+                                <div><a href="<%= meetingLink || '#' %>">Click to join online meeting</a></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Instructions:</div>
+                                <div>Please join 5 minutes early to test your audio/video</div>
+                            </div>
+                        </div>
+                        <% } %>
+            </div>
+
+            <div class="action-buttons">
+                <a href="<%= rescheduleLink || '#' %>" class="btn btn-outline">Reschedule Appointment</a>
+                <a href="<%= cancelLink || '#' %>" class="btn btn-outline">Cancel Appointment</a>
+            </div>
+
+            <p>If you have any questions or need assistance, please don't hesitate to reply to this email or call us at
+                (240) 821-0361.</p>
+
+            <p>Blessings,<br>
+                <strong>The Pastoral Care Team</strong><br>
+                Ethiopian Full Gospel Believers Church<br>
+                (Silver Spring Local)
+            </p>
+            </p>
+            </p>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 10px;">
+                Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
+                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
+            </div>
+            <div>
+                <a href="mailto:office@efgbcssl.org">office@efgbcssl.org</a> |
+                <a href="tel:+12408210361">(240) 821-0361</a> |
+                <a href="https://efgbcssl.org">efgbcssl.org</a>
+            </div>
+        </div>
     </div>
-    <p>Please contact us if you need to reschedule.</p>
-    <p>Blessings,<br>The Church Team</p>
 </body>
 
 </html>

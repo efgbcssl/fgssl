@@ -1,50 +1,235 @@
+<!DOCTYPE html>
 <html>
 
 <head>
     <meta charset="UTF-8">
-    <title>
-        Donation Receipt - <%= donorName %>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Receipt - <%= donorName %>
     </title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #f9f9f9;
-            padding: 20px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
         }
 
         .container {
-            background: #fff;
-            padding: 30px;
-            border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        a {
-            color: #1a73e8;
+        .header {
+            background: #4a6fa5;
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            height: 60px;
+            margin-bottom: 15px;
+        }
+
+        .church-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 10px 0 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .church-motto {
+            font-style: italic;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-top: 0;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .receipt-details {
+            background: #f8f9fa;
+            border-left: 4px solid #4a6fa5;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #4a6fa5;
+        }
+
+        .thank-you {
+            font-size: 18px;
+            text-align: center;
+            margin: 30px 0;
+            color: #2c3e50;
+        }
+
+        .verse {
+            font-style: italic;
+            text-align: center;
+            color: #666;
+            margin: 25px 0;
+            padding: 15px;
+            border-top: 1px dashed #ddd;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #a3c4ff;
             text-decoration: none;
+        }
+
+        .receipt-btn {
+            display: inline-block;
+            background: #4a6fa5;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .detail-row {
+                flex-direction: column;
+            }
+
+            .detail-label {
+                margin-bottom: 5px;
+            }
         }
     </style>
 </head>
 
 <body>
+    <div class="container">
+        <div class="header">
+            <!-- Replace with your church logo -->
+            <img src="/source//public/fg-logo.jpg" alt="Church Logo" class="logo">
+            <div class="church-name">Grace Community Church</div>
+            <div class="church-motto">Serving Christ Together</div>
+        </div>
 
-    <h2>Thank you, <%= donorName %>!</h2>
+        <div class="content">
+            <h1>Donation Receipt</h1>
 
-    <p>We’ve received your <strong>
-            <%= donationType %>
-        </strong> donation of <strong>$<%= amount.toFixed(2) %></strong>.</p>
+            <p>Dear <%= donorName %>,</p>
 
-    <% if (receiptUrl) { %>
-        <p>You can view your receipt here: <a href="<%= receiptUrl %>">
-                <%= receiptUrl %>
-            </a></p>
-        <% } %>
+            <p>We are deeply grateful for your generous support of our ministry. Your donation helps us fulfill our
+                mission and serve our community.</p>
 
-            <p>We deeply appreciate your support.</p>
-
-            <p>With gratitude,<br>Your Organization</p>
-
+            <div class="receipt-details">
+                <div class="detail-row">
+                    <div class="detail-label">Receipt Number:</div>
+                    <div>#<%= receiptNumber || '2023-0001' %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Date Received:</div>
+                    <div>
+                        <%= new Date().toLocaleDateString('en-US', { year: 'numeric' , month: 'long' , day: 'numeric' })
+                            %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Donation Type:</div>
+                    <div>
+                        <%= donationType %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Amount:</div>
+                    <div>$<%= amount.toFixed(2) %>
+                    </div>
+                </div>
+                <% if (paymentMethod) { %>
+                    <div class="detail-row">
+                        <div class="detail-label">Payment Method:</div>
+                        <div>
+                            <%= paymentMethod %>
+                        </div>
+                    </div>
+                    <% } %>
             </div>
+
+            <div class="verse">
+                "Each of you should give what you have decided in your heart to give, not reluctantly or under
+                compulsion, for God loves a cheerful giver."<br>
+                - 2 Corinthians 9:7
+            </div>
+
+            <div class="thank-you">
+                Thank you for your faithful support!
+            </div>
+
+            <% if (receiptUrl) { %>
+                <div style="text-align: center;">
+                    <a href="<%= receiptUrl %>" class="receipt-btn">Download Official Receipt</a>
+                </div>
+                <% } %>
+
+                    <p>With gratitude,</p>
+                    <p>
+                        <strong>Pastor John Smith</strong><br>
+                        Grace Community Church
+                    </p>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 10px;">
+                Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
+                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
+            </div>
+            <div>
+                <a href="mailto:giving@efgbcssl.org">giving@efgbcssl.org</a> |
+                <a href="tel:+12408210361">(240) 821-0361</a> |
+                <a href="https://efgbcssl.org">efgbcssl.org</a>
+            </div>
+            <div style="margin-top: 15px; opacity: 0.8;">
+                This receipt may be used for tax purposes. No goods or services were provided in exchange for this
+                donation.
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -170,11 +170,11 @@ export async function POST(request: Request) {
 
         console.log('📥 Received appointment data:', data)
         // Validate required fields
-        if (!preferredDate || !fullName || !email) {
+        if (!preferredDate || !fullName || !email || !phoneNumber || !medium) {
             return NextResponse.json(
-                { error: 'Missing required fields (preferredDate, fullName, email)' },
+                { error: 'Missing required fields (preferredDate, fullName, email, phoneNumber, medium)' },
                 { status: 400 }
-            )
+            );
         }
 
         // Parse and validate the date

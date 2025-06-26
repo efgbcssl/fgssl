@@ -3,71 +3,176 @@
 
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Appointment Confirmation</title>
-    <style>
+    <style type="text/css">
+        /* Base styles */
         body {
-            font-family: Arial, sans-serif;
-            color: #333;
-            background-color: #f9f9f9;
-            padding: 2rem;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #333333;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
         }
 
+        /* Container */
         .container {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
+            background: #ffffff;
             max-width: 600px;
-            margin: auto;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
+        /* Header */
         .header {
+            background-color: #4a6fa5;
+            color: white;
+            padding: 25px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Content */
+        .content {
+            padding: 30px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #4a6fa5;
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .info-item {
+            margin-bottom: 12px;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            font-weight: bold;
             color: #2c3e50;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+            display: inline-block;
+            min-width: 80px;
         }
 
-        .info {
-            margin-top: 1rem;
-        }
-
-        .info p {
-            margin: 0.5rem 0;
-        }
-
+        /* Footer */
         .footer {
-            margin-top: 2rem;
-            font-size: 0.9rem;
-            color: #777;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 25px 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .church-info {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+
+        .church-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .signature {
+            margin-top: 25px;
+            font-style: italic;
+            color: #95a5a6;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .header,
+            .content,
+            .footer {
+                padding: 20px;
+            }
+
+            .header {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="header">Your Appointment is Confirmed</div>
+        <div class="header">
+            <img src="/source/public/fg-logo.jpg" alt="Church Logo"
+                style="width: 100%; max-width: 150px; display: block; margin: 20px auto;">
 
-        <p>Hi <strong>
-                <%= fullName %>
-            </strong>,</p>
-        <p>Thank you for booking with us. Here are your appointment details:</p>
 
-        <div class="info">
-            <p><strong>Date:</strong>
-                <%= preferredDate %>
-            </p>
-            <p><strong>Time:</strong>
-                <%= preferredTime %>
-            </p>
-            <p><strong>Medium:</strong>
-                <%= medium %>
-            </p>
+            Your Appointment is Confirmed
         </div>
 
-        <p>We’ll get in touch if anything changes. Until then, take care!</p>
+        <div class="content">
+            <p class="greeting">Dear <strong>
+                    <%= fullName %>
+                </strong>,</p>
+
+            <p>Thank you for booking with us. Your appointment has been successfully scheduled. Below are the details:
+            </p>
+
+            <div class="info-box">
+                <div class="info-item">
+                    <span class="info-label">Date:</span>
+                    <span>
+                        <%= preferredDate %>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Time:</span>
+                    <span>
+                        <%= preferredTime %>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Medium:</span>
+                    <span>
+                        <%= medium %>
+                    </span>
+                </div>
+            </div>
+
+            <p>We're looking forward to connecting with you. If you need to make any changes to your appointment or have
+                any questions, please don't hesitate to contact us.</p>
+
+            <p class="signature">Blessings,<br>The Pastoral Team</p>
+        </div>
 
         <div class="footer">
-            Church Name • 123 Main Street • your@email.com
+            <div class="church-info">
+                <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
+                <div>914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA</div>
+                <div>office@efgbcssl.org | (240) 821 0361</div>
+            </div>
+            <div>
+                &copy; <%= new Date().getFullYear() %>
+            </div>
+            <div>
+                Ethiopian Full Gospel Believers Church (Silver Spring Local). All rights reserved.
+
+            </div>
         </div>
     </div>
 </body>

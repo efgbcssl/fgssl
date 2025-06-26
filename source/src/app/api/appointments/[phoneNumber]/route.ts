@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
 
-export async function PUT(req: NextRequest, { params }: { params: { phoneNumber: string } }) {
+export async function PUT(
+    req: NextRequest,
+    context: { params: Promise<{ phoneNumber: string }> }
+) {
     try {
-        const { phoneNumber } = params
+        const { phoneNumber } = await context.params
         const { status, remark } = await req.json()
 
         const record = await xata.db.appointments

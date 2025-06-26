@@ -125,6 +125,14 @@ export default function AppointmentForm() {
       console.log('Selected date/time (Eastern):', `${dateStr} ${time}`)
       console.log('UTC date/time for storage:', utcDateTime.toISOString())
 
+      const payload = {
+        fullName: formValues.fullName,
+        email: formValues.email,
+        phoneNumber: formValues.phoneNumber,
+        preferredDate: utcDateTime.toISOString(),
+        medium,
+      };
+
       const response = await fetch('/api/appointments', {
         method: 'POST',
         headers: {
@@ -132,18 +140,16 @@ export default function AppointmentForm() {
         },
         body: JSON.stringify({
           fullName: formValues.fullName,
-          phoneNumber: formValues.phoneNumber,
           email: formValues.email,
+          phoneNumber: formValues.phoneNumber,
           preferredDate: utcDateTime.toISOString(),
-          preferredDateLocal: `${dateStr} ${time}`, // Keep local time for reference
-          timezone: TIMEZONE,
           medium,
-          status: 'pending'
         })
       })
 
       if (!response.ok) {
-        const errorText = await response.text()
+        const errorText = await response.text();
+        console.error('❌ Server Error:', errorText);
         let errorMessage = 'Failed to submit appointment.'
 
         try {

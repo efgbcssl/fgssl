@@ -1,5 +1,4 @@
-// app/(dashboard)/dashboard/faq/page.tsx
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
@@ -26,12 +25,12 @@ export default function FAQAdminPage() {
     const fetchFAQs = async () => {
         try {
             setLoading(true)
-            const response = await fetch('/api/faq')
-            if (!response.ok) throw new Error('Failed to fetch FAQs')
-            const data = await response.json()
-            setFaqs(data)
-        } catch (error) {
-            console.error('Error fetching FAQs:', error)
+            const res = await fetch('/api/faq')
+            if (!res.ok) throw new Error('Failed to fetch FAQs')
+            const data = await res.json()
+            setFaqs(data.sort((a: FAQ, b: FAQ) => a.order - b.order))
+        } catch (err) {
+            console.error(err)
             toast.error('Failed to load FAQs')
         } finally {
             setLoading(false)
@@ -46,26 +45,21 @@ export default function FAQAdminPage() {
 
         setIsSubmitting(true)
         try {
-            const response = await fetch('/api/faq', {
+            const res = await fetch('/api/faq', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newFAQ),
             })
 
-            if (!response.ok) {
-                const data = await response.json()
-                throw new Error(data.error || 'Failed to add FAQ')
-            }
+            if (!res.ok) throw new Error((await res.json()).error || 'Failed to add FAQ')
 
-            const data = await response.json()
+            const data = await res.json()
             setFaqs([...faqs, data])
             setNewFAQ({ question: '', answer: '' })
             toast.success('FAQ added successfully')
-        } catch (error) {
-            console.error('Add FAQ error:', error)
-            toast.error(error instanceof Error ? error.message : 'Failed to add FAQ')
+        } catch (err) {
+            console.error(err)
+            toast.error((err instanceof Error ? err.message : 'Failed to add FAQ'))
         } finally {
             setIsSubmitting(false)
         }
@@ -78,60 +72,43 @@ export default function FAQAdminPage() {
 
     const handleUpdateFAQ = async (faq_id: string) => {
         if (!editData.question || !editData.answer) {
-            toast.error('Please fill in both question and answer')
+            toast.error('Both question and answer are required')
             return
         }
 
         setIsUpdating(faq_id)
         try {
-            const response = await fetch(`/api/faq/${faq_id}`, {
+            const res = await fetch(`/api/faq/${faq_id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editData),
             })
 
-            if (!response.ok) {
-                const data = await response.json()
-                throw new Error(data.error || 'Failed to update FAQ')
-            }
+            if (!res.ok) throw new Error((await res.json()).error || 'Failed to update')
 
-            const data = await response.json()
-            setFaqs(faqs.map(faq => faq.faq_id === faq_id ? data : faq))
+            const updated = await res.json()
+            setFaqs(faqs.map(f => (f.faq_id === faq_id ? updated : f)))
             setEditingId(null)
-            toast.success('FAQ updated successfully')
-        } catch (error) {
-            console.error('Update FAQ error:', error)
-            toast.error(error instanceof Error ? error.message : 'Failed to update FAQ')
+            toast.success('FAQ updated')
+        } catch (err) {
+            console.error(err)
+            toast.error((err instanceof Error ? err.message : 'Update failed'))
         } finally {
             setIsUpdating(null)
         }
     }
 
-    const handleDeleteFAQ = async (xata_id: string) => {
-        setIsDeleting(xata_id)
+    const handleDeleteFAQ = async (faq_id: string) => {
+        setIsDeleting(faq_id)
         try {
-            console.log('Sending delete request for FAQ:', xata_id);
-            const response = await fetch(`/api/faq/${xata_id}`, {
-                method: 'DELETE',
-            })
+            const res = await fetch(`/api/faq/${faq_id}`, { method: 'DELETE' })
+            if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete')
 
-            console.log('Delete response status:', response.status);
-
-            if (!response.ok) {
-                const data = await response.json()
-                console.log('Delete error response:', data);
-                throw new Error(data.error || 'Failed to delete FAQ')
-            }
-            console.log('Deletion successful, updating UI...');
-
-            setFaqs(faqs.filter(faq => faq.faq_id !== xata_id))
-            toast.success('FAQ deleted successfully')
-        } catch (error) {
-            console.error('Delete FAQ error:', error)
-            toast.error(error instanceof Error ? error.message : 'Failed to delete FAQ')
-            fetchFAQs();
+            setFaqs(faqs.filter(f => f.faq_id !== faq_id))
+            toast.success('FAQ deleted')
+        } catch (err) {
+            console.error(err)
+            toast.error((err instanceof Error ? err.message : 'Delete failed'))
         } finally {
             setIsDeleting(null)
         }
@@ -141,44 +118,30 @@ export default function FAQAdminPage() {
         if (!result.destination) return
 
         const items = Array.from(faqs)
-        const [reorderedItem] = items.splice(result.source.index, 1)
-        items.splice(result.destination.index, 0, reorderedItem)
+        const [reordered] = items.splice(result.source.index, 1)
+        items.splice(result.destination.index, 0, reordered)
 
         const reorderedFAQs = items.map((item, index) => ({
-            ...item,
-            order: index
+            faq_id: item.faq_id,
+            order: index,
         }))
 
-        setFaqs(reorderedFAQs)
+        setFaqs(items)
 
         try {
-            const response = await fetch('/api/faq/reorder', {
+            const res = await fetch('/api/faq/reorder', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reorderedFAQs }),
             })
 
-            if (!response.ok) {
-                throw new Error('Failed to save new order')
-            }
-
-            toast.success('FAQ order updated successfully')
-        } catch (error) {
-            console.error('Error reordering FAQs:', error)
-            toast.error('Failed to save new order')
+            if (!res.ok) throw new Error('Failed to reorder')
+            toast.success('FAQs reordered')
+        } catch (err) {
+            console.error(err)
+            toast.error('Reorder failed')
             fetchFAQs()
         }
-    }
-
-    if (loading) {
-        return (
-            <div className="container py-8">
-                <h1 className="text-2xl font-bold mb-6 text-church-dark">Manage FAQs</h1>
-                <p className="text-church-muted">Loading FAQs...</p>
-            </div>
-        )
     }
 
     return (
@@ -213,7 +176,9 @@ export default function FAQAdminPage() {
                     Current FAQs
                 </h2>
 
-                {faqs.length === 0 ? (
+                {loading ? (
+                    <p className="p-6 text-church-muted">Loading FAQs...</p>
+                ) : faqs.length === 0 ? (
                     <p className="p-6 text-church-muted">No FAQs added yet.</p>
                 ) : (
                     <DragDropContext onDragEnd={onDragEnd}>
@@ -226,6 +191,7 @@ export default function FAQAdminPage() {
                                                 <div
                                                     ref={provided.innerRef}
                                                     {...provided.draggableProps}
+                                                    {...provided.dragHandleProps}
                                                     className={`p-6 border-b border-church-muted/20 hover:bg-church-light/50 transition-colors ${snapshot.isDragging ? 'bg-church-light/50' : ''
                                                         }`}
                                                 >
@@ -235,17 +201,25 @@ export default function FAQAdminPage() {
                                                                 <div className="space-y-4">
                                                                     <Input
                                                                         value={editData.question}
-                                                                        onChange={(e) => setEditData({ ...editData, question: e.target.value })}
+                                                                        onChange={(e) =>
+                                                                            setEditData({ ...editData, question: e.target.value })
+                                                                        }
                                                                     />
                                                                     <Textarea
                                                                         value={editData.answer}
-                                                                        onChange={(e) => setEditData({ ...editData, answer: e.target.value })}
+                                                                        onChange={(e) =>
+                                                                            setEditData({ ...editData, answer: e.target.value })
+                                                                        }
                                                                     />
                                                                     <div className="flex space-x-2">
                                                                         <Button
                                                                             onClick={() => handleUpdateFAQ(faq.faq_id)}
                                                                             className="bg-church-primary hover:bg-church-primary/90"
-                                                                            disabled={!editData.question || !editData.answer || isUpdating === faq.faq_id}
+                                                                            disabled={
+                                                                                !editData.question ||
+                                                                                !editData.answer ||
+                                                                                isUpdating === faq.faq_id
+                                                                            }
                                                                         >
                                                                             {isUpdating === faq.faq_id ? 'Saving...' : 'Save'}
                                                                         </Button>
@@ -261,14 +235,12 @@ export default function FAQAdminPage() {
                                                                 </div>
                                                             ) : (
                                                                 <div>
-                                                                    <h3 className="font-medium mb-2 text-church-dark">
-                                                                        {faq.question}
-                                                                    </h3>
+                                                                    <h3 className="font-medium mb-2 text-church-dark">{faq.question}</h3>
                                                                     <p className="text-church-muted">{faq.answer}</p>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="flex space-x-2 ml-4">
+                                                        <div className="flex space-x-2 ml-4 items-center">
                                                             {editingId !== faq.faq_id && (
                                                                 <>
                                                                     <Button
@@ -282,18 +254,17 @@ export default function FAQAdminPage() {
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-100"
                                                                         onClick={() => handleDeleteFAQ(faq.faq_id)}
                                                                         disabled={isDeleting === faq.faq_id}
+                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-100"
                                                                     >
                                                                         {isDeleting === faq.faq_id ? 'Deleting...' : 'Delete'}
                                                                     </Button>
-                                                                    <div
-                                                                        {...provided.dragHandleProps}
+                                                                    <span
                                                                         className="text-church-muted hover:text-church-primary cursor-move px-2"
                                                                     >
                                                                         ≡
-                                                                    </div>
+                                                                    </span>
                                                                 </>
                                                             )}
                                                         </div>

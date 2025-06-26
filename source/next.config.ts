@@ -7,9 +7,15 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: [
+      'ik.imagekit.io',
+      'images.unsplash.com',]
   },
   experimental: {
-  }
+    serverActions: {
+      bodySizeLimit: '50mb', // Increase the limit for server actions
+    }
+  },
 };
 
 export default nextConfig;
