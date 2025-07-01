@@ -18,7 +18,7 @@ type Message = {
 }
 
 export default function MessageDetailPage() {
-    const { id: message_id } = useParams()
+    const { message_id } = useParams()
     const [message, setMessage] = useState<Message | null>(null)
     const [loading, setLoading] = useState(true)
     const { toast } = useToast()

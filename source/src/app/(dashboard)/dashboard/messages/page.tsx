@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { MailOpen, Archive, RefreshCw } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 type Message = {
     message_id: string
@@ -29,10 +29,12 @@ type Message = {
 export default function MessagesDashboard() {
     const [messages, setMessages] = useState<Message[]>([])
     const [loading, setLoading] = useState(true)
+    const [refreshing, setRefreshing] = useState(false)
     const { toast } = useToast()
     const router = useRouter()
 
     const fetchMessages = async () => {
+        setRefreshing(true)
         setLoading(true)
         try {
             const response = await fetch('/api/messages')
@@ -48,10 +50,11 @@ export default function MessagesDashboard() {
             })
         } finally {
             setLoading(false)
+            setRefreshing(false)
         }
     }
 
-    const updateMessageStatus = async (message_id: string, status: string) => {
+    const updateMessageStatus = async (message_id: string, status: 'read' | 'archived') => {
         try {
             const response = await fetch(`/api/messages/${message_id}`, {
                 method: 'PATCH',
@@ -61,17 +64,34 @@ export default function MessagesDashboard() {
 
             if (!response.ok) throw new Error('Failed to update message')
 
-            fetchMessages()
+            // Optimistically update the local state
+            setMessages(prev => prev.map(msg =>
+                msg.message_id === message_id ? { ...msg, status } : msg
+            ))
+
             toast({
                 title: "Updated",
-                description: "Message status updated",
+                description: `Message marked as ${status}`,
             })
+
+            // If marking as read and opening, navigate after state update
+            if (status === 'read') {
+                router.push(`/dashboard/messages/${message_id}`)
+            }
         } catch (error) {
             toast({
                 title: "Error",
                 description: error instanceof Error ? error.message : "Update failed",
                 variant: "destructive"
             })
+        }
+    }
+
+    const handleRowClick = (id: string, currentStatus: string) => {
+        if (currentStatus !== 'read') {
+            updateMessageStatus(id, 'read')
+        } else {
+            router.push(`/dashboard/messages/${id}`)
         }
     }
 
@@ -89,9 +109,9 @@ export default function MessagesDashboard() {
         <div className="container py-8">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Messages</h1>
-                <Button variant="outline" onClick={fetchMessages}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
+                <Button variant="outline" onClick={fetchMessages} disabled={refreshing}>
+                    <RefreshCw className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")} />
+                    {refreshing ? "Refreshing..." : "Refresh"}
                 </Button>
             </div>
 
@@ -121,31 +141,27 @@ export default function MessagesDashboard() {
                             </TableRow>
                         ) : (
                             messages.map((message) => (
-                                <TableRow key={message.message_id} className="hover:bg-gray-50" onClick={() => router.push(`/dashboard/messages/${message.message_id}`)}>
+                                <TableRow
+                                    key={message.message_id}
+                                    className="hover:bg-gray-50 cursor-pointer"
+                                    onClick={() => handleRowClick(message.message_id, message.status)}
+                                >
                                     <TableCell>
-                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
-                                                {message.status}
-                                            </span>
-                                        </Link>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
+                                            {message.status}
+                                        </span>
                                     </TableCell>
                                     <TableCell>
-                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
-                                            <div className="font-medium">{message.name}</div>
-                                            <div className="text-sm text-gray-500">{message.email}</div>
-                                        </Link>
+                                        <div className="font-medium">{message.name}</div>
+                                        <div className="text-sm text-gray-500">{message.email}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
-                                            {message.subject || 'No Subject'}
-                                        </Link>
+                                        {message.subject || 'No Subject'}
                                     </TableCell>
                                     <TableCell>
-                                        <Link href={`/dashboard/messages/${message.message_id}`} className="block">
-                                            {format(new Date(message.createdAt), 'MMM d, yyyy h:mm a')}
-                                        </Link>
+                                        {format(new Date(message.createdAt), 'MMM d, yyyy h:mm a')}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
                                         <div className="flex gap-2">
                                             <Button
                                                 size="sm"

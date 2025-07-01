@@ -826,6 +826,14 @@ const tables = [
         comment: '{"xata.type":"text"}',
       },
       {
+        name: "message",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
         name: "message_id",
         type: "text",
         notNull: true,

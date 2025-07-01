@@ -5,6 +5,7 @@ import ejs from 'ejs'
 import path from 'path'
 import fs from 'fs/promises'
 import { generateDonationReceiptPDF } from './pdf'
+import { format } from 'date-fns-tz'
 
 // Metrics tracking
 interface EmailMetrics {
@@ -231,6 +232,50 @@ export async function sendReminderEmail({
         return result;
     } catch (error) {
         console.error('❌ Failed to send reminder email:', error);
+        throw error;
+    }
+}
+
+export async function sendMessageNotificationEmail({
+    to,
+    fullName,
+    email,
+    subject,
+    message,
+    adminName = "Pastoral Care Team"
+}: {
+    to: string
+    fullName: string
+    email: string
+    subject?: string
+    message: string
+    adminName?: string
+}) {
+    try {
+        const templatePath = path.join(process.cwd(), 'src', 'emails', 'message-notification.ejs');
+        const template = await fs.readFile(templatePath, 'utf-8');
+
+        const html = ejs.render(template, {
+            fullName,
+            email,
+            subject: subject || 'No Subject',
+            message,
+            adminName,
+            date: format(new Date(), 'EEEE, MMMM d, yyyy \'at\' h:mm a')
+        });
+
+        const mailOptions = {
+            from: process.env.FROM_EMAIL || 'notifications@efgbcssl.org',
+            to,
+            subject: `New Message: ${subject || 'Contact Form Submission'}`,
+            html
+        };
+
+        const result = await sendWithRetry(mailOptions, 'message-notification');
+        console.log('✅ Message notification sent to', to);
+        return result;
+    } catch (error) {
+        console.error('❌ Failed to send message notification:', error);
         throw error;
     }
 }

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Message Notification</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: #4a6fa5;
+            padding: 25px;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            height: 50px;
+            margin-bottom: 10px;
+        }
+
+        .church-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 5px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .message-box {
+            background: #f8f9fa;
+            border-left: 4px solid #4a6fa5;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .detail-row {
+            margin-bottom: 12px;
+            display: flex;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #4a6fa5;
+        }
+
+        .message-content {
+            white-space: pre-line;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .action-buttons {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #4a6fa5;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #a3c4ff;
+            text-decoration: none;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .btn {
+                display: block;
+                margin: 10px 0;
+            }
+
+            .detail-row {
+                flex-direction: column;
+            }
+
+            .detail-label {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://efgbcssl.org/fg-logo.jpg" alt="Church Logo" class="logo">
+            <div class="church-name">Ethiopian Full Gospel Believers Church <br>
+                (Silver Spring Local)
+            </div>
+        </div>
+
+        <div class="content">
+            <h1>New Message Received</h1>
+
+            <p>Dear <%= adminName %>,</p>
+
+            <p>A new message has been submitted through the church contact form:</p>
+
+            <div class="message-box">
+                <div class="detail-row">
+                    <div class="detail-label">From:</div>
+                    <div>
+                        <%= fullName %> (<%= email %>)
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Subject:</div>
+                    <div>
+                        <%= subject %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Date:</div>
+                    <div>
+                        <%= date %>
+                    </div>
+                </div>
+
+                <div class="message-content">
+                    <%= message %>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="mailto:<%= email %>" class="btn">Reply to <%= fullName %></a>
+            </div>
+
+            <p>This message was automatically generated from the church website contact form.</p>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 10px;">
+                Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
+                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
+            </div>
+            <div>
+                <a href="mailto:office@efgbcssl.org">office@efgbcssl.org</a> |
+                <a href="tel:+12408210361">(240) 821-0361</a> |
+                <a href="https://efgbcssl.org">efgbcssl.org</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
