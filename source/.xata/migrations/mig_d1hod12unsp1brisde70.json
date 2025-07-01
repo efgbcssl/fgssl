@@ -1,0 +1,100 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1hod12unsp1brisde70",
+    "operations": [
+      {
+        "create_table": {
+          "name": "faqs",
+          "columns": [
+            {
+              "name": "answer",
+              "type": "text",
+              "check": {
+                "name": "faqs_xata_text_length_answer",
+                "constraint": "OCTET_LENGTH(\"answer\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "createdAt",
+              "type": "timestamptz"
+            },
+            {
+              "name": "faq_id",
+              "type": "text",
+              "check": {
+                "name": "faqs_xata_text_length_faq_id",
+                "constraint": "OCTET_LENGTH(\"faq_id\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "order",
+              "type": "bigint",
+              "unique": true
+            },
+            {
+              "name": "question",
+              "type": "text",
+              "check": {
+                "name": "faqs_xata_text_length_question",
+                "constraint": "OCTET_LENGTH(\"question\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "updatedAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "faqs_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"faqs\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"faqs\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1hod12unsp1brisde70",
+  "parent": "mig_d1hnbq2r9e9qaqkp8ef0",
+  "schema": "public",
+  "startedAt": "2025-07-01T06:56:05.333515Z"
+}

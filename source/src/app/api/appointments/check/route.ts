@@ -28,10 +28,12 @@ export async function GET(request: Request) {
             .getAll()
 
         // Extract time slots
-        const bookedSlots = bookedAppointments.map(appt => {
-            const apptDate = new Date(appt.preferredDate)
-            return apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-        })
+        const bookedSlots = bookedAppointments
+            .filter(appt => appt.preferredDate !== null && appt.preferredDate !== undefined)
+            .map(appt => {
+                const apptDate = new Date(appt.preferredDate as string)
+                return apptDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+            })
 
         return NextResponse.json({ bookedSlots })
     } catch (error) {

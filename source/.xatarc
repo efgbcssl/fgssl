@@ -1,5 +1,5 @@
 {
-  "databaseURL": "https://Obsidian-workspace-o1sajg.us-east-1.xata.sh/db/fgssl",
+  "databaseURL": "https://Efgbc-ssl-s-workspace-86ese1.us-east-1.xata.sh/db/efgbcssl",
   "codegen": {
     "output": "src/xata.ts"
   }

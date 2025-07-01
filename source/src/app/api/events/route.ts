@@ -11,7 +11,7 @@ export async function GET() {
             .filter('expiresAt', { $gt: now })
             .sort('order', 'asc')
             .getAll();
-
+        console.log('events', events)
         if (!events) {
             throw new Error('No events found or query failed');
         }

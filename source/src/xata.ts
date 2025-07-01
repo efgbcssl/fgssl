@@ -27,51 +27,51 @@ const tables = [
     columns: [
       {
         name: "createdAt",
-        type: "datetime",
-        notNull: true,
+        type: "text",
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: "{}",
       },
       {
         name: "email",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: "{}",
       },
       {
         name: "fullName",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: "{}",
       },
       {
         name: "medium",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: "{}",
       },
       {
         name: "phoneNumber",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: "{}",
       },
       {
         name: "preferredDate",
-        type: "datetime",
-        notNull: true,
+        type: "text",
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: "{}",
       },
       {
         name: "remark",
@@ -79,168 +79,23 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "reminderSent",
-        type: "bool",
-        notNull: true,
-        unique: false,
-        defaultValue: "false",
-        comment: "",
+        comment: "{}",
       },
       {
         name: "status",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
-        defaultValue: "'pending'::text",
-        comment: "",
+        defaultValue: null,
+        comment: "{}",
       },
       {
         name: "updatedAt",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "xata_createdat",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "xata_id",
         type: "text",
-        notNull: true,
-        unique: true,
-        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
-        comment: "",
-      },
-      {
-        name: "xata_updatedat",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "xata_version",
-        type: "int",
-        notNull: true,
-        unique: false,
-        defaultValue: "0",
-        comment: "",
-      },
-    ],
-  },
-  {
-    name: "comments",
-    checkConstraints: {
-      comments_xata_id_length_xata_id: {
-        name: "comments_xata_id_length_xata_id",
-        columns: ["xata_id"],
-        definition: "CHECK ((length(xata_id) < 256))",
-      },
-    },
-    foreignKeys: {
-      parentId_link: {
-        name: "parentId_link",
-        columns: ["parentId"],
-        referencedTable: "comments",
-        referencedColumns: ["comment_id"],
-        onDelete: "CASCADE",
-      },
-      postId_link: {
-        name: "postId_link",
-        columns: ["postId"],
-        referencedTable: "posts",
-        referencedColumns: ["post_id"],
-        onDelete: "CASCADE",
-      },
-    },
-    primaryKey: [],
-    uniqueConstraints: {
-      _pgroll_new_comments_xata_id_key: {
-        name: "_pgroll_new_comments_xata_id_key",
-        columns: ["xata_id"],
-      },
-      comments__pgroll_new_comment_id_key: {
-        name: "comments__pgroll_new_comment_id_key",
-        columns: ["comment_id"],
-      },
-    },
-    columns: [
-      {
-        name: "comment_id",
-        type: "text",
-        notNull: true,
-        unique: true,
-        defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "content",
-        type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "createdAt",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "isHidden",
-        type: "bool",
-        notNull: true,
-        unique: false,
-        defaultValue: "false",
-        comment: "",
-      },
-      {
-        name: "likes",
-        type: "int",
-        notNull: true,
-        unique: false,
-        defaultValue: "0",
-        comment: "",
-      },
-      {
-        name: "name",
-        type: "text",
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "parentId",
-        type: "link",
-        link: { table: "comments" },
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: '{"xata.link":"comments"}',
-      },
-      {
-        name: "postId",
-        type: "link",
-        link: { table: "posts" },
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: '{"xata.link":"posts"}',
+        comment: "{}",
       },
       {
         name: "xata_createdat",
@@ -284,17 +139,72 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      donations_xata_text_length_currency: {
+        name: "donations_xata_text_length_currency",
+        columns: ["currency"],
+        definition: "CHECK ((octet_length(currency) <= 204800))",
+      },
+      donations_xata_text_length_donationType: {
+        name: "donations_xata_text_length_donationType",
+        columns: ["donationType"],
+        definition: 'CHECK ((octet_length("donationType") <= 204800))',
+      },
+      donations_xata_text_length_donorEmail: {
+        name: "donations_xata_text_length_donorEmail",
+        columns: ["donorEmail"],
+        definition: 'CHECK ((octet_length("donorEmail") <= 204800))',
+      },
+      donations_xata_text_length_donorName: {
+        name: "donations_xata_text_length_donorName",
+        columns: ["donorName"],
+        definition: 'CHECK ((octet_length("donorName") <= 204800))',
+      },
+      donations_xata_text_length_donorPhone: {
+        name: "donations_xata_text_length_donorPhone",
+        columns: ["donorPhone"],
+        definition: 'CHECK ((octet_length("donorPhone") <= 204800))',
+      },
+      donations_xata_text_length_notes: {
+        name: "donations_xata_text_length_notes",
+        columns: ["notes"],
+        definition: "CHECK ((octet_length(notes) <= 204800))",
+      },
+      donations_xata_text_length_paymentMethod: {
+        name: "donations_xata_text_length_paymentMethod",
+        columns: ["paymentMethod"],
+        definition: 'CHECK ((octet_length("paymentMethod") <= 204800))',
+      },
+      donations_xata_text_length_paymentStatus: {
+        name: "donations_xata_text_length_paymentStatus",
+        columns: ["paymentStatus"],
+        definition: 'CHECK ((octet_length("paymentStatus") <= 204800))',
+      },
+      donations_xata_text_length_receiptUrl: {
+        name: "donations_xata_text_length_receiptUrl",
+        columns: ["receiptUrl"],
+        definition: 'CHECK ((octet_length("receiptUrl") <= 204800))',
+      },
+      donations_xata_text_length_stripeChargeId: {
+        name: "donations_xata_text_length_stripeChargeId",
+        columns: ["stripeChargeId"],
+        definition: 'CHECK ((octet_length("stripeChargeId") <= 204800))',
+      },
+      donations_xata_text_length_stripePaymentIntentId: {
+        name: "donations_xata_text_length_stripePaymentIntentId",
+        columns: ["stripePaymentIntentId"],
+        definition: 'CHECK ((octet_length("stripePaymentIntentId") <= 204800))',
+      },
     },
     foreignKeys: {},
     primaryKey: [],
     uniqueConstraints: {
+      _pgroll_new_donations_stripePaymentIntentId_key: {
+        name: "_pgroll_new_donations_stripePaymentIntentId_key",
+        columns: ["stripePaymentIntentId"],
+      },
       _pgroll_new_donations_xata_id_key: {
         name: "_pgroll_new_donations_xata_id_key",
         columns: ["xata_id"],
-      },
-      donations__pgroll_new_stripePaymentIntentId_key: {
-        name: "donations__pgroll_new_stripePaymentIntentId_key",
-        columns: ["stripePaymentIntentId"],
       },
     },
     columns: [
@@ -312,7 +222,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: "'USD'::text",
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "donationType",
@@ -320,7 +230,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "donorEmail",
@@ -328,7 +238,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "donorName",
@@ -336,7 +246,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "donorPhone",
@@ -344,12 +254,12 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "isRecurring",
         type: "bool",
-        notNull: false,
+        notNull: true,
         unique: false,
         defaultValue: "false",
         comment: "",
@@ -360,7 +270,7 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "paymentMethod",
@@ -368,7 +278,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "paymentStatus",
@@ -376,15 +286,15 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: "'pending'::text",
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "receiptUrl",
         type: "text",
-        notNull: false,
+        notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "stripeChargeId",
@@ -392,7 +302,7 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "stripePaymentIntentId",
@@ -400,7 +310,7 @@ const tables = [
         notNull: true,
         unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "xata_createdat",
@@ -444,17 +354,32 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      donors_xata_text_length_email: {
+        name: "donors_xata_text_length_email",
+        columns: ["email"],
+        definition: "CHECK ((octet_length(email) <= 204800))",
+      },
+      donors_xata_text_length_name: {
+        name: "donors_xata_text_length_name",
+        columns: ["name"],
+        definition: "CHECK ((octet_length(name) <= 204800))",
+      },
+      donors_xata_text_length_phone: {
+        name: "donors_xata_text_length_phone",
+        columns: ["phone"],
+        definition: "CHECK ((octet_length(phone) <= 204800))",
+      },
     },
     foreignKeys: {},
     primaryKey: [],
     uniqueConstraints: {
+      _pgroll_new_donors_email_key: {
+        name: "_pgroll_new_donors_email_key",
+        columns: ["email"],
+      },
       _pgroll_new_donors_xata_id_key: {
         name: "_pgroll_new_donors_xata_id_key",
         columns: ["xata_id"],
-      },
-      donors__pgroll_new_email_key: {
-        name: "donors__pgroll_new_email_key",
-        columns: ["email"],
       },
     },
     columns: [
@@ -464,12 +389,12 @@ const tables = [
         notNull: true,
         unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "lastDonationDate",
         type: "datetime",
-        notNull: false,
+        notNull: true,
         unique: false,
         defaultValue: null,
         comment: "",
@@ -480,7 +405,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "phone",
@@ -488,14 +413,14 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "totalDonations",
         type: "float",
-        notNull: false,
+        notNull: true,
         unique: false,
-        defaultValue: "'0'::double precision",
+        defaultValue: null,
         comment: "",
       },
       {
@@ -540,10 +465,54 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      events_xata_text_length_ctaLink: {
+        name: "events_xata_text_length_ctaLink",
+        columns: ["ctaLink"],
+        definition: 'CHECK ((octet_length("ctaLink") <= 204800))',
+      },
+      events_xata_text_length_ctaText: {
+        name: "events_xata_text_length_ctaText",
+        columns: ["ctaText"],
+        definition: 'CHECK ((octet_length("ctaText") <= 204800))',
+      },
+      events_xata_text_length_date: {
+        name: "events_xata_text_length_date",
+        columns: ["date"],
+        definition: "CHECK ((octet_length(date) <= 204800))",
+      },
+      events_xata_text_length_description: {
+        name: "events_xata_text_length_description",
+        columns: ["description"],
+        definition: "CHECK ((octet_length(description) <= 204800))",
+      },
+      events_xata_text_length_imageSrc: {
+        name: "events_xata_text_length_imageSrc",
+        columns: ["imageSrc"],
+        definition: 'CHECK ((octet_length("imageSrc") <= 204800))',
+      },
+      events_xata_text_length_location: {
+        name: "events_xata_text_length_location",
+        columns: ["location"],
+        definition: "CHECK ((octet_length(location) <= 204800))",
+      },
+      events_xata_text_length_time: {
+        name: "events_xata_text_length_time",
+        columns: ["time"],
+        definition: 'CHECK ((octet_length("time") <= 204800))',
+      },
+      events_xata_text_length_title: {
+        name: "events_xata_text_length_title",
+        columns: ["title"],
+        definition: "CHECK ((octet_length(title) <= 204800))",
+      },
     },
     foreignKeys: {},
     primaryKey: [],
     uniqueConstraints: {
+      _pgroll_new_events_expiresAt_key: {
+        name: "_pgroll_new_events_expiresAt_key",
+        columns: ["expiresAt"],
+      },
       _pgroll_new_events_xata_id_key: {
         name: "_pgroll_new_events_xata_id_key",
         columns: ["xata_id"],
@@ -553,40 +522,40 @@ const tables = [
       {
         name: "ctaLink",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "ctaText",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "date",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "description",
         type: "text",
-        notNull: false,
+        notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "expiresAt",
         type: "datetime",
-        notNull: true,
-        unique: false,
+        notNull: false,
+        unique: true,
         defaultValue: null,
         comment: "",
       },
@@ -596,7 +565,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "location",
@@ -604,23 +573,23 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "order",
         type: "int",
         notNull: true,
         unique: false,
-        defaultValue: "0",
+        defaultValue: null,
         comment: "",
       },
       {
         name: "time",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "title",
@@ -628,7 +597,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "xata_createdat",
@@ -672,21 +641,40 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      faqs_xata_text_length_answer: {
+        name: "faqs_xata_text_length_answer",
+        columns: ["answer"],
+        definition: "CHECK ((octet_length(answer) <= 204800))",
+      },
+      faqs_xata_text_length_faq_id: {
+        name: "faqs_xata_text_length_faq_id",
+        columns: ["faq_id"],
+        definition: "CHECK ((octet_length(faq_id) <= 204800))",
+      },
+      faqs_xata_text_length_question: {
+        name: "faqs_xata_text_length_question",
+        columns: ["question"],
+        definition: "CHECK ((octet_length(question) <= 204800))",
+      },
     },
     foreignKeys: {},
     primaryKey: [],
     uniqueConstraints: {
+      _pgroll_new_faqs_faq_id_key: {
+        name: "_pgroll_new_faqs_faq_id_key",
+        columns: ["faq_id"],
+      },
+      _pgroll_new_faqs_order_key: {
+        name: "_pgroll_new_faqs_order_key",
+        columns: ["order"],
+      },
+      _pgroll_new_faqs_question_key: {
+        name: "_pgroll_new_faqs_question_key",
+        columns: ["question"],
+      },
       _pgroll_new_faqs_xata_id_key: {
         name: "_pgroll_new_faqs_xata_id_key",
         columns: ["xata_id"],
-      },
-      faqs__pgroll_new_faq_id_key: {
-        name: "faqs__pgroll_new_faq_id_key",
-        columns: ["faq_id"],
-      },
-      faqs__pgroll_new_question_key: {
-        name: "faqs__pgroll_new_question_key",
-        columns: ["question"],
       },
     },
     columns: [
@@ -696,14 +684,14 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "createdAt",
         type: "datetime",
         notNull: true,
         unique: false,
-        defaultValue: "now()",
+        defaultValue: null,
         comment: "",
       },
       {
@@ -712,14 +700,14 @@ const tables = [
         notNull: true,
         unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "order",
         type: "int",
         notNull: true,
-        unique: false,
-        defaultValue: "0",
+        unique: true,
+        defaultValue: null,
         comment: "",
       },
       {
@@ -728,131 +716,15 @@ const tables = [
         notNull: true,
         unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "updatedAt",
         type: "datetime",
         notNull: true,
         unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "xata_createdat",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "xata_id",
-        type: "text",
-        notNull: true,
-        unique: true,
-        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
-        comment: "",
-      },
-      {
-        name: "xata_updatedat",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "xata_version",
-        type: "int",
-        notNull: true,
-        unique: false,
-        defaultValue: "0",
-        comment: "",
-      },
-    ],
-  },
-  {
-    name: "likes",
-    checkConstraints: {
-      likes_xata_id_length_xata_id: {
-        name: "likes_xata_id_length_xata_id",
-        columns: ["xata_id"],
-        definition: "CHECK ((length(xata_id) < 256))",
-      },
-    },
-    foreignKeys: {
-      commentId_link: {
-        name: "commentId_link",
-        columns: ["commentId"],
-        referencedTable: "comments",
-        referencedColumns: ["comment_id"],
-        onDelete: "CASCADE",
-      },
-      postId_link: {
-        name: "postId_link",
-        columns: ["postId"],
-        referencedTable: "posts",
-        referencedColumns: ["post_id"],
-        onDelete: "SET NULL",
-      },
-    },
-    primaryKey: [],
-    uniqueConstraints: {
-      _pgroll_new_likes_xata_id_key: {
-        name: "_pgroll_new_likes_xata_id_key",
-        columns: ["xata_id"],
-      },
-      likes__pgroll_new_like_id_key: {
-        name: "likes__pgroll_new_like_id_key",
-        columns: ["like_id"],
-      },
-      likes__pgroll_new_userId_key: {
-        name: "likes__pgroll_new_userId_key",
-        columns: ["userId"],
-      },
-    },
-    columns: [
-      {
-        name: "commentId",
-        type: "link",
-        link: { table: "comments" },
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: '{"xata.link":"comments"}',
-      },
-      {
-        name: "createdAt",
-        type: "datetime",
-        notNull: true,
-        unique: false,
-        defaultValue: "now()",
-        comment: "",
-      },
-      {
-        name: "like_id",
-        type: "text",
-        notNull: true,
-        unique: true,
-        defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "postId",
-        type: "link",
-        link: { table: "posts" },
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: '{"xata.link":"posts"}',
-      },
-      {
-        name: "userId",
-        type: "text",
-        notNull: true,
-        unique: true,
-        defaultValue: null,
+        defaultValue:
+          "'2025-07-01 06:56:05.40925+00'::timestamp with time zone",
         comment: "",
       },
       {
@@ -897,17 +769,42 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      messages_xata_text_length_email: {
+        name: "messages_xata_text_length_email",
+        columns: ["email"],
+        definition: "CHECK ((octet_length(email) <= 204800))",
+      },
+      messages_xata_text_length_message_id: {
+        name: "messages_xata_text_length_message_id",
+        columns: ["message_id"],
+        definition: "CHECK ((octet_length(message_id) <= 204800))",
+      },
+      messages_xata_text_length_name: {
+        name: "messages_xata_text_length_name",
+        columns: ["name"],
+        definition: "CHECK ((octet_length(name) <= 204800))",
+      },
+      messages_xata_text_length_status: {
+        name: "messages_xata_text_length_status",
+        columns: ["status"],
+        definition: "CHECK ((octet_length(status) <= 204800))",
+      },
+      messages_xata_text_length_subject: {
+        name: "messages_xata_text_length_subject",
+        columns: ["subject"],
+        definition: "CHECK ((octet_length(subject) <= 204800))",
+      },
     },
     foreignKeys: {},
     primaryKey: [],
     uniqueConstraints: {
+      _pgroll_new_messages_message_id_key: {
+        name: "_pgroll_new_messages_message_id_key",
+        columns: ["message_id"],
+      },
       _pgroll_new_messages_xata_id_key: {
         name: "_pgroll_new_messages_xata_id_key",
         columns: ["xata_id"],
-      },
-      messages__pgroll_new_message_id_key: {
-        name: "messages__pgroll_new_message_id_key",
-        columns: ["message_id"],
       },
     },
     columns: [
@@ -916,7 +813,8 @@ const tables = [
         type: "datetime",
         notNull: true,
         unique: false,
-        defaultValue: "now()",
+        defaultValue:
+          "'2025-07-01 07:01:18.198073+00'::timestamp with time zone",
         comment: "",
       },
       {
@@ -925,15 +823,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
-      },
-      {
-        name: "message",
-        type: "text",
-        notNull: true,
-        unique: false,
-        defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "message_id",
@@ -941,7 +831,7 @@ const tables = [
         notNull: true,
         unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "name",
@@ -949,7 +839,7 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "status",
@@ -957,22 +847,23 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: "'unread'::text",
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "subject",
         type: "text",
-        notNull: true,
+        notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "updatedAt",
         type: "datetime",
         notNull: true,
         unique: false,
-        defaultValue: "now()",
+        defaultValue:
+          "'2025-07-01 07:01:18.198073+00'::timestamp with time zone",
         comment: "",
       },
       {
@@ -1017,19 +908,73 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      posts_xata_multiple_length_categories: {
+        name: "posts_xata_multiple_length_categories",
+        columns: ["categories"],
+        definition:
+          "CHECK ((octet_length(array_to_string(categories, ''::text)) < 65536))",
+      },
+      posts_xata_text_length_content: {
+        name: "posts_xata_text_length_content",
+        columns: ["content"],
+        definition: "CHECK ((octet_length(content) <= 204800))",
+      },
+      posts_xata_text_length_excerpt: {
+        name: "posts_xata_text_length_excerpt",
+        columns: ["excerpt"],
+        definition: "CHECK ((octet_length(excerpt) <= 204800))",
+      },
+      posts_xata_text_length_featuredImage: {
+        name: "posts_xata_text_length_featuredImage",
+        columns: ["featuredImage"],
+        definition: 'CHECK ((octet_length("featuredImage") <= 204800))',
+      },
+      posts_xata_text_length_metaTitle: {
+        name: "posts_xata_text_length_metaTitle",
+        columns: ["metaTitle"],
+        definition: 'CHECK ((octet_length("metaTitle") <= 204800))',
+      },
+      posts_xata_text_length_metsDescription: {
+        name: "posts_xata_text_length_metsDescription",
+        columns: ["metsDescription"],
+        definition: 'CHECK ((octet_length("metsDescription") <= 204800))',
+      },
+      posts_xata_text_length_post_id: {
+        name: "posts_xata_text_length_post_id",
+        columns: ["post_id"],
+        definition: "CHECK ((octet_length(post_id) <= 204800))",
+      },
+      posts_xata_text_length_slug: {
+        name: "posts_xata_text_length_slug",
+        columns: ["slug"],
+        definition: "CHECK ((octet_length(slug) <= 204800))",
+      },
+      posts_xata_text_length_status: {
+        name: "posts_xata_text_length_status",
+        columns: ["status"],
+        definition: "CHECK ((octet_length(status) <= 204800))",
+      },
+      posts_xata_text_length_title: {
+        name: "posts_xata_text_length_title",
+        columns: ["title"],
+        definition: "CHECK ((octet_length(title) <= 204800))",
+      },
     },
     foreignKeys: {},
     primaryKey: [],
     uniqueConstraints: {
+      _pgroll_new_posts_excerpt_key: {
+        name: "_pgroll_new_posts_excerpt_key",
+        columns: ["excerpt"],
+      },
+      _pgroll_new_posts_post_id_key: {
+        name: "_pgroll_new_posts_post_id_key",
+        columns: ["post_id"],
+      },
       _pgroll_new_posts_xata_id_key: {
         name: "_pgroll_new_posts_xata_id_key",
         columns: ["xata_id"],
       },
-      posts__pgroll_new_post_id_key: {
-        name: "posts__pgroll_new_post_id_key",
-        columns: ["post_id"],
-      },
-      posts_slug_unique: { name: "posts_slug_unique", columns: ["slug"] },
     },
     columns: [
       {
@@ -1043,9 +988,9 @@ const tables = [
       {
         name: "commentCount",
         type: "int",
-        notNull: true,
+        notNull: false,
         unique: false,
-        defaultValue: "0",
+        defaultValue: null,
         comment: "",
       },
       {
@@ -1054,23 +999,24 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "createdAt",
         type: "datetime",
         notNull: true,
         unique: false,
-        defaultValue: "now()",
+        defaultValue:
+          "'2025-07-01 07:54:59.397953+00'::timestamp with time zone",
         comment: "",
       },
       {
         name: "excerpt",
         type: "text",
         notNull: true,
-        unique: false,
+        unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "featuredImage",
@@ -1078,19 +1024,11 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "likes",
         type: "int",
-        notNull: true,
-        unique: false,
-        defaultValue: "0",
-        comment: "",
-      },
-      {
-        name: "metaDescription",
-        type: "text",
         notNull: false,
         unique: false,
         defaultValue: null,
@@ -1102,7 +1040,15 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "metsDescription",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "post_id",
@@ -1110,31 +1056,32 @@ const tables = [
         notNull: true,
         unique: true,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "publishDate",
         type: "datetime",
         notNull: false,
         unique: false,
-        defaultValue: null,
+        defaultValue:
+          "'2025-07-01 07:54:59.397953+00'::timestamp with time zone",
         comment: "",
       },
       {
         name: "slug",
         type: "text",
         notNull: true,
-        unique: true,
+        unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "status",
         type: "text",
         notNull: true,
         unique: false,
-        defaultValue: "''::text",
-        comment: "",
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "title",
@@ -1142,14 +1089,15 @@ const tables = [
         notNull: true,
         unique: false,
         defaultValue: null,
-        comment: "",
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "updatedAt",
         type: "datetime",
-        notNull: true,
+        notNull: false,
         unique: false,
-        defaultValue: "now()",
+        defaultValue:
+          "'2025-07-01 07:54:59.397953+00'::timestamp with time zone",
         comment: "",
       },
       {
@@ -1194,9 +1142,6 @@ export type InferredTypes = SchemaInference<SchemaTables>;
 export type Appointments = InferredTypes["appointments"];
 export type AppointmentsRecord = Appointments & XataRecord;
 
-export type Comments = InferredTypes["comments"];
-export type CommentsRecord = Comments & XataRecord;
-
 export type Donations = InferredTypes["donations"];
 export type DonationsRecord = Donations & XataRecord;
 
@@ -1209,9 +1154,6 @@ export type EventsRecord = Events & XataRecord;
 export type Faqs = InferredTypes["faqs"];
 export type FaqsRecord = Faqs & XataRecord;
 
-export type Likes = InferredTypes["likes"];
-export type LikesRecord = Likes & XataRecord;
-
 export type Messages = InferredTypes["messages"];
 export type MessagesRecord = Messages & XataRecord;
 
@@ -1220,12 +1162,10 @@ export type PostsRecord = Posts & XataRecord;
 
 export type DatabaseSchema = {
   appointments: AppointmentsRecord;
-  comments: CommentsRecord;
   donations: DonationsRecord;
   donors: DonorsRecord;
   events: EventsRecord;
   faqs: FaqsRecord;
-  likes: LikesRecord;
   messages: MessagesRecord;
   posts: PostsRecord;
 };
@@ -1233,7 +1173,8 @@ export type DatabaseSchema = {
 const DatabaseClient = buildClient();
 
 const defaultOptions = {
-  databaseURL: "https://Obsidian-workspace-o1sajg.us-east-1.xata.sh/db/fgssl",
+  databaseURL:
+    "https://Efgbc-ssl-s-workspace-86ese1.us-east-1.xata.sh/db/efgbcssl",
 };
 
 export class XataClient extends DatabaseClient<DatabaseSchema> {

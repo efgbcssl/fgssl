@@ -1,12 +1,49 @@
 {
   "done": true,
   "migration": {
-    "name": "mig_d1a0u7ado80pli9qtbkg",
+    "name": "mig_d1hn62ar9e9qaqkp8eb0",
     "operations": [
       {
         "create_table": {
           "name": "donors",
           "columns": [
+            {
+              "name": "email",
+              "type": "text",
+              "check": {
+                "name": "donors_xata_text_length_email",
+                "constraint": "OCTET_LENGTH(\"email\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "lastDonationDate",
+              "type": "timestamptz"
+            },
+            {
+              "name": "name",
+              "type": "text",
+              "check": {
+                "name": "donors_xata_text_length_name",
+                "constraint": "OCTET_LENGTH(\"name\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "phone",
+              "type": "text",
+              "check": {
+                "name": "donors_xata_text_length_phone",
+                "constraint": "OCTET_LENGTH(\"phone\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "totalDonations",
+              "type": "double precision"
+            },
             {
               "name": "xata_id",
               "type": "text",
@@ -50,8 +87,8 @@
     ]
   },
   "migrationType": "pgroll",
-  "name": "mig_d1a0u7ado80pli9qtbkg",
-  "parent": "mig_d1a0to2unsp1brisbmmg",
+  "name": "mig_d1hn62ar9e9qaqkp8eb0",
+  "parent": "mig_d1hmftqunsp1brisddp0",
   "schema": "public",
-  "startedAt": "2025-06-19T13:22:38.067731Z"
+  "startedAt": "2025-07-01T05:32:58.440158Z"
 }

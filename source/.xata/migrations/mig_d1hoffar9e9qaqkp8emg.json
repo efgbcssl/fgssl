@@ -1,0 +1,115 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1hoffar9e9qaqkp8emg",
+    "operations": [
+      {
+        "create_table": {
+          "name": "messages",
+          "columns": [
+            {
+              "name": "createdAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "email",
+              "type": "text",
+              "check": {
+                "name": "messages_xata_text_length_email",
+                "constraint": "OCTET_LENGTH(\"email\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "message_id",
+              "type": "text",
+              "check": {
+                "name": "messages_xata_text_length_message_id",
+                "constraint": "OCTET_LENGTH(\"message_id\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "name",
+              "type": "text",
+              "check": {
+                "name": "messages_xata_text_length_name",
+                "constraint": "OCTET_LENGTH(\"name\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "status",
+              "type": "text",
+              "check": {
+                "name": "messages_xata_text_length_status",
+                "constraint": "OCTET_LENGTH(\"status\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "default": "'unread'"
+            },
+            {
+              "name": "subject",
+              "type": "text",
+              "check": {
+                "name": "messages_xata_text_length_subject",
+                "constraint": "OCTET_LENGTH(\"subject\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "updatedAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "messages_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"messages\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"messages\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1hoffar9e9qaqkp8emg",
+  "parent": "mig_d1hod12unsp1brisde70",
+  "schema": "public",
+  "startedAt": "2025-07-01T07:01:18.12384Z"
+}

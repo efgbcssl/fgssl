@@ -16,6 +16,28 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 const TIMEZONE = 'America/New_York' // Eastern Time for Silver Spring, MD
 
+// Utility function to convert 24h time to 12h AM/PM format
+const formatTimeToAMPM = (time24: string) => {
+  const [hours, minutes] = time24.split(':').map(Number)
+  const period = hours >= 12 ? 'PM' : 'AM'
+  const hours12 = hours % 12 || 12 // Convert 0 to 12 for 12AM
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
+}
+
+// Utility function to convert AM/PM time back to 24h format
+const formatAMPMto24 = (time12: string) => {
+  const [timePart, period] = time12.split(' ')
+  let [hours, minutes] = timePart.split(':').map(Number)
+
+  if (period === 'PM' && hours !== 12) {
+    hours += 12
+  } else if (period === 'AM' && hours === 12) {
+    hours = 0
+  }
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}
+
 export default function AppointmentForm() {
   const [date, setDate] = useState<Date>()
   const [time, setTime] = useState<string>('09:00')
@@ -30,7 +52,8 @@ export default function AppointmentForm() {
     const times = []
     for (let hour = 9; hour <= 17; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        times.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)
+        const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        times.push(formatTimeToAMPM(time24))
       }
     }
     return times
@@ -54,7 +77,12 @@ export default function AppointmentForm() {
       }
 
       const data = await response.json()
-      setBookedSlots(data.bookedSlots || [])
+      const bookedSlotsAMPM = data.bookedSlots?.map((slot: string) => {
+        return formatTimeToAMPM(slot)
+      }) || []
+
+      setBookedSlots(bookedSlotsAMPM || [])
+
     } catch (error) {
       console.error('Error checking slots:', error)
       setBookedSlots([])
@@ -72,7 +100,7 @@ export default function AppointmentForm() {
     if (!selectedDate) return
 
     setDate(selectedDate)
-    setTime('09:00') // Reset time when date changes
+    setTime('09:00 AM') // Reset time when date changes
 
     // Get current date in Eastern Time for comparison
     const nowInEastern = toZonedTime(new Date(), TIMEZONE)
@@ -117,9 +145,12 @@ export default function AppointmentForm() {
         throw new Error("Please fill in all required fields.")
       }
 
+      // Convert AM/PM time back to 24h format for backend processing
+      const time24 = formatAMPMto24(time)
+
       // Create date in Eastern Time, then convert to UTC for storage
       const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')
-      const easternDateTime = new Date(`${dateStr}T${time}:00`)
+      const easternDateTime = new Date(`${dateStr}T${time24}:00`)
       const utcDateTime = fromZonedTime(easternDateTime, TIMEZONE)
 
       console.log('Selected date/time (Eastern):', `${dateStr} ${time}`)
@@ -130,6 +161,7 @@ export default function AppointmentForm() {
         email: formValues.email,
         phoneNumber: formValues.phoneNumber,
         preferredDate: utcDateTime.toISOString(),
+        preferredTime: time,
         medium,
       };
 
@@ -168,7 +200,7 @@ export default function AppointmentForm() {
       try {
         formElement.reset()
         setDate(undefined)
-        setTime('09:00')
+        setTime('09:00 AM')
         setMedium('in-person')
         setBookedSlots([])
       } catch (resetError) {
@@ -217,6 +249,7 @@ export default function AppointmentForm() {
       const currentMinute = nowInEastern.getMinutes()
 
       return availableTimes.filter(timeSlot => {
+        const time24 = formatAMPMto24(timeSlot)
         const [hour, minute] = timeSlot.split(':').map(Number)
         const slotTime = hour * 60 + minute
         const currentTime = currentHour * 60 + currentMinute

@@ -9,60 +9,84 @@ import { ExportButtons } from "@/components/ui/export-buttons"
 import { ErrorComponent } from "@/components/ui/error-component"
 import { Button } from "@/components/ui/button"
 import { SendRemindersButton } from "@/components/dashboard/appointments/send-reminder-button"
-import { Calendar } from "lucide-react"
+import { Calendar, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([])
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const { toast } = useToast()
 
+    // Filter states
     const [status, setStatus] = useState<string | null>(null)
     const [medium, setMedium] = useState<string | null>(null)
     const [createdDateRange, setCreatedDateRange] = useState<[Date, Date] | null>(null)
     const [preferredDateRange, setPreferredDateRange] = useState<[Date, Date] | null>(null)
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const queryParams = new URLSearchParams()
-                if (status) queryParams.append('status', status)
-                if (medium) queryParams.append('medium', medium)
-                if (createdDateRange) {
-                    queryParams.append('createdFrom', createdDateRange[0].toISOString())
-                    queryParams.append('createdTo', createdDateRange[1].toISOString())
-                }
-                if (preferredDateRange) {
-                    queryParams.append('preferredFrom', preferredDateRange[0].toISOString())
-                    queryParams.append('preferredTo', preferredDateRange[1].toISOString())
-                }
+    const fetchAppointments = async () => {
+        setIsLoading(true)
+        setError(null)
 
-                const res = await fetch(`/api/appointments?${queryParams.toString()}`, {
-                    method: 'GET',
-                })
+        try {
+            const params = new URLSearchParams()
 
-                if (!res.ok) {
-                    const errorData = await res.json()
-                    setError(errorData.error || 'Failed to load appointments.')
-                } else {
-                    const data = await res.json()
-                    setAppointments(data)
-                }
-            } catch {
-                setError('Failed to load appointments.')
-            } finally {
-                setIsLoading(false)
+            // Add filters if they exist
+            if (status && status !== "all") params.append('status', status)
+            if (medium && medium !== "all") params.append('medium', medium)
+
+            // Date range filters
+            if (createdDateRange) {
+                params.append('createdFrom', createdDateRange[0].toISOString())
+                params.append('createdTo', createdDateRange[1].toISOString())
             }
-        }
+            if (preferredDateRange) {
+                params.append('preferredFrom', preferredDateRange[0].toISOString())
+                params.append('preferredTo', preferredDateRange[1].toISOString())
+            }
 
-        fetchData()
+            const response = await fetch(`/api/appointments?${params.toString()}`)
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to fetch appointments')
+            }
+
+            const data = await response.json()
+            setAppointments(data)
+        } catch (err) {
+            console.error('Failed to fetch appointments:', err)
+            setError(err instanceof Error ? err.message : 'An unknown error occurred')
+            toast({
+                title: "Error",
+                description: "Failed to load appointments",
+                variant: "destructive"
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Initial fetch and refetch when filters change
+    useEffect(() => {
+        fetchAppointments()
+    }, [])
+
+    // Refresh function that can be passed to child components
+    useEffect(() => {
+        if (!isLoading) { // Prevent double fetch on initial load
+            fetchAppointments()
+        }
     }, [status, medium, createdDateRange, preferredDateRange])
 
+    const refreshData = () => {
+        fetchAppointments()
+    }
 
     if (error) {
         return (
             <ErrorComponent
-                title="Fetch Error"
+                title="Appointments Error"
                 message={error}
                 retryLink="/dashboard/appointments"
             />
@@ -74,15 +98,36 @@ export default function AppointmentsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold">Appointments</h2>
-                    <p className="text-muted-foreground">Manage all upcoming and past appointments</p>
+                    <p className="text-muted-foreground">
+                        {isLoading ? "Loading appointments..." : `Showing ${appointments.length} appointments`}
+                    </p>
                 </div>
-                <ExportButtons data={appointments} filename="appointments_export" />
-                <div className="flex gap-2">
-                    <Button variant="outline">
-                        <Calendar className="mr-2 h-4 w-4" />
+
+                <div className="flex flex-wrap gap-2">
+                    <ExportButtons
+                        data={appointments}
+                        filename="appointments_export"
+                        disabled={isLoading || appointments.length === 0}
+                    />
+                    <Button
+                        variant="outline"
+                        disabled={isLoading}
+                        onClick={() => toast({
+                            title: "Coming Soon",
+                            description: "Calendar view will be available in the next update",
+                        })}
+                    >
+                        {isLoading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Calendar className="mr-2 h-4 w-4" />
+                        )}
                         Calendar View
                     </Button>
-                    <SendRemindersButton />
+                    <SendRemindersButton
+                        disabled={isLoading || appointments.length === 0}
+                        onSuccess={refreshData}
+                    />
                 </div>
             </div>
 
@@ -95,10 +140,21 @@ export default function AppointmentsPage() {
                 onCreatedRangeChange={setCreatedDateRange}
                 preferredRange={preferredDateRange}
                 onPreferredRangeChange={setPreferredDateRange}
+                disabled={isLoading}
             />
 
             <div className="bg-white rounded-lg border shadow-sm mt-4">
-                <DataTable columns={columns} data={appointments} />
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        data={appointments}
+                        onRefresh={refreshData}
+                    />
+                )}
             </div>
         </div>
     )

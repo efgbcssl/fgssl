@@ -1,0 +1,171 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1hnbq2r9e9qaqkp8ef0",
+    "operations": [
+      {
+        "create_table": {
+          "name": "donations",
+          "columns": [
+            {
+              "name": "amount",
+              "type": "double precision"
+            },
+            {
+              "name": "currency",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_currency",
+                "constraint": "OCTET_LENGTH(\"currency\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "default": "'USD'"
+            },
+            {
+              "name": "donationType",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_donationType",
+                "constraint": "OCTET_LENGTH(\"donationType\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "donorEmail",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_donorEmail",
+                "constraint": "OCTET_LENGTH(\"donorEmail\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "donorName",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_donorName",
+                "constraint": "OCTET_LENGTH(\"donorName\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "donorPhone",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_donorPhone",
+                "constraint": "OCTET_LENGTH(\"donorPhone\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "isRecurring",
+              "type": "boolean",
+              "default": "'false'"
+            },
+            {
+              "name": "notes",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_notes",
+                "constraint": "OCTET_LENGTH(\"notes\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "paymentMethod",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_paymentMethod",
+                "constraint": "OCTET_LENGTH(\"paymentMethod\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "paymentStatus",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_paymentStatus",
+                "constraint": "OCTET_LENGTH(\"paymentStatus\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "default": "'pending'"
+            },
+            {
+              "name": "receiptUrl",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_receiptUrl",
+                "constraint": "OCTET_LENGTH(\"receiptUrl\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "stripeChargeId",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_stripeChargeId",
+                "constraint": "OCTET_LENGTH(\"stripeChargeId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "stripePaymentIntentId",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_text_length_stripePaymentIntentId",
+                "constraint": "OCTET_LENGTH(\"stripePaymentIntentId\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "donations_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"donations\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"donations\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1hnbq2r9e9qaqkp8ef0",
+  "parent": "mig_d1hn62ar9e9qaqkp8eb0",
+  "schema": "public",
+  "startedAt": "2025-07-01T05:45:13.882507Z"
+}

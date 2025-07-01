@@ -1,0 +1,187 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1hmfp2unsp1brisddo0",
+    "operations": [
+      {
+        "create_table": {
+          "name": "a",
+          "columns": [
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "a_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            }
+          ]
+        }
+      },
+      {
+        "create_table": {
+          "name": "events",
+          "columns": [
+            {
+              "name": "ctaLink",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_ctaLink",
+                "constraint": "OCTET_LENGTH(\"ctaLink\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "ctaText",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_ctaText",
+                "constraint": "OCTET_LENGTH(\"ctaText\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "date",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_date",
+                "constraint": "OCTET_LENGTH(\"date\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_description",
+                "constraint": "OCTET_LENGTH(\"description\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "expiresAt",
+              "type": "timestamptz",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "imageSrc",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_imageSrc",
+                "constraint": "OCTET_LENGTH(\"imageSrc\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "location",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_location",
+                "constraint": "OCTET_LENGTH(\"location\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "order",
+              "type": "bigint"
+            },
+            {
+              "name": "time",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_time",
+                "constraint": "OCTET_LENGTH(\"time\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "title",
+              "type": "text",
+              "check": {
+                "name": "events_xata_text_length_title",
+                "constraint": "OCTET_LENGTH(\"title\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "events_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"a\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"a\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"events\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"events\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1hmfp2unsp1brisddo0",
+  "parent": "mig_d1hkveido80pli9qv050",
+  "schema": "public",
+  "startedAt": "2025-07-01T04:45:25.289553Z"
+}
