@@ -458,6 +458,157 @@ const tables = [
     ],
   },
   {
+    name: "event_registration",
+    checkConstraints: {
+      event_registration_xata_id_length_xata_id: {
+        name: "event_registration_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      event_registration_xata_text_length_email: {
+        name: "event_registration_xata_text_length_email",
+        columns: ["email"],
+        definition: "CHECK ((octet_length(email) <= 204800))",
+      },
+      event_registration_xata_text_length_name: {
+        name: "event_registration_xata_text_length_name",
+        columns: ["name"],
+        definition: "CHECK ((octet_length(name) <= 204800))",
+      },
+      event_registration_xata_text_length_paymentStatus: {
+        name: "event_registration_xata_text_length_paymentStatus",
+        columns: ["paymentStatus"],
+        definition: 'CHECK ((octet_length("paymentStatus") <= 204800))',
+      },
+      event_registration_xata_text_length_stripePaymentIntentId: {
+        name: "event_registration_xata_text_length_stripePaymentIntentId",
+        columns: ["stripePaymentIntentId"],
+        definition: 'CHECK ((octet_length("stripePaymentIntentId") <= 204800))',
+      },
+      event_registration_xata_text_length_stripeSessionId: {
+        name: "event_registration_xata_text_length_stripeSessionId",
+        columns: ["stripeSessionId"],
+        definition: 'CHECK ((octet_length("stripeSessionId") <= 204800))',
+      },
+    },
+    foreignKeys: {
+      event_link: {
+        name: "event_link",
+        columns: ["event"],
+        referencedTable: "events",
+        referencedColumns: ["xata_id"],
+        onDelete: "SET NULL",
+      },
+    },
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_event_registration_xata_id_key: {
+        name: "_pgroll_new_event_registration_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue:
+          "'2025-07-02 13:45:03.77591+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "email",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "event",
+        type: "link",
+        link: { table: "events" },
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"events"}',
+      },
+      {
+        name: "formData",
+        type: "json",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "name",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "paymentStatus",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: "'unpaid'::text",
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "stripePaymentIntentId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "stripeSessionId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "events",
     checkConstraints: {
       events_xata_id_length_xata_id: {
@@ -474,6 +625,11 @@ const tables = [
         name: "events_xata_text_length_ctaText",
         columns: ["ctaText"],
         definition: 'CHECK ((octet_length("ctaText") <= 204800))',
+      },
+      events_xata_text_length_currency: {
+        name: "events_xata_text_length_currency",
+        columns: ["currency"],
+        definition: "CHECK ((octet_length(currency) <= 204800))",
       },
       events_xata_text_length_date: {
         name: "events_xata_text_length_date",
@@ -494,6 +650,11 @@ const tables = [
         name: "events_xata_text_length_location",
         columns: ["location"],
         definition: "CHECK ((octet_length(location) <= 204800))",
+      },
+      events_xata_text_length_stripePriceId: {
+        name: "events_xata_text_length_stripePriceId",
+        columns: ["stripePriceId"],
+        definition: 'CHECK ((octet_length("stripePriceId") <= 204800))',
       },
       events_xata_text_length_time: {
         name: "events_xata_text_length_time",
@@ -520,6 +681,14 @@ const tables = [
     },
     columns: [
       {
+        name: "capacity",
+        type: "int",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
         name: "ctaLink",
         type: "text",
         notNull: false,
@@ -533,6 +702,14 @@ const tables = [
         notNull: false,
         unique: false,
         defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "currency",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: "'USD'::text",
         comment: '{"xata.type":"text"}',
       },
       {
@@ -560,12 +737,28 @@ const tables = [
         comment: "",
       },
       {
+        name: "formSchema",
+        type: "json",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
         name: "imageSrc",
         type: "text",
         notNull: true,
         unique: false,
         defaultValue: null,
         comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "isPaidEvent",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
       },
       {
         name: "location",
@@ -582,6 +775,30 @@ const tables = [
         unique: false,
         defaultValue: null,
         comment: "",
+      },
+      {
+        name: "price",
+        type: "float",
+        notNull: false,
+        unique: false,
+        defaultValue: "'0'::double precision",
+        comment: "",
+      },
+      {
+        name: "requiresRSVP",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
+      },
+      {
+        name: "stripePriceId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "time",
@@ -1156,6 +1373,9 @@ export type DonationsRecord = Donations & XataRecord;
 export type Donors = InferredTypes["donors"];
 export type DonorsRecord = Donors & XataRecord;
 
+export type EventRegistration = InferredTypes["event_registration"];
+export type EventRegistrationRecord = EventRegistration & XataRecord;
+
 export type Events = InferredTypes["events"];
 export type EventsRecord = Events & XataRecord;
 
@@ -1172,6 +1392,7 @@ export type DatabaseSchema = {
   appointments: AppointmentsRecord;
   donations: DonationsRecord;
   donors: DonorsRecord;
+  event_registration: EventRegistrationRecord;
   events: EventsRecord;
   faqs: FaqsRecord;
   messages: MessagesRecord;

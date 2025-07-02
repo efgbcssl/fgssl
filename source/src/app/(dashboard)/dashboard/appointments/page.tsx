@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { columns } from "@/components/dashboard/appointments/columns"
 import { DataTable } from "@/components/dashboard/appointments/data-table"
 import { Appointment } from "@/types/appointments"
@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button"
 import { SendRemindersButton } from "@/components/dashboard/appointments/send-reminder-button"
 import { Calendar, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { subDays } from 'date-fns'
 
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([])
+    const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const { toast } = useToast()
@@ -21,10 +23,13 @@ export default function AppointmentsPage() {
     // Filter states
     const [status, setStatus] = useState<string | null>(null)
     const [medium, setMedium] = useState<string | null>(null)
-    const [createdDateRange, setCreatedDateRange] = useState<[Date, Date] | null>(null)
+    const [createdDateRange, setCreatedDateRange] = useState<[Date, Date] | null>(() => [
+        subDays(new Date(), 30),
+        new Date()
+    ])
     const [preferredDateRange, setPreferredDateRange] = useState<[Date, Date] | null>(null)
 
-    const fetchAppointments = async () => {
+    const fetchAppointments = useCallback(async () => {
         setIsLoading(true)
         setError(null)
 
@@ -32,10 +37,8 @@ export default function AppointmentsPage() {
             const params = new URLSearchParams()
 
             // Add filters if they exist
-            if (status && status !== "all") params.append('status', status)
-            if (medium && medium !== "all") params.append('medium', medium)
-
-            // Date range filters
+            if (status) params.append('status', status)
+            if (medium) params.append('medium', medium)
             if (createdDateRange) {
                 params.append('createdFrom', createdDateRange[0].toISOString())
                 params.append('createdTo', createdDateRange[1].toISOString())
@@ -65,19 +68,19 @@ export default function AppointmentsPage() {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [status, medium, createdDateRange, preferredDateRange, toast])
 
     // Initial fetch and refetch when filters change
     useEffect(() => {
         fetchAppointments()
-    }, [])
+    }, [fetchAppointments])
 
     // Refresh function that can be passed to child components
     useEffect(() => {
         if (!isLoading) { // Prevent double fetch on initial load
             fetchAppointments()
         }
-    }, [status, medium, createdDateRange, preferredDateRange])
+    }, [status, medium, createdDateRange, preferredDateRange, toast])
 
     const refreshData = () => {
         fetchAppointments()
@@ -91,6 +94,13 @@ export default function AppointmentsPage() {
                 retryLink="/dashboard/appointments"
             />
         )
+    }
+
+    const clearAllFilters = () => {
+        setStatus(null)
+        setMedium(null)
+        setCreatedDateRange([subDays(new Date(), 30), new Date()])
+        setPreferredDateRange(null)
     }
 
     return (
@@ -141,6 +151,8 @@ export default function AppointmentsPage() {
                 preferredRange={preferredDateRange}
                 onPreferredRangeChange={setPreferredDateRange}
                 disabled={isLoading}
+                onClearAll={clearAllFilters}
+                isLoading={isLoading}
             />
 
             <div className="bg-white rounded-lg border shadow-sm mt-4">
@@ -152,6 +164,7 @@ export default function AppointmentsPage() {
                     <DataTable
                         columns={columns}
                         data={appointments}
+                        isLoading={isLoading}
                         onRefresh={refreshData}
                     />
                 )}

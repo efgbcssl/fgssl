@@ -1,0 +1,131 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1ijfnir9e9qaqkp8kr0",
+    "operations": [
+      {
+        "create_table": {
+          "name": "event_registration",
+          "columns": [
+            {
+              "name": "event",
+              "type": "text",
+              "comment": "{\"xata.link\":\"events\"}",
+              "nullable": true,
+              "references": {
+                "name": "event_link",
+                "table": "events",
+                "column": "xata_id",
+                "on_delete": "SET NULL"
+              }
+            },
+            {
+              "name": "name",
+              "type": "text",
+              "check": {
+                "name": "event_registration_xata_text_length_name",
+                "constraint": "OCTET_LENGTH(\"name\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "email",
+              "type": "text",
+              "check": {
+                "name": "event_registration_xata_text_length_email",
+                "constraint": "OCTET_LENGTH(\"email\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "formData",
+              "type": "jsonb",
+              "nullable": true
+            },
+            {
+              "name": "paymentStatus",
+              "type": "text",
+              "check": {
+                "name": "event_registration_xata_text_length_paymentStatus",
+                "constraint": "OCTET_LENGTH(\"paymentStatus\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "default": "'unpaid'",
+              "nullable": true
+            },
+            {
+              "name": "stripeSessionId",
+              "type": "text",
+              "check": {
+                "name": "event_registration_xata_text_length_stripeSessionId",
+                "constraint": "OCTET_LENGTH(\"stripeSessionId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "stripePaymentIntentId",
+              "type": "text",
+              "check": {
+                "name": "event_registration_xata_text_length_stripePaymentIntentId",
+                "constraint": "OCTET_LENGTH(\"stripePaymentIntentId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "createdAt",
+              "type": "timestamptz",
+              "default": "'now()'",
+              "nullable": true
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "event_registration_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"event_registration\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"event_registration\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1ijfnir9e9qaqkp8kr0",
+  "parent": "mig_d1ijcqaunsp1brisdkjg",
+  "schema": "public",
+  "startedAt": "2025-07-02T13:45:03.698887Z"
+}

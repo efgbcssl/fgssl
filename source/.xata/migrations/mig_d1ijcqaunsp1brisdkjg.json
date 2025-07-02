@@ -1,0 +1,97 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1ijcqaunsp1brisdkjg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "requiresRSVP",
+            "type": "boolean",
+            "default": "'false'",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "isPaidEvent",
+            "type": "boolean",
+            "default": "'false'",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "price",
+            "type": "double precision",
+            "default": "'0'",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "currency",
+            "type": "text",
+            "check": {
+              "name": "events_xata_text_length_currency",
+              "constraint": "OCTET_LENGTH(\"currency\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "default": "'USD'",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "stripePriceId",
+            "type": "text",
+            "check": {
+              "name": "events_xata_text_length_stripePriceId",
+              "constraint": "OCTET_LENGTH(\"stripePriceId\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "capacity",
+            "type": "bigint",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "events",
+          "column": {
+            "name": "formSchema",
+            "type": "jsonb",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1ijcqaunsp1brisdkjg",
+  "parent": "mig_d1i1nt2unsp1brisdgl0",
+  "schema": "public",
+  "startedAt": "2025-07-02T13:38:50.204897Z"
+}

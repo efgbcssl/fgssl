@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
+import { toast } from '@/hooks/use-toast'
 
 interface FAQParams {
     params: {
@@ -9,8 +10,9 @@ interface FAQParams {
 }
 
 // ✅ Update FAQ
-export async function PUT(req: Request, context: FAQParams) {
-    const { faq_id: faqId } = context.params
+export async function PUT(req: Request, context: Promise<FAQParams>) {
+    const { params } = await context
+    const { faq_id: faqId } = await params
 
     try {
         const { question, answer, order } = await req.json()
@@ -33,6 +35,8 @@ export async function PUT(req: Request, context: FAQParams) {
                 { status: 400 }
             )
         }
+        console.log('Updating FAQ with ID:', faqId)
+
 
         const updatedFAQ = await xata.db.faqs.update(faqId, {
             question,
@@ -58,8 +62,9 @@ export async function PUT(req: Request, context: FAQParams) {
 }
 
 // ✅ Delete FAQ
-export async function DELETE(req: Request, context: FAQParams) {
-    const { faq_id: faqId } = context.params
+export async function DELETE(req: Request, context: Promise<FAQParams>) {
+    const { params } = await context
+    const { faq_id: faqId } = await params
 
     try {
         const existingFAQ = await xata.db.faqs

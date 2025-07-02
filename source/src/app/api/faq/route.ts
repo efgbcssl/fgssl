@@ -45,7 +45,8 @@ export async function POST(req: Request) {
             faq_id: uuidv4(),
             question,
             answer,
-            order: newOrder
+            order: newOrder,
+            createdAt: new Date().toISOString()
         })
 
         return NextResponse.json(newFAQ, { status: 201 })

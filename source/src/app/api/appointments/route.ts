@@ -22,65 +22,49 @@ const createErrorResponse = (message: string, status: number, details?: any) => 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)
-        const dateParam = searchParams.get('date')
-        const timezone = searchParams.get('timezone') || TIMEZONE
+        const status = searchParams.get('status')
+        const medium = searchParams.get('medium')
+        const createdFrom = searchParams.get('createdFrom')
+        const createdTo = searchParams.get('createdTo')
+        const preferredFrom = searchParams.get('preferredFrom')
+        const preferredTo = searchParams.get('preferredTo')
 
-        // Validate input
-        if (!dateParam) {
-            return createErrorResponse('Date parameter is required', 400)
+        // Base query (exclude cancelled)
+        let query = xata.db.appointments
+
+        // Apply status filter if provided
+        if (status) {
+            query = query.filter('status', status)
         }
 
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-            return createErrorResponse('Invalid date format. Use YYYY-MM-DD', 400)
+        // Apply medium filter if provided
+        if (medium) {
+            query = query.filter('medium', medium)
         }
 
-        // Create date range for the entire day in specified timezone
-        const startOfDay = fromZonedTime(new Date(`${dateParam}T00:00:00`), timezone)
-        const endOfDay = fromZonedTime(new Date(`${dateParam}T23:59:59.999`), timezone)
-
-        console.log(`🔍 Checking appointments for ${dateParam} in ${timezone}`, {
-            startUTC: startOfDay.toISOString(),
-            endUTC: endOfDay.toISOString()
-        })
-
-        // Query appointments with enhanced filtering
-        const bookedAppointments = await xata.db.appointments
-            .filter('preferredDate', {
-                $ge: startOfDay.toISOString(),
-                $le: endOfDay.toISOString()
+        // Apply created date range filter
+        if (createdFrom && createdTo) {
+            query = query.filter('createdAt', {
+                $ge: new Date(createdFrom),
+                $le: new Date(createdTo)
             })
-            .filter({ $not: { status: 'cancelled' } }) // Exclude cancelled appointments
-            .select(['preferredDate', 'fullName'])
-            .getAll()
+        }
 
-        // Process time slots with proper timezone handling
-        const bookedSlots = bookedAppointments.map(appt => {
-            const apptDate = new Date(appt.preferredDate ?? '')
-            return {
-                time24: formatInTimeZone(apptDate, timezone, 'HH:mm'),
-                timeDisplay: formatInTimeZone(apptDate, timezone, 'h:mm a'),
-                name: appt.fullName
-            }
-        })
+        // Apply preferred date range filter
+        if (preferredFrom && preferredTo) {
+            query = query.filter('preferredDate', {
+                $ge: new Date(preferredFrom),
+                $le: new Date(preferredTo)
+            })
+        }
 
-        return NextResponse.json({
-            date: dateParam,
-            timezone,
-            availableSlots: generateTimeSlots(dateParam, timezone).filter(slot =>
-                !bookedSlots.some(booked => booked.time24 === slot.time24)
-            ),
-            bookedSlots,
-            stats: {
-                totalBooked: bookedSlots.length,
-                totalAvailable: 17 - bookedSlots.length // 9am-5pm with 30min slots = 17 slots
-            }
-        })
-
+        // Execute query
+        const appointments = await query.getMany()
+        return NextResponse.json(appointments)
     } catch (error) {
-        return createErrorResponse('Failed to check appointments', 500, error)
+        return createErrorResponse('Failed to fetch appointments', 500, error)
     }
 }
-
 // Generate all possible time slots for a day
 function generateTimeSlots(date: string, timezone: string) {
     const slots = []
