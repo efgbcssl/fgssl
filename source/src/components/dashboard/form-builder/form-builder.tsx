@@ -18,7 +18,7 @@ export const FormBuilder = ({
         const newFields = [...fields, {
             id: `field-${Date.now()}`,
             label: 'New Field',
-            type: 'text',
+            type: 'text' as FieldType,
             required: false,
             options: []
         }]

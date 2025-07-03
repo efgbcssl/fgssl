@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
 import { XataClient } from '@/xata'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(process.env.STRIPE_EVENT_WEBHOOK_SECRET!, {
     apiVersion: '2025-05-28.basil'
 })
 
@@ -33,15 +33,16 @@ export async function POST(req: Request) {
             cancel_url: cancelUrl,
             metadata: {
                 eventId,
-                registrationId: registration.id
+                registrationId: registration.xata_id
             },
             customer_email: email
         })
 
         return NextResponse.json({ sessionId: session.id })
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         return NextResponse.json(
-            { error: error.message },
+            { error: errorMessage },
             { status: 500 }
         )
     }

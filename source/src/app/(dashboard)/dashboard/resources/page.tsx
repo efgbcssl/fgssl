@@ -452,7 +452,7 @@ export default function AdminResourcesPage() {
                                 <PaginationItem>
                                     <PaginationPrevious
                                         onClick={() => setPage(p => Math.max(p - 1, 1))}
-                                        disabled={page === 1}
+
                                     />
                                 </PaginationItem>
                                 <PaginationItem>
@@ -463,7 +463,7 @@ export default function AdminResourcesPage() {
                                 <PaginationItem>
                                     <PaginationNext
                                         onClick={() => setPage(p => Math.min(p + 1, pageCount))}
-                                        disabled={page === pageCount}
+
                                     />
                                 </PaginationItem>
                             </PaginationContent>

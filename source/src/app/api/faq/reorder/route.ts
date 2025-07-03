@@ -39,15 +39,15 @@ export async function POST(req: Request) {
             .getAll()
 
         const faqIdMap = new Map(
-            existingRecords.map(faq => [faq.faq_id, faq.faq_id])
+            existingRecords.map(faq => [faq.faq_id, faq.xata_id])
         )
 
-        // 2. Build valid updates with faq_id
+        // 2. Build valid updates with xata_id
         const finalUpdates = updates.map(f => {
-            const faq_id = faqIdMap.get(f.faq_id)
-            if (!faq_id) throw new Error(`FAQ ID ${f.faq_id} not found in DB`)
+            const xata_id = faqIdMap.get(f.faq_id)
+            if (!xata_id) throw new Error(`FAQ ID ${f.faq_id} not found in DB`)
             return {
-                faq_id,
+                xata_id,
                 order: f.order,
             }
         })

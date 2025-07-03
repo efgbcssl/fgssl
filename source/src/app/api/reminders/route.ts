@@ -15,7 +15,6 @@ export async function GET() {
                 $le: tomorrow.toISOString()
             })
             .filter('status', 'pending')
-            .filter('reminderSent', false)
             .getAll()
 
         // Send reminders
@@ -23,16 +22,16 @@ export async function GET() {
         for (const appointment of upcomingAppointments) {
             try {
                 await sendReminderEmail({
-                    to: appointment.email,
-                    fullName: appointment.fullName,
-                    preferredDateTime: new Date(appointment.preferredDate).toLocaleString(),
-                    medium: appointment.medium,
+                    to: appointment.email ?? '',
+                    fullName: appointment.fullName ?? '',
+                    preferredDateTime: new Date(appointment.preferredDate ?? '').toLocaleString(),
+                    medium: appointment.medium ?? '',
                 })
 
                 // Update appointment to mark reminder sent
-                await xata.db.appointments.update(appointment.xata_id, {
-                    reminderSent: true
-                })
+                //await xata.db.appointments.update(
+                //  { id: appointment.xata_id, reminderSent: true }
+                //)
 
                 results.push({ id: appointment.xata_id, status: 'success' })
             } catch (error) {

@@ -19,7 +19,7 @@ export const getBlogPosts = async (adminView: boolean = false): Promise<ApiRespo
             'likes',
             'featuredImage',
             'metaTitle',
-            'metaDescription'
+            'metsDescription'
         ]);
 
         const filteredQuery = adminView
@@ -52,10 +52,10 @@ export const getBlogPosts = async (adminView: boolean = false): Promise<ApiRespo
             // commentCount: post.commentCount || 0,
             likes: post.likes || 0,
             createdAt: post.createdAt.toISOString(),
-            updatedAt: post.updatedAt?.toISOString(),
+            updatedAt: post.updatedAt?.toISOString() ?? '',
             featuredImage: post.featuredImage || undefined,
             metaTitle: post.metaTitle || undefined,
-            metaDescription: post.metaDescription || undefined
+            metaDescription: post.metsDescription || undefined
         }));
 
         return {
@@ -86,13 +86,7 @@ export const getBlogPostBySlug = async (slug: string): Promise<ApiResponse<BlogP
         }
 
         return {
-            data: transformPost({
-                ...record,
-                categories: record.categories ?? undefined,
-                featuredImage: record.featuredImage ?? undefined,
-                metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
-                metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
-            }),
+            //data: transformPost(),
             status: 200,
             error: undefined
         };
@@ -130,13 +124,13 @@ export const createBlogPost = async (postData: BlogPostCreate): Promise<ApiRespo
         }
 
         return {
-            data: transformPost({
+            /*data: transformPost({
                 ...record,
                 categories: record.categories ?? undefined,
                 featuredImage: record.featuredImage ?? undefined,
                 metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
                 metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
-            }),
+            }),*/
             status: 201,
             error: undefined
         };
@@ -172,13 +166,13 @@ export const updateBlogPost = async (
         }
 
         return {
-            data: transformPost({
+            /*data: transformPost({
                 ...record,
                 categories: record.categories ?? undefined,
                 featuredImage: record.featuredImage ?? undefined,
                 metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
                 metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
-            }),
+            }),*/
             status: 200,
             error: undefined
         };

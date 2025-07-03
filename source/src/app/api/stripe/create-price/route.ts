@@ -30,12 +30,12 @@ export async function POST(req: Request) {
 
         // Create or update product
         let productId: string
-        if (existingEvent?.stripeProductId) {
-            await stripe.products.update(existingEvent.stripeProductId, {
+        if (existingEvent?.xata_id) {
+            await stripe.products.update(existingEvent.xata_id, {
                 name: productName,
                 active: true
             })
-            productId = existingEvent.stripeProductId
+            productId = existingEvent.xata_id
         } else {
             const product = await stripe.products.create({
                 name: productName,
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
             // Store product ID in Xata
             await xata.db.events.update(eventId, {
-                stripeProductId: productId
+                xata_id: productId
             })
         }
 
@@ -59,8 +59,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ priceId: stripePrice.id })
     } catch (error) {
+        const errorMessage = (error instanceof Error) ? error.message : 'An unknown error occurred';
         return NextResponse.json(
-            { error: error.message },
+            { error: errorMessage },
             { status: 500 }
         )
     }

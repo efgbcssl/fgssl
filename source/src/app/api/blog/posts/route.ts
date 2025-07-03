@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { xata } from '@/lib/xata';
-import { BlogPost } from '@/types/blog';
+
 
 // Get all blog posts
 export async function GET(request: Request) {
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
             categories: categories || [],
             featuredImage: featuredImage || '',
             metaTitle: metaTitle || '',
-            metaDescription: metaDescription || '',
+            metsDescription: metaDescription || '',
             likes: 0,
         });
 

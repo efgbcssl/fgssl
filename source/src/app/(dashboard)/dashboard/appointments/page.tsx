@@ -117,7 +117,6 @@ export default function AppointmentsPage() {
                     <ExportButtons
                         data={appointments}
                         filename="appointments_export"
-                        disabled={isLoading || appointments.length === 0}
                     />
                     <Button
                         variant="outline"
@@ -135,8 +134,6 @@ export default function AppointmentsPage() {
                         Calendar View
                     </Button>
                     <SendRemindersButton
-                        disabled={isLoading || appointments.length === 0}
-                        onSuccess={refreshData}
                     />
                 </div>
             </div>
@@ -164,8 +161,6 @@ export default function AppointmentsPage() {
                     <DataTable
                         columns={columns}
                         data={appointments}
-                        isLoading={isLoading}
-                        onRefresh={refreshData}
                     />
                 )}
             </div>

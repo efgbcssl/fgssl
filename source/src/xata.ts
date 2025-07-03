@@ -535,6 +535,14 @@ const tables = [
         comment: '{"xata.link":"events"}',
       },
       {
+        name: "event_reg_id",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
         name: "formData",
         type: "json",
         notNull: false,

@@ -7,7 +7,7 @@ import { Like } from '@/types/like';
 export async function POST(request: Request) {
     const { postId, commentId, userId } = await request.json();
 
-    try {
+    try {/*
         // Check if like already exists
         const existingLike = await xata.db.likes
             .filter({
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
             return NextResponse.json({ liked: true });
         }
-    } catch (error) {
+    */} catch (error) {
         console.error('Error toggling like:', error);
         return NextResponse.json(
             { error: 'Failed to toggle like' },
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
         );
     }
 
-    try {
+    try {/*
         const like = await xata.db.likes
             .filter(
                 commentId
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
             .getFirst();
 
         return NextResponse.json({ liked: !!like });
-    } catch (error) {
+    */} catch (error) {
         console.error('Error checking like status:', error);
         return NextResponse.json(
             { error: 'Failed to check like status' },

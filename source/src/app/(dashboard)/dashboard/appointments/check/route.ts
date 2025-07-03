@@ -20,9 +20,9 @@ export async function GET(request: Request) {
 
         // Handle case where preferredDate might be null/undefined
         const bookedTimes = appointments
-            .filter(appt => appt.preferredDate)
+            .filter(appt => appt.preferredDate != null)
             .map(appt => {
-                const time = new Date(appt.preferredDate)
+                const time = new Date(appt.preferredDate as string)
                 return `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`
             })
 

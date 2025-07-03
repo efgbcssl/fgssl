@@ -6,8 +6,38 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { loadStripe } from '@stripe/stripe-js'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from '@/components/ui/select'
+import { RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+type FormFieldOption = {
+    id: string
+    label: string
+}
+
+type FormField = {
+    id: string
+    label: string
+    type: string
+    required?: boolean
+    options?: FormFieldOption[]
+}
+
+type Event = {
+    id: string
+    isPaidEvent: boolean
+    stripePriceId?: string
+    currency?: string
+    price?: number
+    formSchema?: {
+        fields?: FormField[]
+    }
+    // add other properties as needed
+}
 
 export function EventRegistration({ event }: { event: Event }) {
     const [name, setName] = useState('')
@@ -56,6 +86,7 @@ export function EventRegistration({ event }: { event: Event }) {
                 })
             }
         } catch (error) {
+            console.error(error)
             toast({
                 title: 'Error',
                 description: 'Failed to register for the event',
@@ -79,7 +110,7 @@ export function EventRegistration({ event }: { event: Event }) {
                         Price: {new Intl.NumberFormat('en-US', {
                             style: 'currency',
                             currency: event.currency
-                        }).format(event.price)}
+                        }).format(event.price ?? 0)}
                     </p>
                 </div>
             )}

@@ -11,7 +11,7 @@ const endpointSecret = process.env.STRIPE_EVENT_WEBHOOK_SECRET!
 
 export async function POST(req: Request) {
     const body = await req.text()
-    const sig = headers().get('stripe-signature')
+    const sig = (await headers()).get('stripe-signature')
 
     let event: Stripe.Event
 
@@ -55,33 +55,26 @@ export async function POST(req: Request) {
             const charge = charges.data[0]
 
             // Update registration record
-            await xata.db.event_registrations.update(metadata.registrationId, {
+            await xata.db.event_registration.update({
+                xata_id: metadata.registrationId,
                 paymentStatus: 'paid',
-                amount,
-                currency,
-                stripeSessionId: session.id,
                 stripePaymentIntentId: paymentIntent.id,
-                stripeChargeId: charge?.id,
-                receiptUrl: charge?.receipt_url || '',
-                paidAt: new Date().toISOString()
             })
 
             // Send confirmation email
             try {
                 const event = await xata.db.events.read(metadata.eventId)
-                const registration = await xata.db.event_registrations.read(metadata.registrationId)
+                const registration = await xata.db.event_registration.read(metadata.registrationId)
 
                 if (registration?.email && event) {
                     await sendEventRegistrationEmail({
                         to: registration.email,
                         eventName: event.title,
-                        eventDate: event.date,
-                        eventTime: event.time,
+                        eventDate: event.date ?? '',
+                        eventTime: event.time ?? '',
                         eventLocation: event.location,
-                        attendeeName: registration.name,
-                        amountPaid: amount,
-                        receiptUrl: charge?.receipt_url || '',
-                        eventDetails: event.description || ''
+                        fullName: registration.name ?? '',
+                        additionalDetails: event.description || ''
                     })
                 }
             } catch (emailError) {

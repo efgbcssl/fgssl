@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
     request: Request,
-    { params }: { params: { message_id: string } }
+    context: { params: Promise<{ message_id: string }> }
 ) {
     try {
-        const { message_id } = params
+        const { message_id } = await context.params
 
         if (!message_id) {
             return NextResponse.json(
@@ -50,10 +50,10 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { message_id: string } }
+    context: { params: Promise<{ message_id: string }> }
 ) {
     try {
-        const { message_id } = params
+        const { message_id } = await context.params
         const data = await request.json()
 
         if (!message_id) {
@@ -110,10 +110,10 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { message_id: string } }
+    context: { params: Promise<{ message_id: string }> }
 ) {
     try {
-        const { message_id } = params
+        const { message_id } = await context.params
 
         if (!message_id) {
             return NextResponse.json(

@@ -109,7 +109,7 @@ export function FilterControls({
                     <DateRangePicker
                         value={createdRange}
                         onChange={onCreatedRangeChange}
-                        disabled={disabled}
+
                     />
                 </div>
 
@@ -118,7 +118,7 @@ export function FilterControls({
                     <DateRangePicker
                         value={preferredRange}
                         onChange={onPreferredRangeChange}
-                        disabled={disabled}
+
                     />
                 </div>
             </div>

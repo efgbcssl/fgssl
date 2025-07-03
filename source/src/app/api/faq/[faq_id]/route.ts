@@ -10,8 +10,8 @@ interface FAQParams {
 }
 
 // ✅ Update FAQ
-export async function PUT(req: Request, context: Promise<FAQParams>) {
-    const { params } = await context
+export async function PUT(req: Request, context: { params: Promise<{ faq_id: string }> }) {
+    const { params } = context
     const { faq_id: faqId } = await params
 
     try {
@@ -62,8 +62,8 @@ export async function PUT(req: Request, context: Promise<FAQParams>) {
 }
 
 // ✅ Delete FAQ
-export async function DELETE(req: Request, context: Promise<FAQParams>) {
-    const { params } = await context
+export async function DELETE(req: Request, context: { params: Promise<{ faq_id: string }> }) {
+    const { params } = context
     const { faq_id: faqId } = await params
 
     try {

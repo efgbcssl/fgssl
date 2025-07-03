@@ -279,3 +279,53 @@ export async function sendMessageNotificationEmail({
         throw error;
     }
 }
+
+export async function sendEventRegistrationEmail({
+    to,
+    fullName,
+    eventName,
+    eventDate,
+    eventTime,
+    eventLocation,
+    additionalDetails,
+    contactEmail,
+    contactPhone,
+}: {
+    to: string
+    fullName: string
+    eventName: string
+    eventDate: string
+    eventTime: string
+    eventLocation: string
+    additionalDetails?: string
+    contactEmail?: string
+    contactPhone?: string
+}) {
+    try {
+        const html = await renderTemplate('event-registration', {
+            fullName,
+            eventName,
+            eventDate,
+            eventTime,
+            eventLocation,
+            additionalDetails: additionalDetails || 'None provided',
+            contactEmail: contactEmail || 'Not specified',
+            contactPhone: contactPhone || 'Not specified',
+            currentYear: new Date().getFullYear(),
+        });
+
+        const mailOptions = {
+            from: process.env.FROM_EMAIL! || 'events@yourdomain.com',
+            to,
+            subject: `Registration Confirmation: ${eventName}`,
+            html,
+        };
+
+        const result = await sendWithRetry(mailOptions, 'event-registration');
+        console.log('✅ Event registration email sent to', to, 'after', result.attempts, 'attempt(s)');
+        return result;
+    } catch (error) {
+        console.error('❌ Error sending event registration email:', error);
+        throw error;
+    }
+}

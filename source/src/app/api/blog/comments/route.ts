@@ -15,7 +15,7 @@ export async function GET(request: Request) {
         );
     }
 
-    try {
+    try {/*
         const comments = await xata.db.comments
             .filter({ postId })
             .sort('createdAt', 'desc')
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         );
 
         return NextResponse.json(commentsWithReplies);
-    } catch (error) {
+    */} catch (error) {
         console.error('Error fetching comments:', error);
         return NextResponse.json(
             { error: 'Failed to fetch comments' },
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const newComment = await xata.db.comments.create({
+        /*const newComment = await xata.db.comments.create({
             postId,
             parentId: parentId || null,
             name,
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
         });
 
         return NextResponse.json(newComment, { status: 201 });
-    } catch (error) {
+    */} catch (error) {
         console.error('Error creating comment:', error);
         return NextResponse.json(
             { error: 'Failed to create comment' },

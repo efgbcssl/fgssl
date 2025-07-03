@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1ivliir9e9qaqkp8nlg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "event_registration",
+          "column": {
+            "name": "event_reg_id",
+            "type": "text",
+            "comment": "",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1ivliir9e9qaqkp8nlg",
+  "parent": "mig_d1ijfnir9e9qaqkp8kr0",
+  "schema": "public",
+  "startedAt": "2025-07-03T03:36:43.760133Z"
+}

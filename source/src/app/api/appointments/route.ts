@@ -29,37 +29,36 @@ export async function GET(request: Request) {
         const preferredFrom = searchParams.get('preferredFrom')
         const preferredTo = searchParams.get('preferredTo')
 
-        // Base query (exclude cancelled)
-        let query = xata.db.appointments
+        // Build filters
+        const filters: Record<string, unknown> = {}
 
-        // Apply status filter if provided
         if (status) {
-            query = query.filter('status', status)
+            filters.status = status
         }
 
-        // Apply medium filter if provided
         if (medium) {
-            query = query.filter('medium', medium)
+            filters.medium = medium
         }
 
-        // Apply created date range filter
         if (createdFrom && createdTo) {
-            query = query.filter('createdAt', {
+            filters.createdAt = {
                 $ge: new Date(createdFrom),
                 $le: new Date(createdTo)
-            })
+            }
         }
 
-        // Apply preferred date range filter
         if (preferredFrom && preferredTo) {
-            query = query.filter('preferredDate', {
+            filters.preferredDate = {
                 $ge: new Date(preferredFrom),
                 $le: new Date(preferredTo)
-            })
+            }
         }
 
+        // Always exclude cancelled
+        filters.status = filters.status || { $ne: 'cancelled' }
+
         // Execute query
-        const appointments = await query.getMany()
+        const appointments = await xata.db.appointments.filter(filters).getMany()
         return NextResponse.json(appointments)
     } catch (error) {
         return createErrorResponse('Failed to fetch appointments', 500, error)
@@ -136,8 +135,10 @@ export async function POST(request: Request) {
             .filter({
                 $not: { status: 'cancelled' },
                 preferredDate: {
-                    $ge: startTime.toISOString(),
-                    $le: endTime.toISOString()
+                    $any: [
+                        startTime.toISOString(),
+                        endTime.toISOString()
+                    ]
                 }
             })
             .select(['preferredDate', 'fullName'])

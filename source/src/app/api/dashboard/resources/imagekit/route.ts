@@ -150,7 +150,7 @@ export async function POST(req: Request) {
             fileName: customMetadata.title + '.' + file.name.split('.').pop(),
             folder: FOLDERS[type],
             useUniqueFileName: true,
-            customMetadata: JSON.stringify(customMetadata)
+            customMetadata: customMetadata
         })
 
         return NextResponse.json(formatFileResponse(uploaded))
@@ -204,7 +204,7 @@ export async function PUT(req: Request) {
         }
 
         const updated = await imagekit.updateFileDetails(fileId, {
-            customMetadata: JSON.stringify(customMetadata)
+            customMetadata: customMetadata
         })
 
         return NextResponse.json(formatFileResponse(updated))
