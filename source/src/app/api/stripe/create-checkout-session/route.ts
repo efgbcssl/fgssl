@@ -1,13 +1,12 @@
 // app/api/stripe/create-checkout-session/route.ts
 import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
-import { XataClient } from '@/xata'
+import { xata } from '@/lib/xata'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil'
-})
+//const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+//  apiVersion: '2025-05-28.basil'
+//})
 
-const xata = new XataClient()
 
 export async function POST(req: Request) {
     const { eventId, name, email, priceId, successUrl, cancelUrl } = await req.json()
@@ -22,7 +21,7 @@ export async function POST(req: Request) {
         })
 
         // Create Stripe checkout session
-        const session = await stripe.checkout.sessions.create({
+        /*const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
                 price: priceId,
@@ -38,7 +37,7 @@ export async function POST(req: Request) {
             customer_email: email
         })
 
-        return NextResponse.json({ sessionId: session.id })
+        return NextResponse.json({ sessionId: session.id })*/
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         return NextResponse.json(
