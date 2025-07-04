@@ -1,20 +1,18 @@
 // app/api/stripe/create-price/route.ts
 import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
-import { XataClient } from '@/xata'
+import { xata } from '@/lib/xata'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil'
-})
-
-const xata = new XataClient()
+//const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+//  apiVersion: '2025-05-28.basil'
+//})
 
 export async function POST(req: Request) {
     const { eventId, price, currency, productName } = await req.json()
 
     try {
         // Check if we already have a price for this event
-        const existingEvent = await xata.db.events.read(eventId)
+        /*const existingEvent = await xata.db.events.read(eventId)
 
         if (existingEvent?.stripePriceId) {
             // Retrieve the existing price to check if it matches
@@ -57,7 +55,7 @@ export async function POST(req: Request) {
             metadata: { eventId }
         })
 
-        return NextResponse.json({ priceId: stripePrice.id })
+        return NextResponse.json({ priceId: stripePrice.id })*/
     } catch (error) {
         const errorMessage = (error instanceof Error) ? error.message : 'An unknown error occurred';
         return NextResponse.json(
