@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
 import { XataClient } from '@/xata'
 
-const stripe = new Stripe(process.env.STRIPE_EVENT_WEBHOOK_SECRET!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-05-28.basil'
 })
 

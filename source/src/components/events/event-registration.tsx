@@ -104,7 +104,7 @@ export function EventRegistration({ event }: { event: Event }) {
             {event.isPaidEvent && (
                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                     <p className="text-yellow-700">
-                        This is a paid event. You'll be redirected to complete payment after registration.
+                        This is a paid event. You&apos;ll be redirected to complete payment after registration.
                     </p>
                     <p className="font-medium mt-2">
                         Price: {new Intl.NumberFormat('en-US', {
