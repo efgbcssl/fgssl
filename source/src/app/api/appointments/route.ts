@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         }
 
         // Always exclude cancelled
-        filters.status = filters.status || { $ne: 'cancelled' }
+        filters.status = filters.status || { $not: { status: 'cancelled' } }
 
         // Execute query
         const appointments = await xata.db.appointments.filter(filters).getMany()

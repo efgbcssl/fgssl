@@ -7,17 +7,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Icons.dashboard },
-    { name: 'Members', href: '/dashboard/members', icon: Icons.users },
+    //{ name: 'Members', href: '/dashboard/members', icon: Icons.users },
     { name: 'Events', href: '/dashboard/events', icon: Icons.calendar },
     { name: 'Appointments', href: '/dashboard/appointments', icon: Icons.calendar },
     { name: 'FAQ', href: '/dashboard/faq', icon: Icons.message },
     { name: 'Blog', href: '/dashboard/blog', icon: Icons.bell },
     { name: 'Resources', href: '/dashboard/resources', icon: Icons.calendar },
-    { name: 'Groups', href: '/dashboard/groups', icon: Icons.calendar },
+    //{ name: 'Groups', href: '/dashboard/groups', icon: Icons.calendar },
     { name: 'Donations', href: '/dashboard/donations', icon: Icons.donate },
-    { name: 'Reports', href: '/dashboard/reports', icon: Icons.report },
+    //{ name: 'Reports', href: '/dashboard/reports', icon: Icons.report },
     { name: 'Messages', href: '/dashboard/messages', icon: Icons.message },
-    { name: 'Settings', href: '/dashboard/settings', icon: Icons.settings },
+    //{ name: 'Settings', href: '/dashboard/settings', icon: Icons.settings },
 ];
 
 export function Sidebar() {
