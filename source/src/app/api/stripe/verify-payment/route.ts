@@ -130,6 +130,7 @@ export async function GET(request: Request) {
             donationType: receiptData.donationType,
             receiptUrl: receiptData.receiptUrl,
             createdDate: new Date(receiptData.created * 1000).toLocaleString(),
+            receiptNumber: ''
         })
         console.log('✅ PDF generated for', receiptData.donorName)
 
