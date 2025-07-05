@@ -19,49 +19,81 @@ const createErrorResponse = (message: string, status: number, details?: any) => 
     )
 }
 
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)
-        const status = searchParams.get('status')
-        const medium = searchParams.get('medium')
-        const createdFrom = searchParams.get('createdFrom')
-        const createdTo = searchParams.get('createdTo')
-        const preferredFrom = searchParams.get('preferredFrom')
-        const preferredTo = searchParams.get('preferredTo')
 
-        // Build filters
-        const filters: Record<string, unknown> = {}
+        // Only build filters if query parameters exist
+        const hasFilters = Array.from(searchParams.keys()).length > 0
+        let finalFilter = {}
 
-        if (status) {
-            filters.status = status
-        }
+        if (hasFilters) {
+            const status = searchParams.get('status')
+            const medium = searchParams.get('medium')
+            const createdFrom = searchParams.get('createdFrom')
+            const createdTo = searchParams.get('createdTo')
+            const preferredFrom = searchParams.get('preferredFrom')
+            const preferredTo = searchParams.get('preferredTo')
 
-        if (medium) {
-            filters.medium = medium
-        }
+            const filterConditions: any[] = []
 
-        if (createdFrom && createdTo) {
-            filters.createdAt = {
-                $ge: new Date(createdFrom),
-                $le: new Date(createdTo)
+            // Status filter
+            if (status) {
+                if (status.includes(',')) {
+                    filterConditions.push({ status: { $anyOf: status.split(',') } })
+                } else {
+                    filterConditions.push({ status })
+                }
+            } else {
+                // Default: exclude cancelled appointments when filtering
+                filterConditions.push({ status: { $not: 'cancelled' } })
+            }
+
+            // Medium filter
+            if (medium) {
+                filterConditions.push({ medium })
+            }
+
+            // Date range filters
+            if (createdFrom && createdTo) {
+                filterConditions.push({
+                    createdAt: {
+                        $ge: new Date(createdFrom).toISOString(),
+                        $le: new Date(createdTo).toISOString()
+                    }
+                })
+            }
+
+            if (preferredFrom && preferredTo) {
+                filterConditions.push({
+                    preferredDate: {
+                        $ge: new Date(preferredFrom).toISOString(),
+                        $le: new Date(preferredTo).toISOString()
+                    }
+                })
+            }
+
+            // Combine all filters if any exist
+            if (filterConditions.length > 0) {
+                finalFilter = filterConditions.length > 1
+                    ? { $all: filterConditions }
+                    : filterConditions[0]
             }
         }
-
-        if (preferredFrom && preferredTo) {
-            filters.preferredDate = {
-                $ge: new Date(preferredFrom),
-                $le: new Date(preferredTo)
-            }
-        }
-
-        // Always exclude cancelled
-        filters.status = filters.status || { $not: { status: 'cancelled' } }
 
         // Execute query
-        const appointments = await xata.db.appointments.filter(filters).getMany()
+        const appointments = await xata.db.appointments
+            .filter(finalFilter)
+            .sort('preferredDate', 'asc')
+            .getMany()
+
         return NextResponse.json(appointments)
     } catch (error) {
-        return createErrorResponse('Failed to fetch appointments', 500, error)
+        return NextResponse.json(
+            { error: 'Failed to fetch appointments', details: error.message },
+            { status: 500 }
+        )
     }
 }
 // Generate all possible time slots for a day

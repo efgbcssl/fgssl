@@ -160,7 +160,7 @@ export default function AppointmentsPage() {
                 ) : (
                     <DataTable
                         columns={columns}
-                        data={appointments}
+                        data={filteredAppointments}
                     />
                 )}
             </div>
