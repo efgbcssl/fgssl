@@ -14,7 +14,7 @@ interface EmailMetrics {
     lastFailed?: {
         emailType: string;
         recipient: string;
-        error: any;
+        error: unknown;
         timestamp: Date;
     };
     deliveryRate: number;
@@ -60,9 +60,10 @@ async function renderTemplate(templateName: string, data: Record<string, unknown
 }
 
 // Retry with exponential backoff
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function sendWithRetry(mailOptions: any, emailType: string, maxRetries = 3, baseDelay = 1000) {
     let attempt = 0;
-    let lastError: any = null;
+    let lastError: unknown = null;
 
     while (attempt < maxRetries) {
         try {
@@ -115,20 +116,45 @@ export async function sendDonationEmail({
     donationType,
     receiptUrl,
     createdDate,
+    paymentMethod,
+    currency
 }: {
     to: string
     donorName: string
     amount: number
     donationType: string
     receiptUrl?: string
-    createdDate?: string
+    createdDate?: Date | string
+    paymentMethod?: string
+    currency?: string
 }) {
+    const receiptNumber = `REC-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+
     try {
+        // Format the date if provided
+        const formattedDate = createdDate
+            ? new Date(createdDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })
+            : new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+        // Generate receipt number (you can customize this)
+
         const html = await renderTemplate('donation-receipt', {
             donorName,
             amount,
             donationType,
             receiptUrl,
+            receiptNumber,
+            paymentMethod: paymentMethod || 'Card',
+            dateReceived: formattedDate,
+            currency: currency || 'USD'
         });
 
         const pdfBytes = await generateDonationReceiptPDF({
@@ -136,17 +162,20 @@ export async function sendDonationEmail({
             amount,
             donationType,
             receiptUrl,
-            createdDate,
+            createdDate: formattedDate,
+            receiptNumber,
+            paymentMethod,
+            currency
         });
 
         const mailOptions = {
             from: process.env.FROM_EMAIL! || 'no-reply@yourdomain.com',
             to,
-            subject: `Your ${donationType} Donation Receipt`,
+            subject: `Your ${donationType} Donation Receipt - ${receiptNumber}`,
             html,
             attachments: [
                 {
-                    filename: `Donation_Receipt_${donorName.replace(/\s+/g, '_')}.pdf`,
+                    filename: `Donation_Receipt_${receiptNumber}.pdf`,
                     content: pdfBytes,
                     encoding: 'base64',
                 },

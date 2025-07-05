@@ -107,7 +107,10 @@ export async function POST(req: Request) {
                     donorName: donorData.name,
                     amount: donorData.amount,
                     donationType: donorData.donationType,
-                    receiptUrl: donorData.receiptUrl
+                    receiptUrl: donorData.receiptUrl,
+                    createdDate: donorData.created,
+                    paymentMethod: donorData.paymentMethod,
+                    currency: donorData.currency
                 })
             } catch (emailError) {
                 console.error('Failed to send donation email:', emailError)

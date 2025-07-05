@@ -145,7 +145,7 @@
         <div class="header">
             <!-- Replace with your church logo -->
             <img src="/source//public/fg-logo.jpg" alt="Church Logo" class="logo">
-            <div class="church-name">Grace Community Church</div>
+            <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
             <div class="church-motto">Serving Christ Together</div>
         </div>
 
@@ -160,14 +160,13 @@
             <div class="receipt-details">
                 <div class="detail-row">
                     <div class="detail-label">Receipt Number:</div>
-                    <div>#<%= receiptNumber || '2023-0001' %>
+                    <div>#<%= receiptNumber %>
                     </div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Date Received:</div>
                     <div>
-                        <%= new Date().toLocaleDateString('en-US', { year: 'numeric' , month: 'long' , day: 'numeric' })
-                            %>
+                        <%= dateReceived %>
                     </div>
                 </div>
                 <div class="detail-row">
@@ -178,58 +177,65 @@
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Amount:</div>
-                    <div>$<%= amount.toFixed(2) %>
+                    <div>
+                        <%= currency %>
+                            <%= amount.toFixed(2) %> %>
                     </div>
-                </div>
-                <% if (paymentMethod) { %>
+
                     <div class="detail-row">
                         <div class="detail-label">Payment Method:</div>
                         <div>
                             <%= paymentMethod %>
                         </div>
+
+                    </div>
+                    <% if (receiptUrl) { %>
+                        <div class="detail-row">
+                            <div class="detail-label">Transaction ID:</div>
+                            <div><a href="<%= receiptUrl %>">View on Stripe</a></div>
+                        </div>
+                        <% } %>
+                </div>
+                <div class="verse">
+                    "Each of you should give what you have decided in your heart to give, not reluctantly or under
+                    compulsion, for God loves a cheerful giver."<br>
+                    - 2 Corinthians 9:7
+                </div>
+
+                <div class="thank-you">
+                    Thank you for your faithful support!
+                </div>
+
+                <% if (receiptUrl) { %>
+                    <div style="text-align: center;">
+                        <a href="<%= receiptUrl %>" class="receipt-btn">Download Official Receipt</a>
                     </div>
                     <% } %>
+
+                        <p>With gratitude,</p>
+                        <p>
+                            <strong>Pastor John Smith</strong><br>
+                            Grace Community Church
+                        </p>
             </div>
 
-            <div class="verse">
-                "Each of you should give what you have decided in your heart to give, not reluctantly or under
-                compulsion, for God loves a cheerful giver."<br>
-                - 2 Corinthians 9:7
-            </div>
-
-            <div class="thank-you">
-                Thank you for your faithful support!
-            </div>
-
-            <% if (receiptUrl) { %>
-                <div style="text-align: center;">
-                    <a href="<%= receiptUrl %>" class="receipt-btn">Download Official Receipt</a>
+            <div class="footer">
+                <div style="margin-bottom: 10px;">
+                    Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
+                    914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
                 </div>
-                <% } %>
-
-                    <p>With gratitude,</p>
-                    <p>
-                        <strong>Pastor John Smith</strong><br>
-                        Grace Community Church
-                    </p>
-        </div>
-
-        <div class="footer">
-            <div style="margin-bottom: 10px;">
-                Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
-                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
-            </div>
-            <div>
-                <a href="mailto:giving@efgbcssl.org">giving@efgbcssl.org</a> |
-                <a href="tel:+12408210361">(240) 821-0361</a> |
-                <a href="https://efgbcssl.org">efgbcssl.org</a>
-            </div>
-            <div style="margin-top: 15px; opacity: 0.8;">
-                This receipt may be used for tax purposes. No goods or services were provided in exchange for this
-                donation.
+                <div>
+                    <a href="mailto:giving@efgbcssl.org">giving@efgbcssl.org</a> |
+                    <a href="tel:+12408210361">(240) 821-0361</a> |
+                    <a href="https://efgbcssl.org">efgbcssl.org</a>
+                </div>
+                <div style="margin-top: 15px; opacity: 0.8;">
+                    This receipt may be used for tax purposes. No goods or services were provided in exchange for
+                    this
+                    donation.
+                </div>
             </div>
         </div>
-    </div>
 </body>
 
 </html>

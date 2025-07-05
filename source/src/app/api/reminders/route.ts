@@ -5,56 +5,64 @@ import { sendReminderEmail } from '@/lib/email'
 
 export async function GET() {
     try {
-        const now = new Date()
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-        // Find appointments happening in the next 24 hours that haven't had reminders sent
+        // Validate environment variables
+        if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+            throw new Error('Email credentials not configured');
+        }
+
         const upcomingAppointments = await xata.db.appointments
             .filter('preferredDate', {
                 $ge: now.toISOString(),
-                $le: tomorrow.toISOString()
+                $le: tomorrow.toISOString(),
             })
             .filter('status', 'pending')
-            .getAll()
+            .getAll();
 
-        // Send reminders
-        const results = []
-        for (const appointment of upcomingAppointments) {
-            try {
-                await sendReminderEmail({
-                    to: appointment.email ?? '',
-                    fullName: appointment.fullName ?? '',
-                    preferredDateTime: new Date(appointment.preferredDate ?? '').toLocaleString(),
-                    medium: appointment.medium ?? '',
-                })
+        const results = await Promise.all(
+            upcomingAppointments.map(async (appointment) => {
+                try {
+                    // Validate required fields
+                    if (!appointment.email || !appointment.fullName || !appointment.preferredDate) {
+                        throw new Error('Missing required appointment data');
+                    }
 
-                // Update appointment to mark reminder sent
-                //await xata.db.appointments.update(
-                //  { id: appointment.xata_id, reminderSent: true }
-                //)
+                    await sendReminderEmail({
+                        to: appointment.email,
+                        fullName: appointment.fullName,
+                        preferredDateTime: new Date(appointment.preferredDate).toLocaleString(),
+                        medium: appointment.medium || 'unknown',
+                    });
 
-                results.push({ id: appointment.xata_id, status: 'success' })
-            } catch (error) {
-                results.push({
-                    id: appointment.xata_id,
-                    status: 'failed',
-                    error: typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : String(error)
-                })
-            }
-        }
+                    // Update appointment status (uncomment when ready)
+                    // await xata.db.appointments.update(appointment.xata_id, { reminderSent: true });
+
+                    return { id: appointment.xata_id, status: 'success' };
+                } catch (error) {
+                    return {
+                        id: appointment.xata_id,
+                        status: 'failed',
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                    };
+                }
+            })
+        );
 
         return NextResponse.json({
-            success: results.filter(r => r.status === 'success').length,
-            failed: results.filter(r => r.status === 'failed').length,
-            results
-        })
+            success: results.filter((r) => r.status === 'success').length,
+            failed: results.filter((r) => r.status === 'failed').length,
+            results,
+        });
     } catch (error) {
+        console.error('Reminder job failed:', error);
         return NextResponse.json(
             {
                 error: 'Failed to send reminders',
-                details: typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : String(error)
+                details: error instanceof Error ? error.message : 'Unknown error',
             },
             { status: 500 }
-        )
+        );
     }
 }
