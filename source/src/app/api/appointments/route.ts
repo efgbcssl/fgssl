@@ -20,78 +20,20 @@ const createErrorResponse = (message: string, status: number, details?: any) => 
 }
 
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
-        const { searchParams } = new URL(request.url)
-
-        // Only build filters if query parameters exist
-        const hasFilters = Array.from(searchParams.keys()).length > 0
-        let finalFilter = {}
-
-        if (hasFilters) {
-            const status = searchParams.get('status')
-            const medium = searchParams.get('medium')
-            const createdFrom = searchParams.get('createdFrom')
-            const createdTo = searchParams.get('createdTo')
-            const preferredFrom = searchParams.get('preferredFrom')
-            const preferredTo = searchParams.get('preferredTo')
-
-            const filterConditions: any[] = []
-
-            // Status filter
-            if (status) {
-                if (status.includes(',')) {
-                    filterConditions.push({ status: { $anyOf: status.split(',') } })
-                } else {
-                    filterConditions.push({ status })
-                }
-            } else {
-                // Default: exclude cancelled appointments when filtering
-                filterConditions.push({ status: { $not: 'cancelled' } })
-            }
-
-            // Medium filter
-            if (medium) {
-                filterConditions.push({ medium })
-            }
-
-            // Date range filters
-            if (createdFrom && createdTo) {
-                filterConditions.push({
-                    createdAt: {
-                        $ge: new Date(createdFrom).toISOString(),
-                        $le: new Date(createdTo).toISOString()
-                    }
-                })
-            }
-
-            if (preferredFrom && preferredTo) {
-                filterConditions.push({
-                    preferredDate: {
-                        $ge: new Date(preferredFrom).toISOString(),
-                        $le: new Date(preferredTo).toISOString()
-                    }
-                })
-            }
-
-            // Combine all filters if any exist
-            if (filterConditions.length > 0) {
-                finalFilter = filterConditions.length > 1
-                    ? { $all: filterConditions }
-                    : filterConditions[0]
-            }
-        }
-
-        // Execute query
+        // Fetch all appointments sorted by preferredDate in descending order
         const appointments = await xata.db.appointments
-            .filter(finalFilter)
-            .sort('preferredDate', 'asc')
-            .getMany()
+            .sort('preferredDate', 'desc')
+            .getAll()
 
         return NextResponse.json(appointments)
     } catch (error) {
         return NextResponse.json(
-            { error: 'Failed to fetch appointments', details: error.message },
+            {
+                error: 'Failed to fetch appointments',
+                details: error instanceof Error ? error.message : String(error)
+            },
             { status: 500 }
         )
     }
