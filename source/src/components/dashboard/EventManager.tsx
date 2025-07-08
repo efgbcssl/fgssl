@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { FormField, FormSchema } from './form-builder/types'
 import { FormBuilder } from '@/components/dashboard/form-builder/form-builder'
 import { PriceInput } from '@/components/ui/price-input'
+import { Loader2, Save } from 'lucide-react';
 
 type Event = {
     id: string
@@ -93,7 +94,9 @@ export function EventManager() {
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
+        console.log('Form submitted');
         e.preventDefault();
+        console.log('Editing event:', editingEvent);
         if (!editingEvent) return;
 
         // Enhanced validation
@@ -134,9 +137,15 @@ export function EventManager() {
                     })
                 });
 
-                if (!priceResponse.ok) throw new Error('Failed to create Stripe price');
+                // In your handleSubmit function, after Stripe call:
+                if (!priceResponse.ok) {
+                    const errorData = await priceResponse.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Failed to create Stripe price');
+                }
                 const priceData = await priceResponse.json();
-                payload.stripePriceId = priceData.priceId;
+                if (!priceData.priceId) {
+                    throw new Error('Stripe price ID not returned');
+                }
             }
 
             const response = await fetch(url, {
@@ -444,7 +453,7 @@ export function EventManager() {
                                 />
 
                                 <div className="text-sm text-muted-foreground pt-2">
-                                    <p>Name and email fields are always included and don't need to be added here.</p>
+                                    <p>Name and email fields are always included and don&apos;t need to be added here.</p>
                                 </div>
                             </div>
                         )}
@@ -523,7 +532,17 @@ export function EventManager() {
                                 {(activeTab === 'details' && !editingEvent.requiresRSVP) ||
                                     (activeTab === 'form' && !editingEvent.isPaidEvent) ||
                                     activeTab === 'pricing' ? (
-                                    <Button type="submit" disabled={isSubmitting}>
+                                    <Button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : isNewEvent ? (
+                                            <Plus className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Save className="mr-2 h-4 w-4" />
+                                        )}
                                         {isSubmitting ? 'Saving...' : isNewEvent ? 'Create Event' : 'Update Event'}
                                     </Button>
                                 ) : (

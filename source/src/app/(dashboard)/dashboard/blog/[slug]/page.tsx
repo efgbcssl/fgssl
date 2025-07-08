@@ -16,10 +16,10 @@ export default async function EditBlogPost({ params }: { params: Promise<{ slug:
             <BlogEditor
                 action={(formData) => handleEditBlogSubmit(slug, formData)}
                 defaultValues={{
-                    title: post.data.title,
-                    content: post.data.content,
-                    excerpt: post.data.excerpt,
-                    status: post.data.status,
+                    title: post.data.title ?? "",
+                    content: post.data.content ?? "",
+                    excerpt: post.data.excerpt ?? "",
+                    status: post.data.status ?? "draft",
                     publishDate: post.data.publishDate ?? '',
                     featuredImage: post.data.featuredImage ?? '',
                     metaTitle: post.data.metaTitle ?? '',

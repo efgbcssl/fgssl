@@ -22,7 +22,7 @@ interface BlogEditorDefaultValues {
     excerpt?: string
     content?: string
     featuredImage?: string
-    status?: 'draft' | 'published' | 'scheduled'
+    status?: 'draft' | 'published' | 'scheduled' | string
     publishDate?: string | Date
     metaTitle?: string
     metaDescription?: string
@@ -58,6 +58,7 @@ export function BlogEditor({ action, defaultValues }: BlogEditorProps) {
     const uploadImage = async (file: File): Promise<string> => {
         // Fetch authentication parameters from your backend
         const authRes = await fetch('/api/imagekit-auth')
+        // console.log("file in uploadImage", await authRes.json())
         const { signature, token, expire } = await authRes.json()
 
         const res = await imagekit.upload({
@@ -100,6 +101,8 @@ export function BlogEditor({ action, defaultValues }: BlogEditorProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        console.log("here is submit")
+        console.log("content", content)
         const form = new FormData(e.currentTarget as HTMLFormElement)
         form.set('content', content)
         form.set('featuredImage', featuredImageUrl)

@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { ThumbsUp } from 'lucide-react'
 
 interface Post {
+    featuredImage: string
     post_id: string
     title: string
     categories?: string[]
@@ -15,6 +16,7 @@ interface Post {
 }
 
 export default function BlogPostPage() {
+    console.log("In Blog Post Page")
     const params = useParams<{ slug: string }>()
     const searchParams = useSearchParams()
     const slug = params.slug
@@ -29,9 +31,10 @@ export default function BlogPostPage() {
             setLoadingPost(true)
             setError(null)
             try {
-                const res = await fetch(`/api/blog/post?slug=${slug}`)
+                const res = await fetch(`/api/blog/posts/${slug}?slug=${slug}`)
                 if (!res.ok) throw new Error('Failed to fetch post')
                 const data = await res.json()
+                console.log("data in blog[slug]", data)
                 if (!data) {
                     setError('Post not found')
                     setPost(null)
@@ -58,7 +61,7 @@ export default function BlogPostPage() {
     }
 
     if (error) {
-        return <p className="text-center py-10 text-red-600">{error}</p>
+        return <p className="text-center py-10 text-red-600">An error occured {error}</p>
     }
 
     if (!post) {
@@ -69,6 +72,9 @@ export default function BlogPostPage() {
         <div className="max-w-3xl mx-auto py-8">
             <article className="prose lg:prose-xl">
                 <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
+                <div className="mb-4">
+                    <img className="h-auto max-w-full" src={post.featuredImage} alt="image description"></img>
+                </div>
 
                 <div className="mb-4">
                     {post.categories?.map((category) => (

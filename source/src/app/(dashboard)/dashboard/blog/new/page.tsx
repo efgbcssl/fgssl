@@ -19,7 +19,7 @@ type BlogPost = {
 export default function NewBlogPostPage() {
     async function handleSubmit(formData: FormData) {
         'use server'
-
+        console.log("inside NewBlogPostPage")
         const blogPost: BlogPost = {
             title: (formData.get('title') as string)?.trim() || '',
             content: (formData.get('content') as string)?.trim() || '',

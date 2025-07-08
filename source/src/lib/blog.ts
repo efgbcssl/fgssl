@@ -1,145 +1,198 @@
-import { xata, ApiResponse } from './xata';
-import { BlogPost, BlogPostCreate, BlogPostUpdate } from './types';
+import { xata, ApiResponse } from "./xata";
+import { BlogPost, BlogPostCreate, BlogPostUpdate } from "./types";
 
-
-export const getBlogPosts = async (adminView: boolean = false): Promise<ApiResponse<BlogPost[]>> => {
+export const getBlogPosts = async (
+    adminView: boolean = false
+): Promise<ApiResponse<BlogPost[]>> => {
     try {
         const query = xata.db.posts.select([
-            'post_id',
-            'title',
-            'content',
-            'slug',
-            'excerpt',
-            'status',
-            'publishDate',
-            'categories',
-            'createdAt',
-            'commentCount',
-            'updatedAt',
-            'likes',
-            'featuredImage',
-            'metaTitle',
-            'metsDescription'
+            "post_id",
+            "title",
+            "content",
+            "slug",
+            "excerpt",
+            "status",
+            "publishDate",
+            "categories",
+            "createdAt",
+            "commentCount",
+            "updatedAt",
+            "likes",
+            "featuredImage",
+            "metaTitle",
+            "metaDescription",
         ]);
 
         const filteredQuery = adminView
             ? query
             : query.filter({
                 $any: [
-                    { status: 'published' },
+                    { status: "published" },
                     {
-                        status: 'scheduled',
-                        publishDate: { $le: new Date().toISOString() }
-                    }
-                ]
+                        status: "scheduled",
+                        publishDate: { $le: new Date().toISOString() },
+                    },
+                ],
             });
 
         const { records } = await filteredQuery
-            .sort(adminView ? 'createdAt' : 'publishDate', 'desc')
+            .sort(adminView ? "createdAt" : "publishDate", "desc")
             .getPaginated({ pagination: { size: 100 } });
 
         // Transform records to BlogPost format
-        const posts = records.map(post => ({
+        const posts = records.map((post) => ({
             post_id: post.post_id,
             id: post.post_id,
-            title: post.title || 'Untitled Post',
+            title: post.title || "Untitled Post",
             slug: post.slug,
-            content: post.content || '',
-            excerpt: post.excerpt || '',
-            status: post.status as 'published' | 'scheduled' | 'draft',
+            content: post.content || "",
+            excerpt: post.excerpt || "",
+            status: post.status as "published" | "scheduled" | "draft",
             publishDate: post.publishDate?.toISOString(),
             categories: post.categories || [],
             // commentCount: post.commentCount || 0,
             likes: post.likes || 0,
-            createdAt: post.createdAt.toISOString(),
-            updatedAt: post.updatedAt?.toISOString() ?? '',
+            createdAt: post.createdAt?.toISOString(),
+            updatedAt: post.updatedAt?.toISOString(),
             featuredImage: post.featuredImage || undefined,
             metaTitle: post.metaTitle || undefined,
-            metaDescription: post.metsDescription || undefined
+            metaDescription: post.metaDescription || undefined,
         }));
 
         return {
             data: posts,
             status: 200,
-            error: undefined
+            error: undefined,
         };
     } catch (error) {
-        console.error('Error fetching blog posts:', error);
+        console.error("Error fetching blog posts:", error);
         return {
             data: [],
             status: 500,
-            error: error instanceof Error ? error.message : 'Failed to fetch posts'
+            error: error instanceof Error ? error.message : "Failed to fetch posts",
         };
     }
 };
 
-export const getBlogPostBySlug = async (slug: string): Promise<ApiResponse<BlogPost>> => {
+export const getBlogPostBySlug = async (
+    slug: string
+): Promise<ApiResponse<BlogPost>> => {
     try {
         const record = await xata.db.posts.filter({ slug }).getFirst();
-
+        console.log("record in getBlogPosts is", record);
         if (!record) {
             return {
                 data: undefined,
                 status: 404,
-                error: 'Post not found'
+                error: "Post not found",
             };
         }
 
         return {
-            //data: transformPost(),
+            data: transformPost({
+                ...record,
+                categories: record.categories ?? undefined,
+                featuredImage: record.featuredImage ?? undefined,
+                metaTitle:
+                    record.metaTitle != null ? (record.metaTitle as string) : undefined,
+                metaDescription:
+                    record.metaDescription != null
+                        ? (record.metaDescription as string)
+                        : undefined,
+            }),
             status: 200,
-            error: undefined
+            error: undefined,
         };
     } catch (error) {
-        console.error('Error fetching blog post:', error);
+        console.error("Error fetching blog post:", error);
         return {
             data: undefined,
             status: 500,
-            error: error instanceof Error ? error.message : 'Failed to fetch post'
+            error: error instanceof Error ? error.message : "Failed to fetch post",
         };
     }
 };
 
-export const createBlogPost = async (postData: BlogPostCreate): Promise<ApiResponse<BlogPost>> => {
+export const createBlogPost = async (
+    postData: BlogPostCreate
+): Promise<ApiResponse<BlogPost>> => {
+    console.log("inside createBlogPost");
     try {
         const slug = generateSlug(postData.title);
         const post_id = crypto.randomUUID();
-        const record = await xata.db.posts.create({
-            ...postData,
-            post_id,
-            slug,
-            likes: 0,
-            categories: postData.categories || [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            publishDate: postData.publishDate || new Date().toISOString(),
-        });
-
+        console.log("------------------body in createBlogPost----------------");
+        console.log("----------------------------------");
+        console.log(
+            JSON.stringify({
+                ...postData,
+                post_id,
+                slug,
+                likes: 0,
+                categories: postData.categories || [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                publishDate: postData.publishDate || new Date().toISOString(),
+            })
+        );
+        console.log("----------------------------------");
+        // const record = await xata.db.posts.create({
+        //     ...postData,
+        //     post_id,
+        //     slug,
+        //     likes: 0,
+        //     categories: postData.categories || [],
+        //     createdAt: new Date().toISOString(),
+        //     updatedAt: new Date().toISOString(),
+        //     publishDate: postData.publishDate || new Date().toISOString(),
+        // });
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_SITE_URL}/api/blog/posts`,
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    ...postData,
+                    post_id,
+                    slug,
+                    likes: 0,
+                    categories: postData.categories || [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    publishDate: postData.publishDate || new Date().toISOString(),
+                }),
+                // …
+            }
+        );
+        const record: BlogPost = await response.json();
+        console.log("record is", record);
         if (!record) {
             return {
                 data: undefined,
                 status: 500,
-                error: 'Failed to create post'
+                error: "Failed to create post",
             };
         }
 
         return {
-            /*data: transformPost({
+            data: transformPost({
                 ...record,
                 categories: record.categories ?? undefined,
                 featuredImage: record.featuredImage ?? undefined,
-                metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
-                metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
-            }),*/
+                metaTitle:
+                    record.metaTitle != null ? (record.metaTitle as string) : undefined,
+                metaDescription:
+                    record.metaDescription != null
+                        ? (record.metaDescription as string)
+                        : undefined,
+            }),
             status: 201,
-            error: undefined
+            error: undefined,
         };
     } catch (error) {
-        console.error('Error creating blog post:', error);
+        console.error("Error creating blog post:", error);
         return {
             data: undefined,
             status: 500,
-            error: error instanceof Error ? error.message : 'Failed to create post'
+            error: error instanceof Error ? error.message : "Failed to create post",
         };
     }
 };
@@ -161,45 +214,51 @@ export const updateBlogPost = async (
             return {
                 data: undefined,
                 status: 404,
-                error: 'Post not found'
+                error: "Post not found",
             };
         }
 
         return {
-            /*data: transformPost({
+            data: transformPost({
                 ...record,
-                categories: record.categories ?? undefined,
+                categories: record.categories ?? [],
                 featuredImage: record.featuredImage ?? undefined,
-                metaTitle: record.metaTitle != null ? record.metaTitle as string : undefined,
-                metaDescription: record.metaDescription != null ? record.metaDescription as string : undefined
-            }),*/
+                metaTitle:
+                    record.metaTitle != null ? (record.metaTitle as string) : undefined,
+                metaDescription:
+                    record.metaDescription != null
+                        ? (record.metaDescription as string)
+                        : undefined,
+            }),
             status: 200,
-            error: undefined
+            error: undefined,
         };
     } catch (error) {
-        console.error('Error updating blog post:', error);
+        console.error("Error updating blog post:", error);
         return {
             data: undefined,
             status: 500,
-            error: error instanceof Error ? error.message : 'Failed to update post'
+            error: error instanceof Error ? error.message : "Failed to update post",
         };
     }
 };
 
-export const deleteBlogPost = async (id: string): Promise<ApiResponse<void>> => {
+export const deleteBlogPost = async (
+    id: string
+): Promise<ApiResponse<void>> => {
     try {
         await xata.db.posts.delete(id);
         return {
             data: undefined,
             status: 204,
-            error: undefined
+            error: undefined,
         };
     } catch (error) {
-        console.error('Error deleting blog post:', error);
+        console.error("Error deleting blog post:", error);
         return {
             data: undefined,
             status: 500,
-            error: error instanceof Error ? error.message : 'Failed to delete post'
+            error: error instanceof Error ? error.message : "Failed to delete post",
         };
     }
 };
@@ -208,8 +267,8 @@ export const deleteBlogPost = async (id: string): Promise<ApiResponse<void>> => 
 const generateSlug = (title: string): string => {
     return title
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
 };
 // Replace 'PostRecord' with the actual type returned by xata.db.posts, e.g., from Xata codegen
 
@@ -219,40 +278,41 @@ const transformPost = (post: {
     title?: string;
     slug: string;
     content?: string;
-    excerpt?: string;
-    status: string;
+    excerpt?: string | null;
+    status?: string | null;
     publishDate?: Date | string | null;
     categories?: string[];
-    commentCount?: number;
-    likes?: number;
-    createdAt: Date | string;
-    updatedAt?: Date | string;
+    commentCount?: number | null;
+    likes?: number | null;
+    createdAt: Date | string | null | undefined;
+    updatedAt?: Date | string | null;
     featuredImage?: string;
     metaTitle?: string;
     metaDescription?: string;
 }): BlogPost => ({
     post_id: post.post_id,
-    title: post.title || 'Untitled Post',
+    title: post.title || "Untitled Post",
     slug: post.slug,
-    content: post.content || '',
-    excerpt: post.excerpt || '',
-    status: (post.status as 'published' | 'scheduled' | 'draft'),
+    content: post.content || "",
+    excerpt: post.excerpt || "",
+    status: post.status as "published" | "scheduled" | "draft",
     publishDate: post.publishDate
-        ? typeof post.publishDate === 'string'
+        ? typeof post.publishDate === "string"
             ? post.publishDate
             : post.publishDate.toISOString()
         : undefined,
     categories: post.categories || [],
     likes: post.likes || 0,
-    createdAt: typeof post.createdAt === 'string'
-        ? post.createdAt
-        : post.createdAt.toISOString(),
+    createdAt:
+        typeof post.createdAt === "string"
+            ? post.createdAt
+            : post.createdAt?.toISOString(),
     updatedAt: post.updatedAt
-        ? typeof post.updatedAt === 'string'
+        ? typeof post.updatedAt === "string"
             ? post.updatedAt
             : post.updatedAt.toISOString()
-        : '',
+        : "",
     featuredImage: post.featuredImage || undefined,
     metaTitle: post.metaTitle || undefined,
-    metaDescription: post.metaDescription || undefined
+    metaDescription: post.metaDescription || undefined,
 });

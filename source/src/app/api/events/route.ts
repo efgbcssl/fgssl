@@ -72,22 +72,42 @@ export async function POST(request: Request) {
     try {
         const data = await request.json()
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { xata_id, ...cleanData } = data
+        const {
+            stripePriceId, // From Stripe API
+            requiresRSVP = false,
+            isPaidEvent = false,
+            price = 0,
+            currency = 'USD',
+            capacity = 0,
+            formSchema,
+            date,
+            ...restData
+        } = data;
         const eventDate = new Date(data.date)
         const expiresAt = new Date(eventDate.getTime() + 15 * 24 * 60 * 60 * 1000)
 
-        console.log('Creating event with data: ', cleanData, expiresAt)
+        const eventData = {
+            ...restData,
+            date,
+            expiresAt: expiresAt.toISOString(),
+            requiresRSVP,
+            isPaidEvent,
+            price: isPaidEvent ? price : 0, // Only store price if paid event
+            currency: isPaidEvent ? currency : null,
+            stripePriceId: isPaidEvent ? stripePriceId : null,
+            capacity: requiresRSVP ? capacity : 0,
+            formSchema: requiresRSVP ? formSchema : null
+        };
 
-        const newEvent = await xata.db.events.create({
-            ...cleanData,
-            expiresAt: expiresAt.toISOString()
-        })
+        console.log('Creating event with data:', eventData);
 
-        return NextResponse.json(newEvent, { status: 201 })
+        const newEvent = await xata.db.events.create(eventData);
+
+        return NextResponse.json(newEvent, { status: 201 });
     } catch (error) {
         console.error('Error creating event: ', error)
         return NextResponse.json(
-            { error: 'Failed to create event' },
+            { error: 'Failed to create event', details: error instanceof Error ? error.message : String(error) },
             { status: 500 }
         )
     }

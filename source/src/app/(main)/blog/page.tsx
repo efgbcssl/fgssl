@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import React, { useState, useMemo } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
     Card,
     CardContent,
@@ -10,9 +10,9 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Calendar, User, Clock, ArrowRight } from "lucide-react"
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar, User, Clock, ArrowRight } from "lucide-react";
 
 // Dummy posts data duplicated for pagination demo
 const initialPosts = [
@@ -82,47 +82,105 @@ const initialPosts = [
         readTime: "9 min read",
         slug: "finding-purpose-christian-perspective",
     },
-]
+];
 
+// Post Type
+interface Post {
+    featuredImage: string;
+    post_id: string;
+    title: string;
+    excerpt: string;
+    slug: string;
+    status: "draft" | "published";
+    publishDate?: string;
+    commentCount?: number;
+}
+
+interface PostsResponse {
+    posts: Post[];
+    cursor: string;
+    more: boolean;
+    size: number;
+    pages: number;
+}
+
+// API: Fetch posts
+async function fetchPosts({ page, size }: { page: number; size: number }) {
+    const query = new URLSearchParams();
+    query.set("page", String(page));
+    query.set("size", String(size));
+
+    const res = await fetch(`/api/blog/posts?${query.toString()}`);
+    //   const res = await fetch(`/api/blog/posts`)
+    // console.log("response is", await res.json())
+
+    if (!res.ok) throw new Error("Failed to fetch posts");
+
+    const { meta, records, recordsCount } = await res.json();
+    // console.log("meta", meta)
+    // console.log("records", records)
+    const postsResponse: PostsResponse = {
+        cursor: meta.page.cursor,
+        more: meta.page.more,
+        size: meta.page.size,
+        posts: records,
+        pages: recordsCount,
+    };
+    return postsResponse;
+}
 // Duplicate posts for pagination demo (total 18 posts)
 const blogPosts = [...initialPosts, ...initialPosts, ...initialPosts].map(
     (post, i) => ({
         ...post,
         id: i + 1,
         slug: `${post.slug}-${i + 1}`,
-    }),
-)
+    })
+);
 
-const POSTS_PER_PAGE = 6
+const POSTS_PER_PAGE = 6;
 
 export default function BlogPage() {
-    const [searchTerm, setSearchTerm] = useState("")
-    const [currentPage, setCurrentPage] = useState(1)
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Filter posts by search term on title or author (case insensitive)
     const filteredPosts = useMemo(() => {
-        if (!searchTerm) return blogPosts
+        if (!searchTerm) return blogPosts;
         return blogPosts.filter(
             (post) =>
                 post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                post.author.toLowerCase().includes(searchTerm.toLowerCase()),
-        )
-    }, [searchTerm])
+                post.author.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [searchTerm]);
+
+    const loadPosts = useCallback(async () => {
+        const response = await fetchPosts({ page: currentPage, size: POSTS_PER_PAGE });
+        setPosts(response.posts);
+        setTotalPages(response.pages);
+
+        console.log("response in main blog posts is", response);
+    }, [currentPage]);
+
+    useEffect(() => {
+        loadPosts();
+    }, [loadPosts]);
 
     // Featured posts: first 3 posts from filtered
-    const featuredPosts = filteredPosts.slice(0, 3)
+    const featuredPosts = filteredPosts.slice(0, 3);
 
     // Recent posts: after featured, paginated
-    const recentPosts = filteredPosts.slice(3)
-    const totalPages = Math.ceil(recentPosts.length / POSTS_PER_PAGE)
-    const paginatedPosts = recentPosts.slice(
-        (currentPage - 1) * POSTS_PER_PAGE,
-        currentPage * POSTS_PER_PAGE,
-    )
+    //   const recentPosts = filteredPosts.slice(3);
+    //   const totalPages = Math.ceil(recentPosts.length / POSTS_PER_PAGE);
+    //   const paginatedPosts = recentPosts.slice(
+    //     (currentPage - 1) * POSTS_PER_PAGE,
+    //     currentPage * POSTS_PER_PAGE
+    //   );
 
     // Pagination handlers
-    const goPrev = () => setCurrentPage((p) => Math.max(1, p - 1))
-    const goNext = () => setCurrentPage((p) => Math.min(totalPages, p + 1))
+    const goPrev = () => setCurrentPage((p) => Math.max(1, p - 1));
+    const goNext = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
 
     return (
         <>
@@ -157,8 +215,8 @@ export default function BlogPage() {
                         className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-church-primary"
                         value={searchTerm}
                         onChange={(e) => {
-                            setSearchTerm(e.target.value)
-                            setCurrentPage(1) // reset page on new search
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1); // reset page on new search
                         }}
                     />
                 </div>
@@ -196,10 +254,10 @@ export default function BlogPage() {
                                         </Link>
                                     </CardTitle>
                                     <CardDescription className="text-gray-500">
-                                        <div className="flex items-center">
+                                        <span className="flex items-center">
                                             <User className="h-4 w-4 mr-1 text-church-primary" />
                                             <span>{post.author}</span>
-                                        </div>
+                                        </span>
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="pb-3">
@@ -227,11 +285,11 @@ export default function BlogPage() {
                 <div className="container-custom">
                     <h2 className="section-title mb-8">Recent Posts</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {paginatedPosts.map((post) => (
-                            <Card key={post.id} className="overflow-hidden card-hover">
+                        {posts.map((post) => (
+                            <Card key={post.post_id} className="overflow-hidden card-hover">
                                 <div className="relative aspect-[16/9] w-full">
                                     <Image
-                                        src={post.image}
+                                        src={post.featuredImage}
                                         alt={post.title}
                                         fill
                                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -239,12 +297,12 @@ export default function BlogPage() {
                                     />
                                 </div>
                                 <CardHeader className="pb-3">
-                                    <div className="flex items-center text-sm text-gray-500 mb-2">
-                                        <Calendar className="h-4 w-4 mr-1" />
-                                        <span className="mr-4">{post.date}</span>
-                                        <Clock className="h-4 w-4 mr-1" />
-                                        <span>{post.readTime}</span>
-                                    </div>
+                                    {/* <div className="flex items-center text-sm text-gray-500 mb-2">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span className="mr-4">{post.date}</span>
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>{post.readTime}</span>
+                  </div> */}
                                     <CardTitle className="font-heading">
                                         <Link
                                             href={`/blog/${post.slug}`}
@@ -253,12 +311,12 @@ export default function BlogPage() {
                                             {post.title}
                                         </Link>
                                     </CardTitle>
-                                    <CardDescription className="text-gray-500">
-                                        <div className="flex items-center">
-                                            <User className="h-4 w-4 mr-1 text-church-primary" />
-                                            <span>{post.author}</span>
-                                        </div>
-                                    </CardDescription>
+                                    {/* <CardDescription className="text-gray-500">
+                    <div className="flex items-center">
+                      <User className="h-4 w-4 mr-1 text-church-primary" />
+                      <span>{post.author}</span>
+                    </div>
+                  </CardDescription> */}
                                 </CardHeader>
                                 <CardContent className="pb-3">
                                     <p className="text-gray-600 line-clamp-3">{post.excerpt}</p>
@@ -276,6 +334,55 @@ export default function BlogPage() {
                                 </CardFooter>
                             </Card>
                         ))}
+                        {/* {paginatedPosts.map((post) => (
+              <Card key={post.id} className="overflow-hidden card-hover">
+                <div className="relative aspect-[16/9] w-full">
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover"
+                  />
+                </div>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center text-sm text-gray-500 mb-2">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span className="mr-4">{post.date}</span>
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>{post.readTime}</span>
+                  </div>
+                  <CardTitle className="font-heading">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="hover:text-church-primary transition-colors"
+                    >
+                      {post.title}
+                    </Link>
+                  </CardTitle>
+                  <CardDescription className="text-gray-500">
+                    <div className="flex items-center">
+                      <User className="h-4 w-4 mr-1 text-church-primary" />
+                      <span>{post.author}</span>
+                    </div>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pb-3">
+                  <p className="text-gray-600 line-clamp-3">{post.excerpt}</p>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="p-0 h-auto text-church-primary hover:text-church-primary/80 hover:bg-transparent"
+                  >
+                    <Link href={`/blog/${post.slug}`}>
+                      Read More <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))} */}
                     </div>
 
                     {/* Pagination */}
@@ -303,5 +410,5 @@ export default function BlogPage() {
                 </div>
             </section>
         </>
-    )
+    );
 }
