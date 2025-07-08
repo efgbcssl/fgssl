@@ -53,10 +53,10 @@ export const getBlogPosts = async (
             // commentCount: post.commentCount || 0,
             likes: post.likes || 0,
             createdAt: post.createdAt?.toISOString(),
-            updatedAt: post.updatedAt?.toISOString(),
+            updatedAt: post.updatedAt?.toISOString() || "",
             featuredImage: post.featuredImage || undefined,
             metaTitle: post.metaTitle || undefined,
-            metaDescription: post.metaDescription || undefined,
+            metaDescription: post.metsDescription || undefined,
         }));
 
         return {
@@ -96,8 +96,8 @@ export const getBlogPostBySlug = async (
                 metaTitle:
                     record.metaTitle != null ? (record.metaTitle as string) : undefined,
                 metaDescription:
-                    record.metaDescription != null
-                        ? (record.metaDescription as string)
+                    record.metsDescription != null
+                        ? (record.metsDescription as string)
                         : undefined,
             }),
             status: 200,
@@ -175,6 +175,7 @@ export const createBlogPost = async (
         return {
             data: transformPost({
                 ...record,
+                slug: record.slug ?? "",
                 categories: record.categories ?? undefined,
                 featuredImage: record.featuredImage ?? undefined,
                 metaTitle:
@@ -226,8 +227,8 @@ export const updateBlogPost = async (
                 metaTitle:
                     record.metaTitle != null ? (record.metaTitle as string) : undefined,
                 metaDescription:
-                    record.metaDescription != null
-                        ? (record.metaDescription as string)
+                    record.metsDescription != null
+                        ? (record.metsDescription as string)
                         : undefined,
             }),
             status: 200,
@@ -306,7 +307,7 @@ const transformPost = (post: {
     createdAt:
         typeof post.createdAt === "string"
             ? post.createdAt
-            : post.createdAt?.toISOString(),
+            : post.createdAt?.toISOString() || "",
     updatedAt: post.updatedAt
         ? typeof post.updatedAt === "string"
             ? post.updatedAt
