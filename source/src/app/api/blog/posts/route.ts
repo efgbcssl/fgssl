@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { xata } from "@/lib/xata";
 // import { BlogPost } from '@/types/blog';
+import { v4 as uuidv4 } from 'uuid';
 
 // Get all blog posts
 export async function GET(request: Request) {
@@ -50,6 +51,8 @@ export async function GET(request: Request) {
         );
     }
 }
+
+const post_id = uuidv4();
 
 // Create a new blog post
 export async function POST(request: Request) {
