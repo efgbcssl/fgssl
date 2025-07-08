@@ -20,7 +20,7 @@ export const getBlogPosts = async (
             "likes",
             "featuredImage",
             "metaTitle",
-            "metaDescription",
+            "metsDescription",
         ]);
 
         const filteredQuery = adminView
