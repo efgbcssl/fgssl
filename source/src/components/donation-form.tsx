@@ -31,6 +31,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 const FormSchema = z.object({
     donationType: z.string().min(1, "Please select a donation type"),
     amount: z.string().min(1, "Please enter an amount"),
+    donationFrequency: z.enum(["one-time", "monthly"]),
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email"),
     phone: z.string().optional(),
@@ -61,11 +62,10 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
         },
     })
 
-    async function createPaymentIntent(values: z.infer<typeof FormSchema>) {
+    async function createPayment(values: z.infer<typeof FormSchema>) {
         setIsSubmitting(true)
         try {
             const parsedAmount = Math.round(Number(values.amount) * 100)
-
             if (isNaN(parsedAmount) || parsedAmount < 50 || parsedAmount > 1_000_000_00) {
                 toast({
                     title: "Invalid amount",
@@ -75,44 +75,46 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                 return
             }
 
-            const response = await fetch('/api/stripe/create-payment-intent', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    amount: parsedAmount,
-                    currency: 'usd',
-                    metadata: {
-                        donorName: values.name,
-                        donorEmail: values.email,
-                        donorPhone: values.phone || '',
-                        donationType: values.donationType,
-                    }
-                })
-            })
-
-            if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.message || "Failed to create payment intent")
+            const payload = {
+                name: values.name,
+                email: values.email,
+                phone: values.phone,
+                amount: parsedAmount,
+                donationType: values.donationType,
+                frequency: values.donationFrequency
             }
 
-            const { clientSecret } = await response.json()
-            if (!clientSecret) throw new Error('No client secret returned from server')
+            const endpoint =
+                values.donationFrequency === 'monthly'
+                    ? '/api/stripe/create-subscription'
+                    : '/api/stripe/create-payment-intent'
 
-            setClientSecret(clientSecret)
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+
+            const data = await res.json()
+            if (!res.ok || !data.clientSecret) {
+                throw new Error(data.message || 'Payment setup failed')
+            }
+
+            setClientSecret(data.clientSecret)
             setStep('payment')
-
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "An error occurred"
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Something went wrong"
             toast({ title: "Error", description: message, variant: "destructive" })
         } finally {
             setIsSubmitting(false)
         }
     }
 
+
     return (
         <Form {...form}>
             {step === 'form' ? (
-                <form onSubmit={form.handleSubmit(createPaymentIntent)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(createPayment)} className="space-y-6">
                     {/* Donation Type */}
                     <FormField
                         control={form.control}
@@ -138,6 +140,30 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                             </FormItem>
                         )}
                     />
+
+                    {/* Donation Frequency*/}
+                    <FormField
+                        control={form.control}
+                        name="donationFrequency"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Donation Frequency</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="one-time">One-Time</SelectItem>
+                                        <SelectItem value="monthly">Monthly (Recurring)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
 
                     {/* Amount */}
                     <FormField

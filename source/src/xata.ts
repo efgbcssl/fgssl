@@ -313,6 +313,14 @@ const tables = [
         comment: '{"xata.type":"text"}',
       },
       {
+        name: "stripeSubscriptionId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
         name: "xata_createdat",
         type: "datetime",
         notNull: true,

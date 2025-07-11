@@ -128,6 +128,82 @@ export async function POST(req: Request) {
         }
     }
 
+    if (event.type === 'invoice.payment_succeeded') {
+        const invoice = event.data.object as Stripe.Invoice
+
+        try {
+            const subscription = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
+            const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+            const customerEmail = invoice.customer_email
+            const amount = invoice.amount_paid / 100
+            const currency = invoice.currency.toUpperCase()
+            const paymentMethod = invoice.payment_settings?.payment_method_types?.[0] || 'card'
+            const receiptUrl = invoice.hosted_invoice_url || ''
+            const createdDate = new Date(invoice.created * 1000)
+
+            // fallback if no email
+            if (!customerEmail) {
+                console.error('❌ Missing email on recurring invoice:', invoice.id)
+                return NextResponse.json({ error: 'Missing email' }, { status: 400 })
+            }
+
+            // Save or update donor
+            let donor = await xata.db.donors.filter({ email: customerEmail }).getFirst()
+            if (donor) {
+                await xata.db.donors.update(donor.xata_id, {
+                    totalDonations: (donor.totalDonations || 0) + amount,
+                    lastDonationDate: createdDate.toISOString()
+                })
+            } else {
+                donor = await xata.db.donors.create({
+                    email: customerEmail,
+                    name: invoice.customer_name || 'Recurring Donor',
+                    totalDonations: amount,
+                    lastDonationDate: createdDate.toISOString()
+                })
+            }
+
+            // Save donation
+            await xata.db.donations.create({
+                amount,
+                currency,
+                donationType: 'Recurring Subscription',
+                donorEmail: customerEmail,
+                donorName: invoice.customer_name || 'Recurring Donor',
+                donorPhone: '', // subscriptions often lack phone
+                isRecurring: true,
+                paymentMethod,
+                paymentStatus: 'succeeded',
+                stripeChargeId: invoice.charge as string,
+                stripePaymentIntentId: invoice.payment_intent as string,
+                receiptUrl
+            })
+
+            // Optional: send email
+            try {
+                await sendDonationEmail({
+                    to: customerEmail,
+                    donorName: invoice.customer_name || 'Recurring Donor',
+                    amount,
+                    donationType: 'Recurring Subscription',
+                    receiptUrl,
+                    createdDate,
+                    paymentMethod,
+                    currency
+                })
+            } catch (err) {
+                console.error('Failed to send recurring donation email:', err)
+            }
+
+            console.log(`✅ Recurring donation saved from invoice ${invoice.id}`)
+            return NextResponse.json({ received: true })
+        } catch (err) {
+            console.error('❌ Error processing recurring invoice:', err)
+            return NextResponse.json({ error: 'Failed recurring donation' }, { status: 500 })
+        }
+    }
+
+
     // Handle other event types
     console.log(`ℹ️ Unhandled event type: ${event.type}`)
     return NextResponse.json({ received: true })
