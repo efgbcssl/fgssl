@@ -45,7 +45,7 @@ export async function POST(req: Request) {
                 phone: metadata.donorPhone || '',
                 amount: paymentIntent.amount / 100,
                 currency: paymentIntent.currency.toUpperCase(),
-                donationType: metadata.donationType || 'General',
+                donationType: metadata.donationType || 'Offerings',
                 paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
                 receiptUrl: charge?.receipt_url || '',
                 created: new Date(paymentIntent.created * 1000)
@@ -96,8 +96,6 @@ export async function POST(req: Request) {
                 stripeChargeId: charge?.id,
                 receiptUrl: donorData.receiptUrl,
                 isRecurring: false,
-                // Replace 'date' with the correct field name if it exists in your schema, e.g. 'createdAt'
-                // createdAt: donorData.created.toISOString()
             })
 
             // 3. Send confirmation email
@@ -132,8 +130,6 @@ export async function POST(req: Request) {
         const invoice = event.data.object as Stripe.Invoice
 
         try {
-            const subscription = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
-            const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
             const customerEmail = invoice.customer_email
             const amount = invoice.amount_paid / 100
             const currency = invoice.currency.toUpperCase()
@@ -170,12 +166,12 @@ export async function POST(req: Request) {
                 donationType: 'Recurring Subscription',
                 donorEmail: customerEmail,
                 donorName: invoice.customer_name || 'Recurring Donor',
-                donorPhone: '', // subscriptions often lack phone
+                donorPhone: '',
                 isRecurring: true,
                 paymentMethod,
                 paymentStatus: 'succeeded',
-                stripeChargeId: invoice.charge as string,
-                stripePaymentIntentId: invoice.payment_intent as string,
+                stripeChargeId: undefined,
+                stripePaymentIntentId: undefined,
                 receiptUrl
             })
 
