@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { useState } from 'react'
@@ -13,7 +12,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import Upload from 'imagekit-javascript' // or your wrapper OAuth
 
@@ -34,8 +32,8 @@ interface BlogEditorProps {
 }
 
 const imagekit = new Upload({
-    publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || '',
-    urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || 'public_PEUl1g79PnvCS5xvi49GqgmcmlM=',
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY || 'public_mqdxV/CBEy23cB88fqv5K5ZaCQg=',
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/efgbcssl/',
 })
 
 export function BlogEditor({ action, defaultValues }: BlogEditorProps) {
@@ -60,7 +58,7 @@ export function BlogEditor({ action, defaultValues }: BlogEditorProps) {
         const authRes = await fetch('/api/imagekit-auth')
         // console.log("file in uploadImage", await authRes.json())
         const { signature, token, expire } = await authRes.json()
-
+        
         const res = await imagekit.upload({
             file,
             fileName: file.name,

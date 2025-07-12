@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { ThumbsUp } from 'lucide-react'
+import { CommentSection } from '@/components/blog/CommentSection'
+import { randomUUID } from 'crypto'
 
 interface Post {
     featuredImage: string
@@ -103,6 +105,7 @@ export default function BlogPostPage() {
                     </button>
                 </div>
             </article>
+            <CommentSection initialComments={[]} postId={post.post_id} userId={"b90abfbe-6129-9f74-a417-9a82d4385471"} />
         </div>
     )
 }

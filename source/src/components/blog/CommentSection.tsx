@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+// import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatDistanceToNow } from 'date-fns'
@@ -32,6 +32,12 @@ export function CommentSection({ postId, userId, initialComments }: CommentSecti
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState('')
   const [showShare, setShowShare] = useState(false)
+
+  function handleCommentValue(value: string)
+  {
+    setContent(value)
+    console.log(value);
+  }
 
   // Fetch like status for comments
   useEffect(() => {
@@ -258,7 +264,7 @@ export function CommentSection({ postId, userId, initialComments }: CommentSecti
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {/* <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -269,10 +275,10 @@ export function CommentSection({ postId, userId, initialComments }: CommentSecti
             type="email"
             placeholder="Your email (optional)"
           />
-        </div>
+        </div> */}
         <Textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => handleCommentValue(e.target.value)}
           placeholder="Write your comment..."
           rows={4}
           required
