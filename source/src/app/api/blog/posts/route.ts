@@ -158,10 +158,10 @@ export async function PUT(request: Request) {
       featuredImage: featuredImage ? featuredImage : post.featuredImage,
       metaTitle: metaTitle ? metaTitle : post.metaTitle,
       metsDescription: metaDescription ? metaDescription : post.metsDescription,
-      likes: 0,
+      likes: post.likes ,
       createdAt,
       updatedAt,
-      commentCount: 0,
+      commentCount: post.commentCount,
     };
 
     const newPost = await post.update({ ...postToBeUpdated });
