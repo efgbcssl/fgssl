@@ -42,8 +42,16 @@ export async function POST(req: Request) {
             }
         })
 
-        const clientSecret = subscription.latest_invoice?.payment_intent?.client_secret
+        // Type guard to check if latest_invoice is an Invoice object
+        const latestInvoice = subscription.latest_invoice
+        let clientSecret: string | null = null
 
+        if (latestInvoice && typeof latestInvoice === 'object' && 'payment_intent' in latestInvoice) {
+            const paymentIntent = latestInvoice.payment_intent
+            if (paymentIntent && typeof paymentIntent === 'object' && 'client_secret' in paymentIntent) {
+                clientSecret = paymentIntent.client_secret as string
+            }
+        }
         return NextResponse.json({
             clientSecret,
             subscriptionId: subscription.id
