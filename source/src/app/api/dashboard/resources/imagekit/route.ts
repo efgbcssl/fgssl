@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/dashboard/resources/imagekit/route.ts
 import { NextResponse } from 'next/server'
 import ImageKit from 'imagekit'
