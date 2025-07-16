@@ -167,19 +167,27 @@ export async function POST(req: Request) {
 
         try {
             // Get subscription details
-            const subscription = invoice.subscription ?
-                await stripe.subscriptions.retrieve(invoice.subscription as string) :
+            const subscription = (invoice as any).subscription as string ?
+                await stripe.subscriptions.retrieve((invoice as any).subscription as string) :
                 null
 
             // Get customer details
             const customer = await stripe.customers.retrieve(invoice.customer as string)
-            const customerEmail = invoice.customer_email ||
-                (typeof customer === 'object' ? customer.email : null)
-            const customerName = typeof customer === 'object' ? customer.name : 'Recurring Donor'
+
+            let customerEmail: string | null = null
+            let customerName: string = 'Recurring Donor'
+
+            if (customer && typeof customer === 'object' && !('deleted' in customer)) {
+                // Now TypeScript knows this is a non-deleted Customer
+                customerEmail = invoice.customer_email || customer.email
+                customerName = customer.name || 'Recurring Donor'
+            } else if (invoice.customer_email) {
+                customerEmail = invoice.customer_email
+            }
 
             // Get payment intent
-            const paymentIntent = invoice.payment_intent ?
-                await stripe.paymentIntents.retrieve(invoice.payment_intent as string) :
+            const paymentIntent = (invoice as any).payment_intent ?
+                await stripe.paymentIntents.retrieve((invoice as any).payment_intent as string) :
                 null
 
             // Prepare donation data
