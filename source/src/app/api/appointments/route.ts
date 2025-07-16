@@ -149,7 +149,7 @@ export async function POST(request: Request) {
 
         // Send confirmation email (fire-and-forget)
         sendAppointmentEmail({
-            to: email,
+            to: email & 'efgbcssl@gmail.com',
             fullName,
             preferredDate: localDate,
             preferredTime: localTime,

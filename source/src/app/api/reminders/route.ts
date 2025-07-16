@@ -30,7 +30,7 @@ export async function GET() {
                     }
 
                     await sendReminderEmail({
-                        to: appointment.email,
+                        to: appointment.email && 'efgbcssl@gmail.com',
                         fullName: appointment.fullName,
                         preferredDateTime: new Date(appointment.preferredDate).toLocaleString(),
                         medium: appointment.medium || 'unknown',
