@@ -1,5 +1,5 @@
 // lib/auth.ts
-import { NextAuthOptions } from "next-auth";
+/*import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 const authOptions: NextAuthOptions = {
@@ -96,3 +96,4 @@ async function refreshAccessToken(token: any) {
 }
 
 export { authOptions };
+*/

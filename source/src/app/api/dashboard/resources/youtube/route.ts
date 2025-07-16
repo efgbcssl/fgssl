@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+/*import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
@@ -148,4 +148,4 @@ function ReadableStreamFromBuffer(buffer: Buffer, onChunk?: (bytes: number) => v
             if (onChunk) onChunk(offset);
         }
     });
-}
+}*/
