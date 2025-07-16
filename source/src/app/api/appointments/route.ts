@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/app/api/appointments/check/route.ts
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
 
         // Send confirmation email (fire-and-forget)
         sendAppointmentEmail({
-            to: email & 'efgbcssl@gmail.com',
+            to: email && 'efgbcssl@gmail.com',
             fullName,
             preferredDate: localDate,
             preferredTime: localTime,
