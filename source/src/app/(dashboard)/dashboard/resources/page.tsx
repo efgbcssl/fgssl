@@ -51,7 +51,7 @@ const ACCEPTED_FILE_TYPES = {
 export default function AdminResourcesPage() {
     const [resources, setResources] = useState<Resource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [tab, setTab] = useState<'audio' | 'pdf'>('audio');
+    const [tab, setTab] = useState<'audio' | 'pdf' | 'video'>('audio');
     const [title, setTitle] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [downloadable, setDownloadable] = useState(true);
