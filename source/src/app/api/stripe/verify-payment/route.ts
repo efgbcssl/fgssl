@@ -130,7 +130,9 @@ export async function GET(request: Request) {
             donationType: receiptData.donationType,
             receiptUrl: receiptData.receiptUrl,
             createdDate: new Date(receiptData.created * 1000).toLocaleString(),
-            receiptNumber: ''
+            receiptNumber: '',
+            frequency: 'one-time',
+            isRecurring: false,
         })
         console.log('✅ PDF generated for', receiptData.donorName)
 
@@ -144,6 +146,8 @@ export async function GET(request: Request) {
                 donationType: receiptData.donationType,
                 receiptUrl: receiptData.receiptUrl,
                 createdDate: new Date(receiptData.created * 1000).toLocaleString(),
+                frequency: "one-time",
+                isRecurring: false
             })
             console.log("✅ Email sent successfully:", emailResponse)
 
