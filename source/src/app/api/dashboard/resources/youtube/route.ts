@@ -1,8 +1,7 @@
-// app/api/dashboard/resources/youtube/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import getServerSession from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import { Readable } from 'stream';
 
 export async function OPTIONS() {
@@ -26,7 +25,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Parse the multipart form data
         const formData = await request.formData();
 
         const videoFile = formData.get('video') as File;
@@ -37,24 +35,16 @@ export async function POST(request: NextRequest) {
         const thumbnail = formData.get('thumbnail') as File;
 
         if (!videoFile) {
-            return NextResponse.json(
-                { error: 'No video file provided' },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'No video file provided' }, { status: 400 });
         }
 
         if (!title?.trim()) {
-            return NextResponse.json(
-                { error: 'Title is required' },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'Title is required' }, { status: 400 });
         }
 
-        // Initialize YouTube API
         const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI
+            process.env.GOOGLE_CLIENT_SECRET
         );
 
         oauth2Client.setCredentials({
@@ -64,68 +54,69 @@ export async function POST(request: NextRequest) {
 
         const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-        // Convert File to Buffer then to Readable stream
-        const buffer = Buffer.from(await videoFile.arrayBuffer());
-        const videoStream = new Readable();
-        videoStream.push(buffer);
-        videoStream.push(null);
+        // Read file into buffer
+        const videoBuffer = Buffer.from(await videoFile.arrayBuffer());
+        const fileSize = videoBuffer.length;
 
-        // Prepare video metadata
-        const videoMetadata = {
-            snippet: {
-                title: title.trim(),
-                description: description || '',
-                tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        // Use the built-in Google resumable upload
+        const res = await youtube.videos.insert(
+            {
+                part: ['snippet', 'status'],
+                requestBody: {
+                    snippet: {
+                        title: title.trim(),
+                        description: description || '',
+                        tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+                    },
+                    status: {
+                        privacyStatus: privacyStatus || 'unlisted',
+                    },
+                },
+                media: {
+                    mimeType: videoFile.type || 'video/*',
+                    body: ReadableStreamFromBuffer(videoBuffer, (bytesUploaded) => {
+                        const progress = ((bytesUploaded / fileSize) * 100).toFixed(2);
+                        console.log(`Upload progress: ${progress}%`);
+                    }),
+                },
             },
-            status: {
-                privacyStatus: privacyStatus || 'unlisted',
-            },
-        };
+            {
+                // These headers help enable resumable behavior
+                onUploadProgress: (evt) => {
+                    const progress = ((evt.bytesRead / fileSize) * 100).toFixed(2);
+                    console.log(`Upload progress: ${progress}%`);
+                },
+            }
+        );
 
-        // Upload video to YouTube
-        const uploadResponse = await youtube.videos.insert({
-            part: ['snippet', 'status'],
-            requestBody: videoMetadata,
-            media: {
-                body: videoStream,
-                mimeType: videoFile.type || 'video/mp4',
-            },
-        });
+        const videoId = res.data.id;
 
-        const videoId = uploadResponse.data.id;
-
-        // Upload custom thumbnail if provided
+        // Upload thumbnail
         if (thumbnail && videoId) {
             try {
-                const thumbnailBuffer = Buffer.from(await thumbnail.arrayBuffer());
-                const thumbnailStream = new Readable();
-                thumbnailStream.push(thumbnailBuffer);
-                thumbnailStream.push(null);
-
+                const thumbBuffer = Buffer.from(await thumbnail.arrayBuffer());
                 await youtube.thumbnails.set({
                     videoId: videoId,
                     media: {
-                        body: thumbnailStream,
+                        body: ReadableStreamFromBuffer(thumbBuffer),
                         mimeType: thumbnail.type,
                     },
                 });
-            } catch (thumbnailError) {
-                console.error('Thumbnail upload failed:', thumbnailError);
-                // Continue without failing the entire upload
+            } catch (err) {
+                console.error('Thumbnail upload failed:', err);
             }
         }
 
         return NextResponse.json({
             success: true,
-            videoId: videoId,
+            videoId,
             url: `https://youtu.be/${videoId}`,
-            message: 'Video uploaded successfully to YouTube',
+            message: 'Video uploaded successfully with resumable upload.',
         });
 
     } catch (error: any) {
         console.error('YouTube upload error:', error);
 
-        // Handle specific YouTube API errors
         let errorMessage = 'Failed to upload video';
         let statusCode = 500;
 
@@ -142,9 +133,19 @@ export async function POST(request: NextRequest) {
             errorMessage = error.message;
         }
 
-        return NextResponse.json(
-            { error: errorMessage },
-            { status: statusCode }
-        );
+        return NextResponse.json({ error: errorMessage }, { status: statusCode });
     }
+}
+
+function ReadableStreamFromBuffer(buffer: Buffer, onChunk?: (bytes: number) => void): Readable {
+    let offset = 0;
+
+    return new Readable({
+        read(size) {
+            const chunk = buffer.slice(offset, offset + size);
+            this.push(chunk.length > 0 ? chunk : null);
+            offset += size;
+            if (onChunk) onChunk(offset);
+        }
+    });
 }

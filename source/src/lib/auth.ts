@@ -1,51 +1,4 @@
-// src/lib/auth.ts
-/*
-import CredentialsProvider from "next-auth/providers/credentials"
-import type { NextAuthConfig } from "next-auth"
-
-export const authConfig: NextAuthConfig = {/*
-    providers: [
-        CredentialsProvider({
-            credentials: {
-                email: { label: "Email", type: "text" },
-                password: { label: "Password", type: "password" },
-            },
-            async authorize(credentials) {
-                const { email, password } = credentials ?? {}
-
-                // Replace this with your actual logic
-                if (email === "test@example.com" && password === "password") {
-                    return {
-                        id: "1",
-                        name: "Test User",
-                        email: "test@example.com",
-                        role: "admin",
-                    }
-                }
-                return null
-            },
-        }),
-    ],
-    secret: process.env.AUTH_SECRET,
-    pages: {
-        signIn: "/login", // Optional: your custom sign-in page
-    },
-    session: {
-        strategy: "jwt",
-    },
-    callbacks: {
-        async jwt({ token, user }) {
-            if (user) token.role = user.role
-            return token
-        },
-        async session({ session, token }) {
-            if (token?.role) session.user.role = token.role
-            return session
-        },
-    },
-}
-*/
-
+// lib/auth.ts
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -65,60 +18,80 @@ const authOptions: NextAuthOptions = {
                         "https://www.googleapis.com/auth/youtube.force-ssl"
                     ].join(" "),
                     access_type: "offline",
-                    prompt: "consent",
+                    prompt: "consent"
                 }
             }
         })
     ],
+    session: {
+        strategy: "jwt"
+    },
+    useSecureCookies: process.env.NODE_ENV === "production",
     callbacks: {
-        async jwt({ token, account, profile }) {
+        async jwt({ token, account }) {
+            // First time user logs in
             if (account) {
+                console.log("Account:", account);
+
                 token.accessToken = account.access_token;
                 token.refreshToken = account.refresh_token;
-                token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : undefined;
+                token.accessTokenExpires = account.expires_at
+                    ? account.expires_at * 1000
+                    : Date.now() + (account.expires_in ?? 3600) * 1000;
             }
+
+            // Return token early if still valid
             if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
                 return token;
             }
+
+            // Token expired, refresh it
             return await refreshAccessToken(token);
         },
         async session({ session, token }) {
-            session.accessToken = token.accessToken;
-            session.refreshToken = token.refreshToken;
+            session.accessToken = token.accessToken as string;
+            session.refreshToken = token.refreshToken as string;
             session.error = token.error;
             return session;
         }
     },
-    session: {
-        strategy: "jwt",
-    },
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET
 };
 
 async function refreshAccessToken(token: any) {
     try {
         const url = "https://oauth2.googleapis.com/token";
         const response = await fetch(url, {
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
             body: new URLSearchParams({
                 client_id: process.env.GOOGLE_CLIENT_ID!,
                 client_secret: process.env.GOOGLE_CLIENT_SECRET!,
                 grant_type: "refresh_token",
-                refresh_token: token.refreshToken,
-            }),
+                refresh_token: token.refreshToken
+            })
         });
+
         const refreshedTokens = await response.json();
-        if (!response.ok) throw refreshedTokens;
+
+        if (!response.ok) {
+            throw refreshedTokens;
+        }
+
         return {
             ...token,
             accessToken: refreshedTokens.access_token,
             accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
-            refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+            refreshToken: refreshedTokens.refresh_token ?? token.refreshToken
         };
     } catch (error) {
         console.error("Error refreshing access token:", error);
-        return { ...token, error: "RefreshAccessTokenError" };
+        return {
+            ...token,
+            error: "RefreshAccessTokenError"
+        };
     }
 }
 
