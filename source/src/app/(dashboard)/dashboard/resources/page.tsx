@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Image from "next/image"
+import { ToastAction } from "@/components/ui/toast"
 
 interface YouTubeMetadata {
     description?: string;
@@ -342,7 +343,7 @@ export default function AdminResourcesPage() {
             });
 
             const responseText = await uploadPromise;
-            const response = JSON.parse(responseText);
+            const response = JSON.parse(responseText as string);
 
             if (response.error) {
                 throw new Error(response.error);
@@ -352,12 +353,12 @@ export default function AdminResourcesPage() {
                 title: 'Upload Successful',
                 description: `Video "${title}" has been uploaded to YouTube`,
                 variant: 'default',
-                action: response.videoId ? {
-                    label: 'View on YouTube',
-                    onClick: () => window.open(`https://youtu.be/${response.videoId}`, '_blank')
-                } : undefined
+                action: response.videoId ? (
+                    <ToastAction altText="View on YouTube" onClick={() => window.open(`https://youtu.be/${response.videoId}`, '_blank')}>
+                        View on YouTube
+                    </ToastAction>
+                ) : undefined
             });
-
             // Reset form
             setTitle('');
             setDescription('');
