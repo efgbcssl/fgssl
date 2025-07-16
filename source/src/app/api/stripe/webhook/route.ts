@@ -327,6 +327,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true })
     }
 
+    if (event.type === 'payment_intent.created') {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        console.log(`ℹ️ Payment Intent created: ${paymentIntent.id}`)
+        // Add any necessary logic here
+        return NextResponse.json({ received: true })
+    }
+
+    if (event.type === 'customer.created') {
+        const customer = event.data.object as Stripe.Customer
+        console.log(`ℹ️ New customer created: ${customer.id}`)
+        // Add logic to store new customer in your database
+        return NextResponse.json({ received: true })
+    }
+
+
     console.log(`ℹ️ Unhandled event type: ${event.type}`)
     return NextResponse.json({ received: true })
 }
