@@ -3,11 +3,13 @@
 import dynamic from 'next/dynamic'
 import { Heart, Gift, Building, GraduationCap, HandHeart, Lightbulb } from 'lucide-react'
 import Image from 'next/image'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
+import { motion } from 'framer-motion'
+import { Icons } from '@/components/ui/icons'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -61,9 +63,18 @@ const DonationForm = dynamic(
     () => import('@/components/donation-form').then((mod) => mod.DonationForm),
     {
         ssr: false,
-        loading: () => <div className="text-center py-8">Loading donation form...</div>
+        loading: () => (
+            <div className="flex justify-center items-center h-64">
+                <Icons.spinner className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        )
     }
 )
+
+const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+}
 
 export default function DonationPage() {
     const { toast } = useToast()
@@ -71,7 +82,7 @@ export default function DonationPage() {
     return (
         <>
             {/* Hero Section */}
-            <section className="relative h-[300px] md:h-[350px] overflow-hidden">
+            <section className="relative h-[300px] md:h-[400px] overflow-hidden">
                 <Image
                     src="https://images.pexels.com/photos/6647037/pexels-photo-6647037.jpeg"
                     alt="Donation"
@@ -82,37 +93,62 @@ export default function DonationPage() {
                 />
                 <div className="absolute inset-0 bg-black/50" />
                 <div className="container-custom relative z-10 h-full flex flex-col justify-center items-center text-center text-white">
-                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 font-heading">
+                    <motion.h1
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeIn}
+                        transition={{ duration: 0.6 }}
+                        className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 font-heading"
+                    >
                         Support Our Ministry
-                    </h1>
-                    <p className="text-lg max-w-2xl">
+                    </motion.h1>
+                    <motion.p
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeIn}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="text-xl max-w-2xl"
+                    >
                         Your generosity makes a difference in our church and community
-                    </p>
+                    </motion.p>
                 </div>
             </section>
 
             {/* Donation Types */}
-            <section className="py-16">
+            <section className="py-16 bg-white">
                 <div className="container-custom">
-                    <h2 className="text-3xl font-bold text-center mb-4 font-heading">Ways to Give</h2>
-                    <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-                        Your financial support enables us to continue our mission of spreading the gospel,
-                        caring for those in need, and building a community of faith.
-                    </p>
+                    <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeIn}
+                        className="text-center mb-12"
+                    >
+                        <h2 className="text-3xl font-bold mb-4 font-heading">Ways to Give</h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Your financial support enables us to continue our mission of spreading the gospel,
+                            caring for those in need, and building a community of faith.
+                        </p>
+                    </motion.div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {donationTypes.map((type) => (
-                            <Card key={type.id} className="hover:shadow-lg transition-shadow">
-                                <CardContent className="p-6">
-                                    <div className="flex flex-col items-center text-center">
-                                        <div className="h-14 w-14 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mb-4">
-                                            <type.icon className="h-7 w-7" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {donationTypes.map((type, index) => (
+                            <motion.div
+                                key={type.id}
+                                initial="hidden"
+                                animate="visible"
+                                variants={fadeIn}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                            >
+                                <Card className="h-full hover:shadow-lg transition-shadow border-0 shadow-sm">
+                                    <CardContent className="p-8 flex flex-col items-center text-center h-full">
+                                        <div className="h-16 w-16 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mb-6">
+                                            <type.icon className="h-8 w-8" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-2 font-heading">{type.name}</h3>
-                                        <p className="text-gray-600 mb-4">{type.description}</p>
+                                        <h3 className="text-xl font-bold mb-3 font-heading">{type.name}</h3>
+                                        <p className="text-gray-600 mb-6 flex-grow">{type.description}</p>
                                         <Button
                                             variant="outline"
-                                            className="border-blue-600 text-blue-600 mt-auto"
+                                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
                                             onClick={() => {
                                                 const donationForm = document.getElementById('donation-form')
                                                 if (donationForm) {
@@ -126,9 +162,9 @@ export default function DonationPage() {
                                         >
                                             Give Now
                                         </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
@@ -137,30 +173,43 @@ export default function DonationPage() {
             {/* Donation Form */}
             <section className="py-16 bg-gray-50" id="donation-form">
                 <div className="container-custom">
-                    <div className="max-w-3xl mx-auto">
-                        <h2 className="text-3xl font-bold text-center mb-4 font-heading">Make a Donation</h2>
-                        <p className="text-center text-gray-600 mb-10">
-                            Fill out the form below to make a secure online donation.
-                        </p>
-
-                        <Card>
+                    <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeIn}
+                        className="max-w-4xl mx-auto"
+                    >
+                        <Card className="border-0 shadow-sm">
+                            <CardHeader className="text-center pb-0">
+                                <CardTitle className="text-3xl font-heading">Make a Donation</CardTitle>
+                                <p className="text-gray-600">
+                                    Fill out the form below to make a secure online donation.
+                                </p>
+                            </CardHeader>
                             <CardContent className="p-6 md:p-8">
                                 <Elements stripe={stripePromise}>
                                     <DonationForm donationTypes={donationTypes} />
                                 </Elements>
                             </CardContent>
                         </Card>
-                    </div>
+                    </motion.div>
                 </div>
             </section>
 
             {/* Impact Stories */}
-            <section className="py-16">
+            <section className="py-16 bg-white">
                 <div className="container-custom">
-                    <h2 className="text-3xl font-bold text-center mb-4 font-heading">Your Giving Makes a Difference</h2>
-                    <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-                        See how your generous donations have impacted lives in our church and community.
-                    </p>
+                    <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeIn}
+                        className="text-center mb-12"
+                    >
+                        <h2 className="text-3xl font-bold mb-4 font-heading">Your Giving Makes a Difference</h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            See how your generous donations have impacted lives in our church and community.
+                        </p>
+                    </motion.div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {[
@@ -180,21 +229,30 @@ export default function DonationPage() {
                                 description: "Thanks to your generosity, we completed renovations to make our facilities more accessible."
                             }
                         ].map((story, index) => (
-                            <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
-                                <div className="relative h-48">
-                                    <Image
-                                        src={story.image}
-                                        alt={story.title}
-                                        fill
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        className="object-cover"
-                                    />
-                                </div>
-                                <CardContent className="p-6">
-                                    <h3 className="text-xl font-bold mb-2 font-heading">{story.title}</h3>
-                                    <p className="text-gray-600">{story.description}</p>
-                                </CardContent>
-                            </Card>
+                            <motion.div
+                                key={index}
+                                initial="hidden"
+                                animate="visible"
+                                variants={fadeIn}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                whileHover={{ y: -5 }}
+                            >
+                                <Card className="overflow-hidden border-0 shadow-sm h-full">
+                                    <div className="relative h-48">
+                                        <Image
+                                            src={story.image}
+                                            alt={story.title}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                    <CardContent className="p-6">
+                                        <h3 className="text-xl font-bold mb-2 font-heading">{story.title}</h3>
+                                        <p className="text-gray-600">{story.description}</p>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
                         ))}
                     </div>
                 </div>

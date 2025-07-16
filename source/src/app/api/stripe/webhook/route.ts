@@ -9,6 +9,33 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
+interface DonorRecord {
+    name?: string
+    email: string
+    phone?: string
+    totalDonations?: number
+    lastDonationDate?: string
+    donationFrequency?: string
+}
+
+interface DonationRecord {
+    amount: number
+    currency: string
+    donationType: string
+    frequency?: string
+    donorName: string
+    donorEmail: string
+    donorPhone?: string
+    paymentMethod: string
+    paymentStatus: string
+    isRecurring: boolean
+    stripePaymentIntentId?: string
+    stripeChargeId?: string
+    stripeSubscriptionId?: string
+    receiptUrl?: string
+    date: string
+}
+
 export async function POST(req: Request) {
     const body = await req.text()
     const sig = (await headers()).get('stripe-signature')
@@ -25,33 +52,34 @@ export async function POST(req: Request) {
         )
     }
 
-    // Handle payment success
+    // Handle payment success events
     if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
         const metadata = paymentIntent.metadata || {}
 
+        console.log('✅ Received metadata:', metadata)
+
         try {
-            // Get charge details (for receipt URL)
-            const charges = await stripe.charges.list({
-                payment_intent: paymentIntent.id,
-                limit: 1
-            })
-            const charge = charges.data[0]
+            // Get charge details
+            const charge = paymentIntent.latest_charge ?
+                await stripe.charges.retrieve(paymentIntent.latest_charge as string) :
+                null
 
             // Prepare donor data
             const donorData = {
                 name: metadata.donorName || 'Anonymous',
-                email: metadata.donorEmail,
-                phone: metadata.donorPhone || '',
+                email: metadata.donorEmail || (charge?.billing_details?.email || ''),
+                phone: metadata.donorPhone || (charge?.billing_details?.phone || ''),
                 amount: paymentIntent.amount / 100,
                 currency: paymentIntent.currency.toUpperCase(),
-                donationType: metadata.donationType || 'Offerings',
+                donationType: metadata.donationType || 'General Donation',
+                frequency: metadata.frequency || 'one-time',
                 paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
                 receiptUrl: charge?.receipt_url || '',
-                created: new Date(paymentIntent.created * 1000)
+                created: new Date(paymentIntent.created * 1000),
+                subscriptionId: metadata.subscriptionId
             }
 
-            // Validate required fields
             if (!donorData.email) {
                 console.error('Missing donor email in payment intent:', paymentIntent.id)
                 return NextResponse.json(
@@ -60,45 +88,50 @@ export async function POST(req: Request) {
                 )
             }
 
-            // 1. Save/update donor in Xata
+            // Save/update donor
             let donor = await xata.db.donors
                 .filter({ email: donorData.email })
                 .getFirst()
 
-            if (donor) {
-                await xata.db.donors.update(donor.xata_id, {
-                    name: donorData.name,
-                    phone: donorData.phone,
-                    totalDonations: (donor.totalDonations || 0) + donorData.amount,
-                    lastDonationDate: donorData.created.toISOString()
-                })
-            } else {
-                donor = await xata.db.donors.create({
-                    name: donorData.name,
-                    email: donorData.email,
-                    phone: donorData.phone,
-                    totalDonations: donorData.amount,
-                    lastDonationDate: donorData.created.toISOString()
-                })
+            const donorUpdate: Partial<DonorRecord> = {
+                name: donorData.name,
+                phone: donorData.phone,
+                totalDonations: (donor?.totalDonations || 0) + donorData.amount,
+                lastDonationDate: donorData.created.toISOString(),
+                donationFrequency: donorData.frequency
             }
 
-            // 2. Save donation record
-            await xata.db.donations.create({
+            if (donor) {
+                await xata.db.donors.update(donor.email, donorUpdate)
+            } else {
+                donor = await xata.db.donors.create({
+                    ...donorUpdate,
+                    email: donorData.email
+                } as DonorRecord)
+            }
+
+            // Save donation record
+            const donationRecord: DonationRecord = {
                 amount: donorData.amount,
                 currency: donorData.currency,
                 donationType: donorData.donationType,
+                frequency: donorData.frequency,
                 donorName: donorData.name,
                 donorEmail: donorData.email,
                 donorPhone: donorData.phone,
                 paymentMethod: donorData.paymentMethod,
                 paymentStatus: 'succeeded',
+                isRecurring: donorData.frequency !== 'one-time',
                 stripePaymentIntentId: paymentIntent.id,
                 stripeChargeId: charge?.id,
+                stripeSubscriptionId: donorData.subscriptionId,
                 receiptUrl: donorData.receiptUrl,
-                isRecurring: false,
-            })
+                date: donorData.created.toISOString()
+            }
 
-            // 3. Send confirmation email
+            await xata.db.donations.create(donationRecord)
+
+            // Send confirmation email
             try {
                 await sendDonationEmail({
                     to: donorData.email,
@@ -108,13 +141,15 @@ export async function POST(req: Request) {
                     receiptUrl: donorData.receiptUrl,
                     createdDate: donorData.created,
                     paymentMethod: donorData.paymentMethod,
-                    currency: donorData.currency
+                    currency: donorData.currency,
+                    frequency: donorData.frequency,
+                    isRecurring: donorData.frequency !== 'one-time'
                 })
             } catch (emailError) {
                 console.error('Failed to send donation email:', emailError)
             }
 
-            console.log(`✅ Successfully processed payment ${paymentIntent.id}`)
+            console.log(`✅ Processed payment ${paymentIntent.id}`)
             return NextResponse.json({ received: true })
 
         } catch (err) {
@@ -126,81 +161,135 @@ export async function POST(req: Request) {
         }
     }
 
+    // Handle subscription payments
     if (event.type === 'invoice.payment_succeeded') {
         const invoice = event.data.object as Stripe.Invoice
 
         try {
-            const customerEmail = invoice.customer_email
-            const amount = invoice.amount_paid / 100
-            const currency = invoice.currency.toUpperCase()
-            const paymentMethod = invoice.payment_settings?.payment_method_types?.[0] || 'card'
-            const receiptUrl = invoice.hosted_invoice_url || ''
-            const createdDate = new Date(invoice.created * 1000)
+            // Get subscription details
+            const subscription = invoice.subscription ?
+                await stripe.subscriptions.retrieve(invoice.subscription as string) :
+                null
 
-            // fallback if no email
-            if (!customerEmail) {
-                console.error('❌ Missing email on recurring invoice:', invoice.id)
+            // Get customer details
+            const customer = await stripe.customers.retrieve(invoice.customer as string)
+            const customerEmail = invoice.customer_email ||
+                (typeof customer === 'object' ? customer.email : null)
+            const customerName = typeof customer === 'object' ? customer.name : 'Recurring Donor'
+
+            // Get payment intent
+            const paymentIntent = invoice.payment_intent ?
+                await stripe.paymentIntents.retrieve(invoice.payment_intent as string) :
+                null
+
+            // Prepare donation data
+            const donationData = {
+                email: customerEmail,
+                name: customerName,
+                amount: invoice.amount_paid / 100,
+                currency: invoice.currency.toUpperCase(),
+                donationType: subscription?.metadata?.donationType || 'Recurring Donation',
+                frequency: subscription?.metadata?.frequency || 'monthly',
+                paymentMethod: paymentIntent?.payment_method_types?.[0] || 'card',
+                receiptUrl: invoice.hosted_invoice_url || '',
+                created: new Date(invoice.created * 1000),
+                subscriptionId: subscription?.id
+            }
+
+            if (!donationData.email) {
+                console.error('Missing email on invoice:', invoice.id)
                 return NextResponse.json({ error: 'Missing email' }, { status: 400 })
             }
 
-            // Save or update donor
-            let donor = await xata.db.donors.filter({ email: customerEmail }).getFirst()
-            if (donor) {
-                await xata.db.donors.update(donor.xata_id, {
-                    totalDonations: (donor.totalDonations || 0) + amount,
-                    lastDonationDate: createdDate.toISOString()
-                })
-            } else {
-                donor = await xata.db.donors.create({
-                    email: customerEmail,
-                    name: invoice.customer_name || 'Recurring Donor',
-                    totalDonations: amount,
-                    lastDonationDate: createdDate.toISOString()
-                })
+            // Save/update donor
+            let donor = await xata.db.donors
+                .filter({ email: donationData.email })
+                .getFirst()
+
+            const donorUpdate: Partial<DonorRecord> = {
+                name: donationData.name,
+                totalDonations: (donor?.totalDonations || 0) + donationData.amount,
+                lastDonationDate: donationData.created.toISOString(),
+                donationFrequency: donationData.frequency
             }
 
-            // Save donation
-            await xata.db.donations.create({
-                amount,
-                currency,
-                donationType: 'Recurring Subscription',
-                donorEmail: customerEmail,
-                donorName: invoice.customer_name || 'Recurring Donor',
-                donorPhone: '',
-                isRecurring: true,
-                paymentMethod,
-                paymentStatus: 'succeeded',
-                stripeChargeId: undefined,
-                stripePaymentIntentId: undefined,
-                receiptUrl
-            })
+            if (donor) {
+                await xata.db.donors.update(donor.email, donorUpdate)
+            } else {
+                donor = await xata.db.donors.create({
+                    ...donorUpdate,
+                    email: donationData.email
+                } as DonorRecord)
+            }
 
-            // Optional: send email
+            // Save donation record
+            const donationRecord: DonationRecord = {
+                amount: donationData.amount,
+                currency: donationData.currency,
+                donationType: donationData.donationType,
+                frequency: donationData.frequency,
+                donorName: donationData.name,
+                donorEmail: donationData.email,
+                paymentMethod: donationData.paymentMethod,
+                paymentStatus: 'succeeded',
+                isRecurring: true,
+                stripePaymentIntentId: paymentIntent?.id,
+                stripeSubscriptionId: donationData.subscriptionId,
+                receiptUrl: donationData.receiptUrl,
+                date: donationData.created.toISOString()
+            }
+
+            await xata.db.donations.create(donationRecord)
+
+            // Send confirmation email
             try {
                 await sendDonationEmail({
-                    to: customerEmail,
-                    donorName: invoice.customer_name || 'Recurring Donor',
-                    amount,
-                    donationType: 'Recurring Subscription',
-                    receiptUrl,
-                    createdDate,
-                    paymentMethod,
-                    currency
+                    to: donationData.email,
+                    donorName: donationData.name,
+                    amount: donationData.amount,
+                    donationType: donationData.donationType,
+                    receiptUrl: donationData.receiptUrl,
+                    createdDate: donationData.created,
+                    paymentMethod: donationData.paymentMethod,
+                    currency: donationData.currency,
+                    frequency: donationData.frequency,
+                    isRecurring: true
                 })
             } catch (err) {
                 console.error('Failed to send recurring donation email:', err)
             }
 
-            console.log(`✅ Recurring donation saved from invoice ${invoice.id}`)
+            console.log(`✅ Processed recurring payment from invoice ${invoice.id}`)
             return NextResponse.json({ received: true })
+
         } catch (err) {
-            console.error('❌ Error processing recurring invoice:', err)
-            return NextResponse.json({ error: 'Failed recurring donation' }, { status: 500 })
+            console.error('Error processing invoice:', invoice.id, err)
+            return NextResponse.json(
+                { error: 'Failed to process recurring payment' },
+                { status: 500 }
+            )
         }
     }
 
+    // Handle subscription lifecycle events
+    if (event.type === 'customer.subscription.created') {
+        const subscription = event.data.object as Stripe.Subscription
+        console.log(`ℹ️ New subscription created: ${subscription.id}`)
+        return NextResponse.json({ received: true })
+    }
 
-    // Handle other event types
+    if (event.type === 'customer.subscription.updated') {
+        const subscription = event.data.object as Stripe.Subscription
+        console.log(`ℹ️ Subscription updated: ${subscription.id}`)
+        return NextResponse.json({ received: true })
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+        const subscription = event.data.object as Stripe.Subscription
+        console.log(`ℹ️ Subscription canceled: ${subscription.id}`)
+        return NextResponse.json({ received: true })
+    }
+
     console.log(`ℹ️ Unhandled event type: ${event.type}`)
     return NextResponse.json({ received: true })
 }

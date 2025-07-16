@@ -117,7 +117,9 @@ export async function sendDonationEmail({
     receiptUrl,
     createdDate,
     paymentMethod,
-    currency
+    currency,
+    frequency,
+    isRecurring
 }: {
     to: string
     donorName: string
@@ -127,6 +129,8 @@ export async function sendDonationEmail({
     createdDate?: Date | string
     paymentMethod?: string
     currency?: string
+    frequency: string
+    isRecurring: boolean
 }) {
     const receiptNumber = `REC-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
 
@@ -154,7 +158,9 @@ export async function sendDonationEmail({
             receiptNumber,
             paymentMethod: paymentMethod || 'Card',
             dateReceived: formattedDate,
-            currency: currency || 'USD'
+            currency: currency || 'USD',
+            frequency:
+                isRecurring
         });
 
         const pdfBytes = await generateDonationReceiptPDF({
@@ -165,7 +171,9 @@ export async function sendDonationEmail({
             createdDate: formattedDate,
             receiptNumber,
             paymentMethod,
-            currency
+            currency,
+            frequency,
+            isRecurring
         });
 
         const mailOptions = {

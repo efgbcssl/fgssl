@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { useToast } from '@/hooks/use-toast'
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import {
     Form,
@@ -25,13 +26,16 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select"
+import { Icons } from "@/components/ui/icons"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 const FormSchema = z.object({
     donationType: z.string().min(1, "Please select a donation type"),
     amount: z.string().min(1, "Please enter an amount"),
-    donationFrequency: z.enum(["one-time", "monthly"]),
+    donationFrequency: z.enum(["one-time", "daily", "weekly", "monthly", "yearly"]),
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email"),
     phone: z.string().optional(),
@@ -44,6 +48,22 @@ type DonationType = {
     icon: React.ComponentType<{ className?: string }>
 }
 
+const frequencyOptions = [
+    { id: "one-time", label: "One-Time" },
+    { id: "daily", label: "Daily" },
+    { id: "weekly", label: "Weekly" },
+    { id: "monthly", label: "Monthly" },
+    { id: "yearly", label: "Yearly" },
+]
+
+const amountPresets = {
+    "one-time": [25, 50, 100, 200, 500, 1000],
+    "daily": [1, 5, 7, 10],
+    "weekly": [10, 25, 50, 100],
+    "monthly": [250, 500, 750, 1000],
+    "yearly": [5000, 10000, 15000, 20000],
+}
+
 export function DonationForm({ donationTypes }: { donationTypes: DonationType[] }) {
     const [step, setStep] = useState<'form' | 'payment'>('form')
     const [clientSecret, setClientSecret] = useState<string>()
@@ -54,7 +74,8 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            donationType: "",
+            donationType: donationTypes[0]?.id || "",
+            donationFrequency: "one-time",
             amount: "",
             name: "",
             email: "",
@@ -62,14 +83,17 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
         },
     })
 
+    const selectedFrequency = form.watch("donationFrequency")
+    const selectedType = form.watch("donationType")
+
     async function createPayment(values: z.infer<typeof FormSchema>) {
         setIsSubmitting(true)
         try {
             const parsedAmount = Math.round(Number(values.amount) * 100)
-            if (isNaN(parsedAmount) || parsedAmount < 50 || parsedAmount > 1_000_000_00) {
+            if (isNaN(parsedAmount) || parsedAmount < 50) {
                 toast({
                     title: "Invalid amount",
-                    description: "Amount must be between $0.50 and $1,000,000",
+                    description: "Amount must be at least $0.50",
                     variant: "destructive"
                 })
                 return
@@ -85,9 +109,9 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
             }
 
             const endpoint =
-                values.donationFrequency === 'monthly'
-                    ? '/api/stripe/create-subscription'
-                    : '/api/stripe/create-payment-intent'
+                values.donationFrequency === 'one-time'
+                    ? '/api/stripe/create-payment-intent'
+                    : '/api/stripe/create-subscription'
 
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -110,163 +134,213 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
         }
     }
 
-
     return (
-        <Form {...form}>
-            {step === 'form' ? (
-                <form onSubmit={form.handleSubmit(createPayment)} className="space-y-6">
-                    {/* Donation Type */}
-                    <FormField
-                        control={form.control}
-                        name="donationType"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Donation Type</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a donation type" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {donationTypes.map((type) => (
-                                            <SelectItem key={type.id} value={type.id}>
-                                                {type.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+        <Card className="max-w-2xl mx-auto border-0 shadow-lg">
+            <CardHeader>
+                <CardTitle className="text-2xl font-bold text-center">
+                    Support Our Mission
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Form {...form}>
+                    <AnimatePresence mode="wait">
+                        {step === 'form' ? (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.2 }}
+                                key="form"
+                            >
+                                <form onSubmit={form.handleSubmit(createPayment)} className="space-y-6">
+                                    {/* Donation Type */}
+                                    <FormField
+                                        control={form.control}
+                                        name="donationType"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>I want to support</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-12">
+                                                            <SelectValue placeholder="Select a donation type" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {donationTypes.map((type) => (
+                                                            <SelectItem key={type.id} value={type.id} className="flex items-center gap-2">
+                                                                <type.icon className="w-4 h-4" />
+                                                                {type.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                    {/* Donation Frequency*/}
-                    <FormField
-                        control={form.control}
-                        name="donationFrequency"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Donation Frequency</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="one-time">One-Time</SelectItem>
-                                        <SelectItem value="monthly">Monthly (Recurring)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                                    {/* Donation Frequency */}
+                                    <FormField
+                                        control={form.control}
+                                        name="donationFrequency"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Frequency</FormLabel>
+                                                <Tabs
+                                                    value={field.value}
+                                                    onValueChange={field.onChange}
+                                                    className="w-full"
+                                                >
+                                                    <TabsList className="grid w-full grid-cols-5 h-12">
+                                                        {frequencyOptions.map((option) => (
+                                                            <TabsTrigger
+                                                                key={option.id}
+                                                                value={option.id}
+                                                                className="py-1 text-xs sm:text-sm"
+                                                            >
+                                                                {option.label}
+                                                            </TabsTrigger>
+                                                        ))}
+                                                    </TabsList>
+                                                </Tabs>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
+                                    {/* Amount Section */}
+                                    <div className="space-y-3">
+                                        <FormLabel>Amount</FormLabel>
+                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                            {amountPresets[selectedFrequency].map((amount) => (
+                                                <Button
+                                                    key={amount}
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="h-12"
+                                                    onClick={() => form.setValue('amount', amount.toString())}
+                                                >
+                                                    ${amount}
+                                                </Button>
+                                            ))}
+                                        </div>
 
-                    {/* Amount */}
-                    <FormField
-                        control={form.control}
-                        name="amount"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Amount</FormLabel>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                                    <FormControl>
-                                        <Input {...field} type="number" min="1" step="0.01" className="pl-7" />
-                                    </FormControl>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                                        <FormField
+                                            control={form.control}
+                                            name="amount"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-3 text-gray-500">$</span>
+                                                        <FormControl>
+                                                            <Input
+                                                                {...field}
+                                                                type="number"
+                                                                min="1"
+                                                                step="0.01"
+                                                                className="pl-8 h-12"
+                                                                placeholder="Other amount"
+                                                            />
+                                                        </FormControl>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
-                    {/* Quick Amounts */}
-                    <div>
-                        <label className="text-sm font-medium">Quick Amounts</label>
-                        <div className="grid grid-cols-3 gap-3 mt-1">
-                            {[25, 50, 100, 200, 500, 1000].map((amount) => (
-                                <Button
-                                    key={amount}
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => form.setValue('amount', amount.toString())}
-                                >
-                                    ${amount}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+                                    {/* Personal Info */}
+                                    <div className="space-y-4 pt-2">
+                                        <h3 className="font-medium">Your Information</h3>
+                                        <div className="space-y-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Full Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input {...field} className="h-12" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                    {/* Name */}
-                    <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Full Name</FormLabel>
-                                <FormControl>
-                                    <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="email"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Email</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} type="email" className="h-12" />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
 
-                    {/* Email & Phone */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email Address</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} type="email" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="phone"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Phone (Optional)</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} type="tel" className="h-12" />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                        <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Phone Number (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} type="tel" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-
-                    {/* Continue to Payment */}
-                    <Button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white hover:bg-blue-700 py-6 text-lg"
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? "Processing..." : "Continue to Payment"}
-                    </Button>
-                </form>
-            ) : clientSecret ? (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <PaymentForm
-                        email={form.getValues('email')}
-                        setIsSubmitting={setIsSubmitting}
-                        isSubmitting={isSubmitting}
-                        paymentElementReady={paymentElementReady}
-                        setPaymentElementReady={setPaymentElementReady}
-                    />
-                </Elements>
-            ) : null}
-        </Form>
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-12 text-lg"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Icons.arrowRight className="mr-2 h-4 w-4" />
+                                        )}
+                                        Continue to Payment
+                                    </Button>
+                                </form>
+                            </motion.div>
+                        ) : clientSecret ? (
+                            <motion.div
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.2 }}
+                                key="payment"
+                            >
+                                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                                    <PaymentForm
+                                        email={form.getValues('email')}
+                                        setIsSubmitting={setIsSubmitting}
+                                        isSubmitting={isSubmitting}
+                                        paymentElementReady={paymentElementReady}
+                                        setPaymentElementReady={setPaymentElementReady}
+                                        donationType={donationTypes.find(t => t.id === selectedType)?.name || "Donation"}
+                                        amount={form.getValues('amount')}
+                                        frequency={selectedFrequency}
+                                        onBack={() => setStep('form')}
+                                    />
+                                </Elements>
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
+                </Form>
+            </CardContent>
+        </Card>
     )
 }
 
@@ -275,13 +349,21 @@ function PaymentForm({
     isSubmitting,
     setIsSubmitting,
     paymentElementReady,
-    setPaymentElementReady
+    setPaymentElementReady,
+    donationType,
+    amount,
+    frequency,
+    onBack
 }: {
     email: string
     isSubmitting: boolean
     setIsSubmitting: (v: boolean) => void
     paymentElementReady: boolean
     setPaymentElementReady: (v: boolean) => void
+    donationType: string
+    amount: string
+    frequency: string
+    onBack: () => void
 }) {
     const stripe = useStripe()
     const elements = useElements()
@@ -314,7 +396,6 @@ function PaymentForm({
             if (result.error) {
                 throw result.error
             }
-
         } catch (err: unknown) {
             const message =
                 err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
@@ -331,27 +412,59 @@ function PaymentForm({
     }
 
     return (
-        <form onSubmit={handlePaymentSubmit} className="space-y-6">
-            <div className="border rounded-lg p-4">
-                <PaymentElement
-                    onReady={() => {
-                        console.log("PaymentElement is ready")
-                        setPaymentElementReady(true)
-                    }}
-                    options={{
-                        layout: 'tabs',
-                        wallets: { applePay: 'auto', googlePay: 'auto' },
-                    }}
-                />
+        <div className="space-y-6">
+            <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Donation Type</span>
+                    <span className="font-medium">{donationType}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Amount</span>
+                    <span className="font-medium">${amount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Frequency</span>
+                    <span className="font-medium capitalize">
+                        {frequency === "one-time" ? "One-Time" : frequency}
+                    </span>
+                </div>
             </div>
 
-            <Button
-                type="submit"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 py-6 text-lg"
-                disabled={!stripe || !paymentElementReady || isSubmitting}
-            >
-                {isSubmitting ? "Processing Payment..." : "Complete Donation"}
-            </Button>
-        </form>
+            <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                <div className="border rounded-lg p-4">
+                    <PaymentElement
+                        onReady={() => setPaymentElementReady(true)}
+                        options={{
+                            layout: 'tabs',
+                            wallets: { applePay: 'auto', googlePay: 'auto' },
+                        }}
+                    />
+                </div>
+
+                <div className="flex gap-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 h-12"
+                        onClick={onBack}
+                        disabled={isSubmitting}
+                    >
+                        Back
+                    </Button>
+                    <Button
+                        type="submit"
+                        className="flex-1 h-12"
+                        disabled={!stripe || !paymentElementReady || isSubmitting}
+                    >
+                        {isSubmitting ? (
+                            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Icons.creditCard className="mr-2 h-4 w-4" />
+                        )}
+                        Complete Donation
+                    </Button>
+                </div>
+            </form>
+        </div>
     )
 }

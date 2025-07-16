@@ -11,6 +11,8 @@ interface DonationReceiptPDFParams {
     receiptNumber: string
     paymentMethod?: string
     currency?: string
+    frequency: string
+    isRecurring: boolean
 }
 
 export async function generateDonationReceiptPDF({
@@ -21,7 +23,8 @@ export async function generateDonationReceiptPDF({
     createdDate,
     receiptNumber,
     paymentMethod = 'Credit Card',
-    currency = 'USD'
+    currency = 'USD',
+    frequency
 }: DonationReceiptPDFParams) {
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create()
@@ -150,6 +153,7 @@ export async function generateDonationReceiptPDF({
     drawDetail('Amount', `${currency} ${amount.toFixed(2)}`, true)
     drawDetail('Payment Method', paymentMethod)
     drawDetail('Receipt URL', receiptUrl ?? 'N/A')
+    drawDetail('Frequency', frequency ?? 'N/A')
 
     yPosition -= detailsBoxHeight + sectionGap * 2
 
