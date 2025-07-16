@@ -93,7 +93,7 @@ export async function POST(req: Request) {
             throw new Error('Invoice not properly expanded')
         }
 
-        const paymentIntentRaw = invoice
+        const paymentIntentRaw = (invoice as any).payment_intent as Stripe.PaymentIntent
         if (!paymentIntentRaw || typeof paymentIntentRaw === 'string') {
             console.warn('⚠️ No valid payment intent found. Creating fallback intent...')
 
@@ -120,6 +120,10 @@ export async function POST(req: Request) {
         }
 
         const intent = paymentIntentRaw as unknown as Stripe.PaymentIntent
+        if (!intent.client_secret) {
+            throw new Error('Client secret not found in payment intent')
+        }
+
         console.log('✅ Client secret extracted from PaymentIntent:', intent.client_secret)
 
         return NextResponse.json({
