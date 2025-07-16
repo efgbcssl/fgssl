@@ -298,6 +298,35 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true })
     }
 
+    // Add these cases to your webhook handler
+    if (event.type === 'invoice.created') {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log(`ℹ️ New invoice created: ${invoice.id}`)
+        // Add logic to notify customers about upcoming charges
+        return NextResponse.json({ received: true })
+    }
+
+    if (event.type === 'invoice.finalized') {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log(`ℹ️ Invoice finalized: ${invoice.id}`)
+        // Add logic to store finalized invoice data
+        return NextResponse.json({ received: true })
+    }
+
+    if (event.type === 'invoice.payment_failed') {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log(`⚠️ Invoice payment failed: ${invoice.id}`)
+        // Add logic to handle failed payments (retry, notify customer, etc.)
+        return NextResponse.json({ received: true })
+    }
+
+    if (event.type === 'customer.updated') {
+        const customer = event.data.object as Stripe.Customer
+        console.log(`ℹ️ Customer updated: ${customer.id}`)
+        // Add logic to sync customer data with your database
+        return NextResponse.json({ received: true })
+    }
+
     console.log(`ℹ️ Unhandled event type: ${event.type}`)
     return NextResponse.json({ received: true })
 }
