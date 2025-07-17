@@ -140,6 +140,8 @@ export default function AppointmentForm() {
       const easternDateTime = new Date(`${dateStr}T${time24}:00`)
       const utcDateTime = fromZonedTime(easternDateTime, TIMEZONE)
       const isoString = formatInTimeZone(appointmentDateTimeInTz, TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX")
+      const zonedDateTime = toZonedTime(easternDateTime, TIMEZONE);
+
       console.log('Date/time processing:', {
         time,
         time24,
@@ -147,6 +149,11 @@ export default function AppointmentForm() {
         easternDateTime,
         utcDateTime: utcDateTime.toISOString()
       })
+      console.log('Corrected Time Conversion:', {
+        userSelected: `${date.toDateString()} ${time} (EAT)`,
+        storedAsEastern: formatInTimeZone(zonedDateTime, TIMEZONE, 'yyyy-MM-dd HH:mm'),
+        storedAsUTC: zonedDateTime.toISOString()
+      });
       console.log('Selected local time:', `${dateStr}T${time24}:00`) // 2025-07-19T10:00:00
       console.log('Timezone-converted:', isoString) // Should be 2025-07-19T10:00:00-04:00 (for EDT)
 
@@ -154,7 +161,7 @@ export default function AppointmentForm() {
         fullName: formValues.fullName as string,
         email: formValues.email as string,
         phoneNumber: formValues.phoneNumber as string,
-        preferredDate: isoString,
+        preferredDate: zonedDateTime.toISOString(),
         medium: medium as 'in-person' | 'online',
         status: 'pending',
         createdAt: new Date().toISOString(),
@@ -477,19 +484,38 @@ export default function AppointmentForm() {
                       </div>
                     )}
                   </div>
-                  {date && time && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      You selected: {date.toLocaleDateString()} at {time} (Eastern Time)
-                      <br />
-                      <span className="text-xs">
-                        That is {formatInTimeZone(
-                          new Date(`${formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')}T${formatAMPMto24(time)}:00`),
-                          TIMEZONE,
-                          'yyyy-MM-dd hh:mm a'
-                        )} in New York
-                      </span>
-                    </div>
-                  )}
+                  {date && time && (() => {
+                    // Create church time in Maryland (Eastern Time)
+                    const churchTime = new Date(`${formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')}T${formatAMPMto24(time)}:00`);
+
+                    // Calculate time difference
+                    const userOffset = new Date().getTimezoneOffset(); // in minutes
+                    const churchOffset = new Date(churchTime.toLocaleString('en-US', { timeZone: TIMEZONE })).getTimezoneOffset();
+                    const diffHours = (churchOffset - userOffset) / 60;
+                    const timeDiffText = diffHours === 0
+                      ? "same time"
+                      : `${Math.abs(diffHours)} hour${Math.abs(diffHours) > 1 ? 's' : ''} ${diffHours > 0 ? 'behind' : 'ahead'}`;
+
+                    return (
+                      <div className="mt-2 text-sm text-gray-600 space-y-1">
+                        <div>
+                          <span className="font-medium">Your local time:</span> {date.toLocaleDateString()} at {time}
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-medium">Church time (Maryland):</span> {
+                            formatInTimeZone(
+                              churchTime,
+                              TIMEZONE,
+                              'EEEE, MMMM d, yyyy h:mm a'
+                            )
+                          } (Eastern Time)
+                        </div>
+                        <div className="text-xs text-blue-600">
+                          <span className="font-medium">Note:</span> Maryland time is {timeDiffText} your local time
+                        </div>
+                      </div>
+                    )
+                  })()}
                   {date && bookedSlots.length > 0 && (
                     <p className="text-sm text-gray-500 mt-2">
                       {bookedSlots.length} slot(s) already booked
@@ -520,7 +546,7 @@ export default function AppointmentForm() {
             </div>
           </form>
         </div>
-      </div>
-    </section>
+      </div >
+    </section >
   )
 }

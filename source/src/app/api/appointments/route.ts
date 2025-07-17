@@ -133,6 +133,8 @@ export async function POST(request: Request) {
         // Convert to timezone-aware date
         const appointmentDateInTz = fromZonedTime(appointmentDate, TIMEZONE)
         const nowInTz = toZonedTime(new Date(), TIMEZONE)
+        console.log(appointmentDateInTz)
+        console.log(nowInTz)
 
         // Check if date is in the past
         if (isBefore(appointmentDateInTz, nowInTz)) {

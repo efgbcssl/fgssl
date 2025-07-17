@@ -80,7 +80,7 @@ export default function AppointmentsPage() {
         if (!isLoading) { // Prevent double fetch on initial load
             fetchAppointments()
         }
-    }, [status, medium, createdDateRange, preferredDateRange, toast])
+    }, [status, medium, createdDateRange, preferredDateRange, toast, fetchAppointments, isLoading])
 
     const refreshData = () => {
         fetchAppointments()
