@@ -1,7 +1,3 @@
-// src/app/api/appointments/[xata_id]/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { xata } from '@/lib/xata'
-
 export async function PUT(
     req: NextRequest,
     context: { params: { xata_id: string } }
