@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/appointments/route.ts
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
@@ -74,14 +73,13 @@ async function handleCheckAvailability(date: string, timezone: string) {
         const appointments = await xata.db.appointments
             .filter({
                 $not: { status: 'cancelled' },
-                preferredDate: {
-                    $ge: startOfDay.toISOString(),
-                    $le: endOfDay.toISOString()
-                }
+                $all: [
+                    { preferredDate: { $ge: startOfDay.toISOString() } },
+                    { preferredDate: { $le: endOfDay.toISOString() } }
+                ]
             })
             .select(['preferredDate'])
             .getAll()
-
         // Extract booked time slots in 24h format
         const bookedSlots = appointments.map(appointment => {
             const appointmentDate = new Date(appointment.preferredDate ?? '')
