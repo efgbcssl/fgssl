@@ -44,17 +44,20 @@ export async function GET(request: Request) {
         // Create date range for filtering (in UTC)
         const startDate = new Date(`${date}T00:00:00.000Z`)
         const endDate = new Date(`${date}T23:59:59.999Z`)
+        const startDateISO = startDate.toISOString()
+        const endDateISO = endDate.toISOString()
+
 
         // Query appointments for the entire day
         const bookedAppointments = await xata.db.appointments
             .filter({
-                $not: { status: 'cancelled' }, // Exclude cancelled appointments
-                preferredDate: {
-                    $ge: startDate.toISOString(),
-                    $le: endDate.toISOString()
-                }
+                $not: { status: 'cancelled' },
+                $all: [
+                    { preferredDate: { $ge: startDateISO } },
+                    { preferredDate: { $le: endDateISO } }
+                ]
             })
-            .select(['preferredDate'])
+            .select(['preferredDate', 'fullName'])
             .getAll()
 
         // Extract time slots in 24h format from the perspective of the requested timezone
