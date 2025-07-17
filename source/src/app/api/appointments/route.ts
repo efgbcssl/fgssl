@@ -155,15 +155,18 @@ export async function POST(request: Request) {
         const bufferMs = APPOINTMENT_BUFFER_MINUTES * 60 * 1000
         const startTime = new Date(appointmentDate.getTime() - bufferMs)
         const endTime = new Date(appointmentDate.getTime() + bufferMs)
+        const startTimeISO = startTime.toISOString()
+        const endTimeISO = endTime.toISOString()
 
-        // Check for conflicts
+
+        // Check for conflicts using Xata's filter syntax
         const conflictingAppointments = await xata.db.appointments
             .filter({
                 $not: { status: 'cancelled' },
-                preferredDate: {
-                    $ge: startTime.toISOString(),
-                    $le: endTime.toISOString()
-                }
+                $all: [
+                    { preferredDate: { $ge: startTimeISO } },
+                    { preferredDate: { $le: endTimeISO } }
+                ]
             })
             .select(['preferredDate', 'fullName'])
             .getAll()
