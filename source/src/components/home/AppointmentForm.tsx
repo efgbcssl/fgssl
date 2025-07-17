@@ -1,9 +1,8 @@
-//src/components/home/AppointmentForm.tsx
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prefer-const */
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
-import { format, isBefore, isToday, addDays } from 'date-fns'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { isBefore, isToday, startOfDay } from 'date-fns'
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -14,43 +13,37 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
-const TIMEZONE = 'America/New_York' // Eastern Time for Silver Spring, MD
+const TIMEZONE = 'America/New_York'
 
-// Utility function to convert 24h time to 12h AM/PM format
 const formatTimeToAMPM = (time24: string) => {
   const [hours, minutes] = time24.split(':').map(Number)
   const period = hours >= 12 ? 'PM' : 'AM'
-  const hours12 = hours % 12 || 12 // Convert 0 to 12 for 12AM
+  const hours12 = hours % 12 || 12
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
 }
 
-// Utility function to convert AM/PM time back to 24h format
 const formatAMPMto24 = (time12: string) => {
   const [timePart, period] = time12.split(' ')
   let [hours, minutes] = timePart.split(':').map(Number)
-
-  if (period === 'PM' && hours !== 12) {
-    hours += 12
-  } else if (period === 'AM' && hours === 12) {
-    hours = 0
-  }
-
+  if (period === 'PM' && hours !== 12) hours += 12
+  else if (period === 'AM' && hours === 12) hours = 0
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
 export default function AppointmentForm() {
   const [date, setDate] = useState<Date>()
-  const [time, setTime] = useState<string>('09:00')
+  const [time, setTime] = useState<string>('')
   const [medium, setMedium] = useState("in-person")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [bookedSlots, setBookedSlots] = useState<string[]>([])
+  const [fullyBookedDates, setFullyBookedDates] = useState<string[]>([])
   const [isChecking, setIsChecking] = useState(false)
   const { toast } = useToast()
 
-  // Generate available times (9AM-5PM, every 30 minutes) in Eastern Time
-  const generateTimes = useCallback(() => {
+  // Generate only 9AM-4:30PM slots (last appointment ends at 5PM)
+  const availableTimes = useMemo(() => {
     const times = []
-    for (let hour = 9; hour <= 17; hour++) {
+    for (let hour = 9; hour <= 16; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
         times.push(formatTimeToAMPM(time24))
@@ -59,29 +52,30 @@ export default function AppointmentForm() {
     return times
   }, [])
 
-  const availableTimes = generateTimes()
-
   const checkBookedSlots = useCallback(async (selectedDate: Date) => {
+    if (!selectedDate) return
+
     const baseUrl = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
       : process.env.NEXT_PUBLIC_SITE_URL || ''
 
     setIsChecking(true)
     try {
-      // Format date in Eastern Time
       const dateStr = formatInTimeZone(selectedDate, TIMEZONE, 'yyyy-MM-dd')
       const response = await fetch(`${baseUrl}/api/appointments/check?date=${dateStr}&timezone=${TIMEZONE}`)
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
 
       const data = await response.json()
-      const bookedSlotsAMPM = data.bookedSlots?.map((slot: string) => {
-        return formatTimeToAMPM(slot)
-      }) || []
+      const bookedSlotsAMPM = data.bookedSlots?.map((slot: string) => formatTimeToAMPM(slot)) || []
+      setBookedSlots(bookedSlotsAMPM)
 
-      setBookedSlots(bookedSlotsAMPM || [])
+      // Update fully booked dates
+      if (bookedSlotsAMPM.length === availableTimes.length) {
+        setFullyBookedDates(prev => [...prev, dateStr])
+      } else {
+        setFullyBookedDates(prev => prev.filter(d => d !== dateStr))
+      }
 
     } catch (error) {
       console.error('Error checking slots:', error)
@@ -94,28 +88,20 @@ export default function AppointmentForm() {
     } finally {
       setIsChecking(false)
     }
-  }, [toast])
+  }, [availableTimes.length, toast])
 
   const handleDateSelect = useCallback((selectedDate: Date | undefined) => {
     if (!selectedDate) return
-
     setDate(selectedDate)
-    setTime('09:00 AM') // Reset time when date changes
-
-    // Get current date in Eastern Time for comparison
-    const nowInEastern = toZonedTime(new Date(), TIMEZONE)
-    const selectedInEastern = toZonedTime(selectedDate, TIMEZONE)
-
-    // Only check slots if date is today or in the future (in Eastern Time)
-    if (!isBefore(selectedInEastern, nowInEastern) || isToday(selectedInEastern)) {
-      checkBookedSlots(selectedDate)
-    }
+    setTime('')
+    checkBookedSlots(selectedDate)
   }, [checkBookedSlots])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-
+    console.log('Form submission started')
     if (!date || !time) {
+      console.log('Validation failed: date or time missing', { date, time })
       toast({
         title: "Error",
         description: "Please select a date and time.",
@@ -125,6 +111,7 @@ export default function AppointmentForm() {
     }
 
     if (bookedSlots.includes(time)) {
+      console.log('Validation failed: time slot already booked', { time, bookedSlots })
       toast({
         title: "Error",
         description: "The selected time slot is already booked.",
@@ -139,77 +126,66 @@ export default function AppointmentForm() {
       const formElement = e.currentTarget
       const formData = new FormData(formElement)
       const formValues = Object.fromEntries(formData.entries())
+      console.log('Form values extracted:', formValues)
 
-      // Validate required fields
       if (!formValues.fullName || !formValues.phoneNumber || !formValues.email) {
+        console.log('Validation failed: missing required fields', formValues)
         throw new Error("Please fill in all required fields.")
       }
 
-      // Convert AM/PM time back to 24h format for backend processing
       const time24 = formatAMPMto24(time)
-
-      // Create date in Eastern Time, then convert to UTC for storage
       const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')
+      const appointmentDateTime = new Date(`${dateStr}T${time24}:00`)
+      const appointmentDateTimeInTz = toZonedTime(appointmentDateTime, TIMEZONE)
       const easternDateTime = new Date(`${dateStr}T${time24}:00`)
       const utcDateTime = fromZonedTime(easternDateTime, TIMEZONE)
+      const isoString = formatInTimeZone(appointmentDateTimeInTz, TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX")
+      console.log('Date/time processing:', {
+        time,
+        time24,
+        dateStr,
+        easternDateTime,
+        utcDateTime: utcDateTime.toISOString()
+      })
+      console.log('Selected local time:', `${dateStr}T${time24}:00`) // 2025-07-19T10:00:00
+      console.log('Timezone-converted:', isoString) // Should be 2025-07-19T10:00:00-04:00 (for EDT)
 
-      console.log('Selected date/time (Eastern):', `${dateStr} ${time}`)
-      console.log('UTC date/time for storage:', utcDateTime.toISOString())
-
-      const payload = {
-        fullName: formValues.fullName,
-        email: formValues.email,
-        phoneNumber: formValues.phoneNumber,
-        preferredDate: utcDateTime.toISOString(),
-        preferredTime: time,
-        medium,
+      const appointmentData = {
+        fullName: formValues.fullName as string,
+        email: formValues.email as string,
+        phoneNumber: formValues.phoneNumber as string,
+        preferredDate: isoString,
+        medium: medium as 'in-person' | 'online',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
-
+      console.log('Final appointment data being sent:', appointmentData)
       const response = await fetch('/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fullName: formValues.fullName,
-          email: formValues.email,
-          phoneNumber: formValues.phoneNumber,
-          preferredDate: utcDateTime.toISOString(),
-          medium,
-        })
+        body: JSON.stringify(appointmentData)
       })
+      console.log('API response status:', response.status)
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Server Error:', errorText);
-        let errorMessage = 'Failed to submit appointment.'
-
-        try {
-          const errorData = JSON.parse(errorText)
-          errorMessage = errorData.message || errorMessage
-        } catch (jsonErr) {
-          console.warn('Response is not JSON:', errorText)
-        }
-
-        throw new Error(errorMessage)
+        const errorData = await response.json().catch(() => ({}))
+        console.log('API error response:', errorData)
+        throw new Error(errorData.message || 'Failed to submit appointment')
       }
-      console.log('Server returned:', response.status, response.statusText)
-
-
-      // Reset form on success
-      try {
-        formElement.reset()
-        setDate(undefined)
-        setTime('09:00 AM')
-        setMedium('in-person')
-        setBookedSlots([])
-      } catch (resetError) {
-        console.error('Error resetting form:', resetError)
-      }
+      const successData = await response.json()
+      console.log('API success response:', successData)
+      formElement.reset()
+      setDate(undefined)
+      setTime('')
+      setMedium('in-person')
+      setBookedSlots([])
 
       toast({
         title: "Success!",
-        description: "Your appointment request has been submitted. We'll contact you to confirm the details.",
+        description: "Your appointment request has been submitted. We'll contact you to confirm.",
       })
 
     } catch (error) {
@@ -224,47 +200,105 @@ export default function AppointmentForm() {
     }
   }
 
-  const isDateDisabled = (date: Date) => {
-    // Get current date in Eastern Time
+  const isDateDisabled = useCallback((date: Date) => {
     const nowInEastern = toZonedTime(new Date(), TIMEZONE)
-    const todayInEastern = new Date(nowInEastern)
-    todayInEastern.setHours(0, 0, 0, 0)
-
+    const todayStart = startOfDay(nowInEastern)
     const checkDate = toZonedTime(date, TIMEZONE)
-    checkDate.setHours(0, 0, 0, 0)
+    const checkDateStart = startOfDay(checkDate)
+    const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')
 
-    return isBefore(checkDate, todayInEastern) || date.getDay() === 0 // Disable past dates and Sundays
-  }
+    return (
+      isBefore(checkDateStart, todayStart) ||
+      date.getDay() === 0 ||
+      fullyBookedDates.includes(dateStr)
+    )
+  }, [fullyBookedDates])
 
-  // Filter out past time slots if selected date is today
   const getAvailableTimesForDate = useCallback(() => {
-    if (!date) return availableTimes
-
+    if (!date) return []
     const nowInEastern = toZonedTime(new Date(), TIMEZONE)
     const selectedInEastern = toZonedTime(date, TIMEZONE)
+    const isSelectedToday = isToday(selectedInEastern)
 
-    // If selected date is today, filter out past times
-    if (isToday(selectedInEastern)) {
-      const currentHour = nowInEastern.getHours()
-      const currentMinute = nowInEastern.getMinutes()
-
-      return availableTimes.filter(timeSlot => {
+    return availableTimes.filter(timeSlot => {
+      if (bookedSlots.includes(timeSlot)) return false
+      if (isSelectedToday) {
         const time24 = formatAMPMto24(timeSlot)
-        const [hour, minute] = timeSlot.split(':').map(Number)
-        const slotTime = hour * 60 + minute
-        const currentTime = currentHour * 60 + currentMinute
+        const [hour, minute] = time24.split(':').map(Number)
+        const slotTime = new Date(nowInEastern)
+        slotTime.setHours(hour, minute, 0, 0)
+        return isBefore(nowInEastern, new Date(slotTime.getTime() - 30 * 60 * 1000))
+      }
+      return true
+    })
+  }, [date, availableTimes, bookedSlots])
 
-        // Add 30 minute buffer for booking
-        return slotTime > currentTime + 30
-      })
+  const availableTimesForDate = useMemo(() => getAvailableTimesForDate(), [getAvailableTimesForDate])
+
+  useEffect(() => {
+    if (date && !time && availableTimesForDate.length > 0) {
+      setTime(availableTimesForDate[0])
     }
+  }, [date, time, availableTimesForDate])
 
-    return availableTimes
-  }, [date, availableTimes])
-
-  const availableTimesForDate = getAvailableTimesForDate()
   const isFormValid = date && time && !bookedSlots.includes(time) && availableTimesForDate.includes(time)
+  const CurrentLocalTime = () => {
+    const [currentTime, setCurrentTime] = useState({
+      localTime: '',
+      easternTime: '',
+      timeDifference: ''
+    });
 
+    useEffect(() => {
+      const updateTime = () => {
+        const now = new Date();
+
+        // Local time
+        const localFormatted = now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        });
+
+        // Eastern Time
+        const easternFormatted = now.toLocaleTimeString('en-US', {
+          timeZone: 'America/New_York',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        });
+
+        // Calculate time difference
+        const localOffset = now.getTimezoneOffset();
+        const easternOffset = new Date(now.toLocaleString('en-US', {
+          timeZone: 'America/New_York'
+        })).getTimezoneOffset();
+
+        const diffHours = (easternOffset - localOffset) / 60;
+        const timeDiff = diffHours === 0 ?
+          "same time" :
+          `${Math.abs(diffHours)} hour${Math.abs(diffHours) > 1 ? 's' : ''} ${diffHours > 0 ? 'behind' : 'ahead'}`;
+
+        setCurrentTime({
+          localTime: localFormatted,
+          easternTime: easternFormatted,
+          timeDifference: timeDiff
+        });
+      };
+
+      updateTime();
+      const interval = setInterval(updateTime, 1000);
+      return () => clearInterval(interval);
+    }, []);
+
+    return (
+      <span className="text-sm text-gray-500 ml-2">
+        (Your time: {currentTime.localTime} •
+        Eastern: {currentTime.easternTime} •
+        {currentTime.timeDifference})
+      </span>
+    );
+  };
   return (
     <section className="py-16 bg-gray-50">
       <div className="container-custom">
@@ -284,7 +318,6 @@ export default function AppointmentForm() {
 
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column - Personal Info */}
               <div className="space-y-6">
                 <div className="space-y-3">
                   <Label htmlFor="fullName">Full Name *</Label>
@@ -352,7 +385,6 @@ export default function AppointmentForm() {
                 </div>
               </div>
 
-              {/* Right Column - Date & Time */}
               <div className="space-y-6">
                 <div className="space-y-3">
                   <Label>Preferred Date *</Label>
@@ -364,6 +396,15 @@ export default function AppointmentForm() {
                       initialFocus
                       disabled={isDateDisabled}
                       className="w-full"
+                      modifiers={{
+                        fullyBooked: (date) => {
+                          const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')
+                          return fullyBookedDates.includes(dateStr)
+                        }
+                      }}
+                      modifiersStyles={{
+                        fullyBooked: { backgroundColor: '#f3f4f6', color: '#9ca3af' }
+                      }}
                       classNames={{
                         months: "w-full",
                         month: "space-y-4 w-full",
@@ -396,44 +437,62 @@ export default function AppointmentForm() {
 
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
-                    Available Times * (Eastern Time)
+                    Available Times * (9AM-5PM Eastern)
+                    <CurrentLocalTime />
                     {isChecking && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
                   </Label>
                   <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-gray-50">
-                    {availableTimesForDate.map((slot) => {
-                      const isBooked = bookedSlots.includes(slot)
-                      const isDisabled = isBooked || !date
+                    {availableTimesForDate.length > 0 ? (
+                      availableTimes.map((slot) => {
+                        const isBooked = bookedSlots.includes(slot);
+                        const isAvailable = availableTimesForDate.includes(slot);
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => !isBooked && setTime(slot)}
+                            disabled={isBooked}
+                            className={cn(
+                              'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center h-10',
+                              time === slot && isAvailable
+                                ? 'bg-church-primary text-white shadow-md'
+                                : isBooked
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'bg-white hover:bg-gray-100 border border-gray-200',
+                              !isAvailable && 'opacity-50'
+                            )}
+                            aria-disabled={isBooked}
+                          >
+                            {slot}
+                            {isBooked && (
+                              <span className="sr-only">(Booked)</span>
+                            )}
+                          </button>
 
-                      return (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => setTime(slot)}
-                          disabled={isDisabled}
-                          className={cn(
-                            'py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center h-10',
-                            time === slot
-                              ? 'bg-church-primary text-white shadow-md'
-                              : 'bg-white hover:bg-gray-100 border border-gray-200',
-                            isDisabled && 'opacity-50 cursor-not-allowed bg-gray-100'
-                          )}
-                        >
-                          {slot}
-                          {isBooked && (
-                            <span className="sr-only">(Booked)</span>
-                          )}
-                        </button>
-                      )
-                    })}
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-3 text-center py-4 text-gray-500">
+                        {date ? 'No available slots for this date' : 'Select a date to see available times'}
+                      </div>
+                    )}
                   </div>
-                  {date && availableTimesForDate.length === 0 && (
-                    <p className="text-sm text-red-500 mt-2">
-                      No available slots for this date. Please choose another date.
-                    </p>
+                  {date && time && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      You selected: {date.toLocaleDateString()} at {time} (Eastern Time)
+                      <br />
+                      <span className="text-xs">
+                        That is {formatInTimeZone(
+                          new Date(`${formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')}T${formatAMPMto24(time)}:00`),
+                          TIMEZONE,
+                          'yyyy-MM-dd hh:mm a'
+                        )} in New York
+                      </span>
+                    </div>
                   )}
-                  {date && bookedSlots.length === availableTimesForDate.length && availableTimesForDate.length > 0 && (
-                    <p className="text-sm text-red-500 mt-2">
-                      All remaining slots are booked for this date. Please choose another date.
+                  {date && bookedSlots.length > 0 && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      {bookedSlots.length} slot(s) already booked
                     </p>
                   )}
                 </div>

@@ -66,7 +66,16 @@
             font-weight: bold;
             color: #2c3e50;
             display: inline-block;
-            min-width: 80px;
+            min-width: 100px;
+        }
+
+        .timezone-note {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f4f8;
+            border-radius: 4px;
         }
 
         /* Footer */
@@ -120,8 +129,6 @@
         <div class="header">
             <img src="/source/public/fg-logo.jpg" alt="Church Logo"
                 style="width: 100%; max-width: 150px; display: block; margin: 20px auto;">
-
-
             Your Appointment is Confirmed
         </div>
 
@@ -135,23 +142,30 @@
 
             <div class="info-box">
                 <div class="info-item">
-                    <span class="info-label">Date:</span>
+                    <span class="info-label">Your Local Time:</span>
                     <span>
-                        <%= preferredDate %>
+                        <%= preferredDate %> at <%= preferredTime %>
                     </span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Time:</span>
+                    <span class="info-label">Church Time:</span>
                     <span>
-                        <%= preferredTime %>
+                        <%= newYorkDate %> at <%= newYorkTime %> (New York Time)
                     </span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Medium:</span>
+                    <span class="info-label">Meeting Type:</span>
                     <span>
                         <%= medium %>
                     </span>
                 </div>
+            </div>
+
+            <div class="timezone-note">
+                <strong>Note:</strong> New York time is currently <strong>
+                    <%= timeDifference %>
+                </strong> your local time.
+                Please double-check the time difference to ensure you don't miss your appointment.
             </div>
 
             <p>We're looking forward to connecting with you. If you need to make any changes to your appointment or have
@@ -167,11 +181,8 @@
                 <div>office@efgbcssl.org | (240) 821 0361</div>
             </div>
             <div>
-                &copy; <%= new Date().getFullYear() %>
-            </div>
-            <div>
-                Ethiopian Full Gospel Believers Church (Silver Spring Local). All rights reserved.
-
+                &copy; <%= new Date().getFullYear() %> Ethiopian Full Gospel Believers Church (Silver Spring Local). All
+                    rights reserved.
             </div>
         </div>
     </div>

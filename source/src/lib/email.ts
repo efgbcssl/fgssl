@@ -5,7 +5,7 @@ import ejs from 'ejs'
 import path from 'path'
 import fs from 'fs/promises'
 import { generateDonationReceiptPDF } from './pdf'
-import { format } from 'date-fns-tz'
+import { format, formatInTimeZone } from 'date-fns-tz'
 
 // Metrics tracking
 interface EmailMetrics {
@@ -204,40 +204,80 @@ export async function sendAppointmentEmail({
     fullName,
     preferredDate,
     preferredTime,
-    medium
+    medium,
+    newYorkDate,
+    newYorkTime,
+    timeDifference
 }: {
     to: string
     fullName: string
     preferredDate: string
     preferredTime: string
     medium: string
+    newYorkDate: string
+    newYorkTime: string
+    timeDifference: string
 }) {
     try {
-        const templatePath = path.join(process.cwd(), 'src/emails/appointment-confirmation.ejs');
-        console.log('🟡 Reading email template from:', templatePath);
+        const templatePath = path.join(process.cwd(), 'src/emails/appointment-confirmation.ejs')
+        console.log('🟡 Reading email template from:', templatePath)
 
-        const template = await fs.readFile(templatePath, 'utf-8');
+        // Read and render the template with all timezone information
+        const template = await fs.readFile(templatePath, 'utf-8')
         const html = ejs.render(template, {
             fullName,
             preferredDate,
             preferredTime,
-            medium
-        });
+            medium,
+            newYorkDate,
+            newYorkTime,
+            timeDifference
+        })
 
-        console.log('📤 Sending email to:', to);
+        console.log('📤 Sending email to:', to)
         const mailOptions = {
-            from: process.env.FROM_EMAIL! || 'no-reply@yourdomain.com',
+            from: process.env.FROM_EMAIL! || 'no-reply@efgbcssl.org',
             to,
-            subject: 'Your Appointment is Confirmed',
+            subject: `Your Appointment Confirmation - ${preferredDate} at ${preferredTime}`,
             html
-        };
+        }
 
-        const result = await sendWithRetry(mailOptions, 'appointment-confirmation');
-        console.log('✅ Appointment email sent after', result.attempts, 'attempt(s)');
-        return result;
+        const result = await sendWithRetry(mailOptions, 'appointment-confirmation')
+        console.log('✅ Appointment email sent after', result.attempts, 'attempt(s)')
+        return result
     } catch (error) {
-        console.error('Failed to send appointment confirmation email:', error);
-        throw error;
+        console.error('Failed to send appointment confirmation email:', error)
+        throw error
+    }
+}
+
+// Helper function to generate all timezone-aware date information
+export async function generateTimezoneInfo(appointmentDate: Date) {
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const churchTimeZone = 'America/New_York'
+
+    // Format dates for display
+    const userLocalDate = formatInTimeZone(appointmentDate, userTimeZone, 'EEEE, MMMM do, yyyy')
+    const userLocalTime = formatInTimeZone(appointmentDate, userTimeZone, 'h:mm a')
+    const newYorkDate = formatInTimeZone(appointmentDate, churchTimeZone, 'EEEE, MMMM do, yyyy')
+    const newYorkTime = formatInTimeZone(appointmentDate, churchTimeZone, 'h:mm a')
+
+    // Calculate time difference
+    const userOffset = new Date().getTimezoneOffset()
+    const nyOffset = new Date(appointmentDate.toLocaleString('en-US', {
+        timeZone: churchTimeZone
+    })).getTimezoneOffset()
+    const diffHours = (nyOffset - userOffset) / 60
+    const timeDiffText = diffHours === 0
+        ? "the same as your local time"
+        : `${Math.abs(diffHours)} hour${Math.abs(diffHours) > 1 ? 's' : ''} ${diffHours > 0 ? 'behind' : 'ahead'} of your local time`
+
+    return {
+        userLocalDate,
+        userLocalTime,
+        newYorkDate,
+        newYorkTime,
+        timeDifference: timeDiffText
     }
 }
 
