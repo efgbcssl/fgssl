@@ -101,6 +101,7 @@ export default function AppointmentsPage() {
         setMedium(null)
         setCreatedDateRange([subDays(new Date(), 30), new Date()])
         setPreferredDateRange(null)
+        refreshData()
     }
 
     return (
