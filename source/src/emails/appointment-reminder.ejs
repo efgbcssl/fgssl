@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMPORTANT: Your Appointment Reminder</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a6fa5 0%, #2c3e50 100%);
+            padding: 25px;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .header::after {
+            content: "IMPORTANT REMINDER";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            height: 50px;
+            margin-bottom: 10px;
+        }
+
+        .church-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 5px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h1 {
+            color: #e74c3c;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .urgent-banner {
+            background: #fff8e6;
+            border: 2px dashed #e74c3c;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+
+        .reminder-box {
+            background: #f8f9fa;
+            border-left: 4px solid #e74c3c;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 5px 5px 0;
+            position: relative;
+        }
+
+        .reminder-box::before {
+            content: "⏰";
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .detail-row {
+            margin-bottom: 12px;
+            display: flex;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #4a6fa5;
+        }
+
+        .timezone-note {
+            background: #e8f4fc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .action-buttons {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #4a6fa5;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #4a6fa5;
+            color: #4a6fa5;
+        }
+
+        .btn-urgent {
+            background: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #a3c4ff;
+            text-decoration: none;
+        }
+
+        .location {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .countdown {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .btn {
+                display: block;
+                margin: 10px 0;
+            }
+
+            .detail-row {
+                flex-direction: column;
+            }
+
+            .detail-label {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="/source//public/fg-logo.jpg" alt="Church Logo" class="logo">
+            <div class="church-name">Ethiopian Full Gospel Believers Church <br>
+                (Silver Spring Local)
+            </div>
+        </div>
+
+        <div class="content">
+            <h1>YOUR APPOINTMENT IS COMING SOON!</h1>
+
+            <div class="urgent-banner">
+                <strong>⏳ Don't forget!</strong> Your appointment is scheduled for <strong>
+                    <%= preferredDate %> at <%= preferredTime %>
+                </strong> (<%= timeDifference %>).
+            </div>
+
+            <p>Dear <strong>
+                    <%= fullName %>
+                </strong>,</p>
+
+            <p>We're excited to meet with you! This is your official reminder about your upcoming appointment. Please
+                review the details below carefully:</p>
+
+            <div class="reminder-box">
+                <div class="detail-row">
+                    <div class="detail-label">Date:</div>
+                    <div><strong>
+                            <%= preferredDate %>
+                        </strong></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Time:</div>
+                    <div><strong>
+                            <%= preferredTime %>
+                        </strong> (Your local time)</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">New York Time:</div>
+                    <div>
+                        <%= newYorkTime %> on <%= newYorkDate %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Meeting Type:</div>
+                    <div><strong>
+                            <%= medium==='in-person' ? 'In-Person Meeting' : 'Online Meeting' %>
+                        </strong></div>
+                </div>
+
+                <div class="timezone-note">
+                    <strong>Note:</strong> Our church operates on Eastern Time (New York). The time difference is <%=
+                        timeDifference %>.
+                </div>
+
+                <% if (medium==='in-person' ) { %>
+                    <div class="location">
+                        <div class="detail-row">
+                            <div class="detail-label">Location:</div>
+                            <div><strong>Ethiopian Full Gospel Believers Church</strong><br>
+                                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA<br>
+                                (Main Office, Room 201)</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Parking:</div>
+                            <div>Visitor parking available in the west lot</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">What to bring:</div>
+                            <div>Please bring any necessary documents and a photo ID</div>
+                        </div>
+                    </div>
+                    <% } else { %>
+                        <div class="location">
+                            <div class="detail-row">
+                                <div class="detail-label">Meeting Link:</div>
+                                <div><a href="<%= meetingLink || '#' %>"
+                                        style="color: #4a6fa5; font-weight: bold;">Click to join online meeting</a>
+                                </div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Instructions:</div>
+                                <div>
+                                    <ul style="margin-top: 5px; padding-left: 20px;">
+                                        <li>Please join 5-10 minutes early to test your connection</li>
+                                        <li>Use headphones for better audio quality</li>
+                                        <li>Ensure good lighting so we can see you clearly</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+            </div>
+
+            <div class="countdown">
+                ⏰ Only 1 day until your appointment!
+            </div>
+
+            <div class="action-buttons">
+                <a href="<%= rescheduleLink || '#' %>" class="btn btn-outline">📅 Reschedule Appointment</a>
+                <a href="<%= cancelLink || '#' %>" class="btn btn-outline">❌ Cancel Appointment</a>
+                <% if (medium !=='in-person' ) { %>
+                    <a href="<%= meetingLink || '#' %>" class="btn btn-urgent">🚀 Join Meeting Now (when time comes)</a>
+                    <% } %>
+            </div>
+
+            <p style="margin-top: 30px;"><strong>Important Notes:</strong></p>
+            <ul style="margin-top: 5px; padding-left: 20px;">
+                <li>Please arrive/join 5-10 minutes early</li>
+                <li>Late arrivals may need to be rescheduled</li>
+                <li>If you need to cancel, please do so at least 24 hours in advance</li>
+                <li>For emergencies, call (240) 821-0361</li>
+            </ul>
+
+            <p>We're praying for you and look forward to our time together!</p>
+
+            <p>Blessings,<br>
+                <strong>The Pastoral Care Team</strong><br>
+                Ethiopian Full Gospel Believers Church<br>
+                (Silver Spring Local)
+            </p>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 10px;">
+                Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
+                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
+            </div>
+            <div>
+                <a href="mailto:office@efgbcssl.org">office@efgbcssl.org</a> |
+                <a href="tel:+12408210361">(240) 821-0361</a> |
+                <a href="https://efgbcssl.org">efgbcssl.org</a>
+            </div>
+            <div style="margin-top: 15px; font-size: 12px;">
+                You're receiving this email because you have an upcoming appointment.
+                <% if (unsubscribeLink) { %>
+                    <a href="<%= unsubscribeLink %>" style="color: #a3c4ff;">Unsubscribe from reminders</a>
+                    <% } %>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

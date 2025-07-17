@@ -1,0 +1,86 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1oln2rj0aqdfvuvc1s0",
+    "operations": [
+      {
+        "create_table": {
+          "name": "likes",
+          "columns": [
+            {
+              "name": "postId",
+              "type": "text",
+              "check": {
+                "name": "likes_xata_text_length_postId",
+                "constraint": "OCTET_LENGTH(\"postId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "commentId",
+              "type": "text",
+              "check": {
+                "name": "likes_xata_text_length_commentId",
+                "constraint": "OCTET_LENGTH(\"commentId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "userId",
+              "type": "text",
+              "check": {
+                "name": "likes_xata_text_length_userId",
+                "constraint": "OCTET_LENGTH(\"userId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "likes_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"likes\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"likes\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1oln2rj0aqdfvuvc1s0",
+  "parent": "mig_d1olm91r27un0qigpok0",
+  "schema": "public",
+  "startedAt": "2025-07-11T18:44:28.897297Z"
+}

@@ -281,38 +281,6 @@ export async function generateTimezoneInfo(appointmentDate: Date) {
     }
 }
 
-export async function sendReminderEmail({
-    to,
-    fullName,
-    preferredDateTime,
-    medium
-}: {
-    to: string
-    fullName: string
-    preferredDateTime: string
-    medium: string
-}) {
-    try {
-        const templatePath = path.join(process.cwd(), 'src', 'emails', 'reminder.ejs');
-        const template = await fs.readFile(templatePath, 'utf-8');
-        const html = ejs.render(template, { fullName, preferredDateTime, medium });
-
-        const mailOptions = {
-            from: process.env.FROM_EMAIL || 'no-reply@yourdomain.com',
-            to,
-            subject: 'Appointment Reminder',
-            html
-        };
-
-        const result = await sendWithRetry(mailOptions, 'appointment-reminder');
-        console.log('✅ Reminder email sent after', result.attempts, 'attempt(s)');
-        return result;
-    } catch (error) {
-        console.error('❌ Failed to send reminder email:', error);
-        throw error;
-    }
-}
-
 export async function sendMessageNotificationEmail({
     to,
     fullName,
@@ -404,5 +372,71 @@ export async function sendEventRegistrationEmail({
     } catch (error) {
         console.error('❌ Error sending event registration email:', error);
         throw error;
+    }
+}
+
+export async function sendReminderEmail({
+    to,
+    fullName,
+    preferredDate,
+    preferredTime,
+    medium,
+    newYorkDate,
+    newYorkTime,
+    timeDifference,
+    meetingLink,
+    rescheduleLink,
+    cancelLink,
+    unsubscribeLink
+
+}: {
+    to: string
+    fullName: string
+    preferredDate: string
+    preferredTime: string
+    medium: string
+    newYorkDate: string
+    newYorkTime: string
+    timeDifference: string
+    meetingLink: string
+    rescheduleLink: string
+    cancelLink: string
+    unsubscribeLink: string
+}) {
+    try {
+        const templatePath = path.join(process.cwd(), 'src/emails/appointment-reminder.ejs')
+        console.log('🟡 Reading reminder template from:', templatePath)
+
+        // Read and render the template with all timezone information
+        const template = await fs.readFile(templatePath, 'utf-8')
+        const html = ejs.render(template, {
+            fullName,
+            preferredDate,
+            preferredTime,
+            medium,
+            newYorkDate,
+            newYorkTime,
+            timeDifference,
+            currentYear: new Date().getFullYear(),
+            meetingLink,
+            rescheduleLink,
+            cancelLink,
+            unsubscribeLink
+        })
+
+        console.log('📤 Sending reminder to:', to)
+        const mailOptions = {
+            from: process.env.FROM_EMAIL! || 'no-reply@efgbcssl.org',
+            to,
+            subject: `Reminder: Your Upcoming Appointment - ${preferredDate} at ${preferredTime}`,
+            html
+        }
+
+        const result = await sendWithRetry(mailOptions, 'appointment-reminder')
+        console.log('✅ Reminder email sent after', result.attempts, 'attempt(s)')
+        return result
+    } catch (error) {
+        console.error('Failed to send appointment reminder email:', error)
+        throw error
     }
 }

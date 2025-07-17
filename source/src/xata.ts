@@ -50,6 +50,14 @@ const tables = [
         comment: "{}",
       },
       {
+        name: "lastReminderSentAt ",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
         name: "medium",
         type: "text",
         notNull: false,
@@ -82,6 +90,14 @@ const tables = [
         comment: "{}",
       },
       {
+        name: "reminderSent",
+        type: "bool",
+        notNull: true,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
+      },
+      {
         name: "status",
         type: "text",
         notNull: false,
@@ -96,6 +112,126 @@ const tables = [
         unique: false,
         defaultValue: null,
         comment: "{}",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
+    name: "comments",
+    checkConstraints: {
+      comments_xata_id_length_xata_id: {
+        name: "comments_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      comments_xata_text_length_content: {
+        name: "comments_xata_text_length_content",
+        columns: ["content"],
+        definition: "CHECK ((octet_length(content) <= 204800))",
+      },
+      comments_xata_text_length_name: {
+        name: "comments_xata_text_length_name",
+        columns: ["name"],
+        definition: "CHECK ((octet_length(name) <= 204800))",
+      },
+      comments_xata_text_length_parentId: {
+        name: "comments_xata_text_length_parentId",
+        columns: ["parentId"],
+        definition: 'CHECK ((octet_length("parentId") <= 204800))',
+      },
+      comments_xata_text_length_postId: {
+        name: "comments_xata_text_length_postId",
+        columns: ["postId"],
+        definition: 'CHECK ((octet_length("postId") <= 204800))',
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_comments_xata_id_key: {
+        name: "_pgroll_new_comments_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "content",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "isHidden",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
+      },
+      {
+        name: "likes",
+        type: "int",
+        notNull: false,
+        unique: false,
+        defaultValue: "'0'::bigint",
+        comment: "",
+      },
+      {
+        name: "name",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "parentId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "postId",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "xata_createdat",
@@ -995,6 +1131,97 @@ const tables = [
     ],
   },
   {
+    name: "likes",
+    checkConstraints: {
+      likes_xata_id_length_xata_id: {
+        name: "likes_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      likes_xata_text_length_commentId: {
+        name: "likes_xata_text_length_commentId",
+        columns: ["commentId"],
+        definition: 'CHECK ((octet_length("commentId") <= 204800))',
+      },
+      likes_xata_text_length_postId: {
+        name: "likes_xata_text_length_postId",
+        columns: ["postId"],
+        definition: 'CHECK ((octet_length("postId") <= 204800))',
+      },
+      likes_xata_text_length_userId: {
+        name: "likes_xata_text_length_userId",
+        columns: ["userId"],
+        definition: 'CHECK ((octet_length("userId") <= 204800))',
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_likes_xata_id_key: {
+        name: "_pgroll_new_likes_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "commentId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "postId",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "userId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "messages",
     checkConstraints: {
       messages_xata_id_length_xata_id: {
@@ -1383,6 +1610,9 @@ export type InferredTypes = SchemaInference<SchemaTables>;
 export type Appointments = InferredTypes["appointments"];
 export type AppointmentsRecord = Appointments & XataRecord;
 
+export type Comments = InferredTypes["comments"];
+export type CommentsRecord = Comments & XataRecord;
+
 export type Donations = InferredTypes["donations"];
 export type DonationsRecord = Donations & XataRecord;
 
@@ -1398,6 +1628,9 @@ export type EventsRecord = Events & XataRecord;
 export type Faqs = InferredTypes["faqs"];
 export type FaqsRecord = Faqs & XataRecord;
 
+export type Likes = InferredTypes["likes"];
+export type LikesRecord = Likes & XataRecord;
+
 export type Messages = InferredTypes["messages"];
 export type MessagesRecord = Messages & XataRecord;
 
@@ -1406,11 +1639,13 @@ export type PostsRecord = Posts & XataRecord;
 
 export type DatabaseSchema = {
   appointments: AppointmentsRecord;
+  comments: CommentsRecord;
   donations: DonationsRecord;
   donors: DonorsRecord;
   event_registration: EventRegistrationRecord;
   events: EventsRecord;
   faqs: FaqsRecord;
+  likes: LikesRecord;
   messages: MessagesRecord;
   posts: PostsRecord;
 };

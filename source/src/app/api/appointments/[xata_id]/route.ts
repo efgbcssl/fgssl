@@ -4,12 +4,11 @@ import { xata } from '@/lib/xata'
 
 export async function PUT(
     req: NextRequest,
-    context: { params: { xata_id: string } }
+    { params }: { params: Promise<{ xata_id: string }> }
 ) {
     try {
-        const { xata_id } = context.params;
+        const { xata_id } = await params;
         const { status, remark } = await req.json();
-
         // Validate required fields
         if (!status) {
             return NextResponse.json(

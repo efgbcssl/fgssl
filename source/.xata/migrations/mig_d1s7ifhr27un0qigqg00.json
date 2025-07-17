@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1s7ifhr27un0qigqg00",
+    "operations": [
+      {
+        "add_column": {
+          "table": "appointments",
+          "column": {
+            "name": "reminderSent",
+            "type": "bool",
+            "comment": "",
+            "default": "'false'"
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1s7ifhr27un0qigqg00",
+  "parent": "mig_d1oln2rj0aqdfvuvc1s0",
+  "schema": "public",
+  "startedAt": "2025-07-17T04:17:03.117771Z"
+}

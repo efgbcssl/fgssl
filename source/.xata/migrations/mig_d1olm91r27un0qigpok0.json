@@ -1,0 +1,107 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1olm91r27un0qigpok0",
+    "operations": [
+      {
+        "create_table": {
+          "name": "comments",
+          "columns": [
+            {
+              "name": "postId",
+              "type": "text",
+              "check": {
+                "name": "comments_xata_text_length_postId",
+                "constraint": "OCTET_LENGTH(\"postId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "parentId",
+              "type": "text",
+              "check": {
+                "name": "comments_xata_text_length_parentId",
+                "constraint": "OCTET_LENGTH(\"parentId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "name",
+              "type": "text",
+              "check": {
+                "name": "comments_xata_text_length_name",
+                "constraint": "OCTET_LENGTH(\"name\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "content",
+              "type": "text",
+              "check": {
+                "name": "comments_xata_text_length_content",
+                "constraint": "OCTET_LENGTH(\"content\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "isHidden",
+              "type": "boolean",
+              "default": "'false'",
+              "nullable": true
+            },
+            {
+              "name": "likes",
+              "type": "bigint",
+              "default": "'0'",
+              "nullable": true
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "comments_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"comments\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"comments\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1olm91r27un0qigpok0",
+  "parent": "mig_d1o662jj0aqdfvuvbts0",
+  "schema": "public",
+  "startedAt": "2025-07-11T18:42:44.711639Z"
+}
