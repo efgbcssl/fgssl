@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState } from 'react'
@@ -67,6 +68,7 @@ const amountPresets = {
 export function DonationForm({ donationTypes }: { donationTypes: DonationType[] }) {
     const [step, setStep] = useState<'form' | 'payment'>('form')
     const [clientSecret, setClientSecret] = useState<string>()
+    const [setupIntentData, setSetupIntentData] = useState<any>()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [paymentElementReady, setPaymentElementReady] = useState(false)
     const { toast } = useToast()
@@ -108,24 +110,59 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                 frequency: values.donationFrequency
             }
 
-            const endpoint =
-                values.donationFrequency === 'one-time'
-                    ? '/api/stripe/create-payment-intent'
-                    : '/api/stripe/create-subscription'
+            if (values.donationFrequency === 'one-time') {
+                // One-time payment flow (existing)
+                const res = await fetch('/api/stripe/create-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
+                const data = await res.json()
+                if (!res.ok || !data.clientSecret) {
+                    throw new Error(data.message || 'Payment setup failed')
+                }
 
-            const data = await res.json()
-            if (!res.ok || !data.clientSecret) {
-                throw new Error(data.message || 'Payment setup failed')
+                setClientSecret(data.clientSecret)
+                setStep('payment')
+            } else {
+                // Subscription flow - first create customer and setup intent
+                const res = await fetch('/api/stripe/create-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+
+                const data = await res.json()
+                if (!res.ok) {
+                    throw new Error(data.message || 'Subscription setup failed')
+                }
+
+                if (data.requiresPaymentMethod && data.setupIntent) {
+                    // Setup Intent flow for subscriptions
+                    setClientSecret(data.setupIntent.client_secret)
+                    setSetupIntentData({
+                        customerId: data.customerId,
+                        setupIntentId: data.setupIntent.id,
+                        isSubscription: true,
+                        subscriptionData: payload
+                    })
+                    setStep('payment')
+                } else if (data.clientSecret) {
+                    // Direct payment confirmation flow
+                    setClientSecret(data.clientSecret)
+                    setSetupIntentData({
+                        subscriptionId: data.subscriptionId,
+                        isSubscription: true,
+                        requiresAction: data.requiresAction
+                    })
+                    setStep('payment')
+                } else {
+                    // Subscription created successfully
+                    window.location.href = '/donations/thank-you?subscription=true'
+                    return
+                }
             }
-
-            setClientSecret(data.clientSecret)
-            setStep('payment')
         } catch (err) {
             const message = err instanceof Error ? err.message : "Something went wrong"
             toast({ title: "Error", description: message, variant: "destructive" })
@@ -332,6 +369,7 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                                         donationType={donationTypes.find(t => t.id === selectedType)?.name || "Donation"}
                                         amount={form.getValues('amount')}
                                         frequency={selectedFrequency}
+                                        setupIntentData={setupIntentData}
                                         onBack={() => setStep('form')}
                                     />
                                 </Elements>
@@ -353,6 +391,7 @@ function PaymentForm({
     donationType,
     amount,
     frequency,
+    setupIntentData,
     onBack
 }: {
     email: string
@@ -363,6 +402,7 @@ function PaymentForm({
     donationType: string
     amount: string
     frequency: string
+    setupIntentData?: any
     onBack: () => void
 }) {
     const stripe = useStripe()
@@ -384,17 +424,86 @@ function PaymentForm({
         setIsSubmitting(true)
 
         try {
-            const result = await stripe.confirmPayment({
-                elements,
-                confirmParams: {
-                    return_url: `${window.location.origin}/donations/thank-you`,
-                    receipt_email: email,
-                },
-                redirect: 'always',
-            })
+            if (setupIntentData?.isSubscription && setupIntentData?.customerId) {
+                // Handle subscription setup intent flow
+                const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+                    elements,
+                    confirmParams: {
+                        return_url: `${window.location.origin}/donations/processing`,
+                    },
+                    redirect: 'if_required'
+                })
 
-            if (result.error) {
-                throw result.error
+                if (confirmError) {
+                    throw confirmError
+                }
+
+                if (setupIntent?.status === 'succeeded') {
+                    // Now create the subscription with the payment method
+                    const subscriptionRes = await fetch('/api/stripe/create-subscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...setupIntentData.subscriptionData,
+                            paymentMethodId: setupIntent.payment_method,
+                            customerId: setupIntentData.customerId
+                        })
+                    })
+
+                    const subscriptionData = await subscriptionRes.json()
+
+                    if (!subscriptionRes.ok) {
+                        throw new Error(subscriptionData.message || 'Failed to create subscription')
+                    }
+
+                    if (subscriptionData.requiresAction && subscriptionData.clientSecret) {
+                        // Handle 3D Secure or other authentication
+                        const { error: confirmError } = await stripe.confirmPayment({
+                            clientSecret: subscriptionData.clientSecret,
+                            redirect: 'if_required'
+                        })
+
+                        if (confirmError) {
+                            throw confirmError
+                        }
+                    }
+
+                    // Redirect to success page
+                    window.location.href = `/donations/thank-you?subscription_id=${subscriptionData.subscriptionId}&success=true`
+                    return
+                }
+            } else if (setupIntentData?.requiresAction && setupIntentData?.clientSecret) {
+                // Handle payment intent confirmation for subscriptions
+                const { error: confirmError } = await stripe.confirmPayment({
+                    clientSecret: setupIntentData.clientSecret,
+                    redirect: 'if_required'
+                })
+
+                if (confirmError) {
+                    throw confirmError
+                }
+
+                window.location.href = '/donations/thank-you?subscription=true'
+                return
+            } else {
+                // Handle regular one-time payment
+                const result = await stripe.confirmPayment({
+                    elements,
+                    confirmParams: {
+                        return_url: `${window.location.origin}/donations/thank-you`,
+                        receipt_email: email,
+                    },
+                    redirect: 'if_required',
+                })
+
+                if (result.error) {
+                    throw result.error
+                }
+
+                if (result.paymentIntent?.status === 'succeeded') {
+                    window.location.href = '/donations/thank-you'
+                    return
+                }
             }
         } catch (err: unknown) {
             const message =
@@ -428,6 +537,11 @@ function PaymentForm({
                         {frequency === "one-time" ? "One-Time" : frequency}
                     </span>
                 </div>
+                {setupIntentData?.isSubscription && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-800">
+                        Setting up recurring donation - you&apos;ll be charged {frequency === 'one-time' ? 'once' : frequency}
+                    </div>
+                )}
             </div>
 
             <form onSubmit={handlePaymentSubmit} className="space-y-6">
@@ -461,7 +575,7 @@ function PaymentForm({
                         ) : (
                             <Icons.creditCard className="mr-2 h-4 w-4" />
                         )}
-                        Complete Donation
+                        {setupIntentData?.isSubscription ? 'Setup Recurring Donation' : 'Complete Donation'}
                     </Button>
                 </div>
             </form>

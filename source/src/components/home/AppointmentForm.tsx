@@ -300,8 +300,8 @@ export default function AppointmentForm() {
 
     return (
       <span className="text-sm text-gray-500 ml-2">
-        (Your time: {currentTime.localTime} •
-        Eastern: {currentTime.easternTime} •
+        (Your Current Time: {currentTime.localTime} •<br />
+        Eastern Current Time: {currentTime.easternTime} •
         {currentTime.timeDifference})
       </span>
     );
@@ -485,13 +485,14 @@ export default function AppointmentForm() {
                     )}
                   </div>
                   {date && time && (() => {
-                    // Create church time in Maryland (Eastern Time)
-                    const churchTime = new Date(`${formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')}T${formatAMPMto24(time)}:00`);
+                    const userTime = new Date(date);
+                    const [hours, minutes] = formatAMPMto24(time).split(':').map(Number);
+                    userTime.setHours(hours, minutes, 0, 0);
 
-                    // Calculate time difference
-                    const userOffset = new Date().getTimezoneOffset(); // in minutes
+                    const churchTime = toZonedTime(userTime, TIMEZONE);
+                    const userOffset = userTime.getTimezoneOffset();
                     const churchOffset = new Date(churchTime.toLocaleString('en-US', { timeZone: TIMEZONE })).getTimezoneOffset();
-                    const diffHours = (churchOffset - userOffset) / 60;
+                    const diffHours = (userOffset - churchOffset) / 60;
                     const timeDiffText = diffHours === 0
                       ? "same time"
                       : `${Math.abs(diffHours)} hour${Math.abs(diffHours) > 1 ? 's' : ''} ${diffHours > 0 ? 'behind' : 'ahead'}`;
@@ -503,15 +504,11 @@ export default function AppointmentForm() {
                         </div>
                         <div className="text-xs">
                           <span className="font-medium">Church time (Maryland):</span> {
-                            formatInTimeZone(
-                              churchTime,
-                              TIMEZONE,
-                              'EEEE, MMMM d, yyyy h:mm a'
-                            )
+                            formatInTimeZone(churchTime, TIMEZONE, 'EEEE, MMMM d, yyyy h:mm a')
                           } (Eastern Time)
                         </div>
                         <div className="text-xs text-blue-600">
-                          <span className="font-medium">Note:</span> Maryland time is {timeDiffText} your local time
+                          <span className="font-medium">Note:</span> Maryland time is {timeDiffText} your local time • Same calendar day
                         </div>
                       </div>
                     )

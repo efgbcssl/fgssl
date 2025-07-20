@@ -8,12 +8,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: Request) {
     try {
-        const { amount, currency = 'usd', metadata } = await request.json()
+        const { name, amount, donationType, currency = 'usd', metadata } = await request.json()
 
         const paymentIntent = await stripe.paymentIntents.create({
             amount,
             currency,
-            metadata,
+            metadata: {
+                ...metadata,
+                donorName: name,
+                donationType
+            },
             automatic_payment_methods: {
                 enabled: true,
             },

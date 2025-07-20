@@ -7,26 +7,54 @@ import fs from 'fs/promises'
 import { generateDonationReceiptPDF } from './pdf'
 import { format, formatInTimeZone } from 'date-fns-tz'
 
-// Metrics tracking
+// Types
 interface EmailMetrics {
-    totalSent: number;
-    totalFailed: number;
+    totalSent: number
+    totalFailed: number
     lastFailed?: {
-        emailType: string;
-        recipient: string;
-        error: unknown;
-        timestamp: Date;
-    };
-    deliveryRate: number;
+        emailType: string
+        recipient: string
+        error: unknown
+        timestamp: Date
+    }
+    deliveryRate: number
 }
 
+interface DonationEmailParams {
+    to: string
+    donorName: string
+    amount: number
+    donationType: string
+    receiptUrl?: string
+    createdDate?: Date | string
+    paymentMethod?: string
+    currency?: string
+    frequency?: string
+    isRecurring: boolean
+    unsubscribeLink?: string
+}
+
+interface PaymentFailedEmailParams {
+    to: string
+    donorName: string
+    amount: number
+    currency: string
+    invoiceId: string
+    hostedInvoiceUrl?: string
+    billingReason: string
+    retryLink?: string
+    nextRetryDate: Date
+    updatePaymentUrl: string
+}
+
+// Metrics tracking
 const emailMetrics: EmailMetrics = {
     totalSent: 0,
     totalFailed: 0,
     deliveryRate: 100,
-};
+}
 
-// Create reusable transporter object using SMTP transport
+// Email transporter with connection pooling
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
@@ -40,7 +68,7 @@ const transporter = nodemailer.createTransport({
     maxMessages: 100,
     rateDelta: 1000,
     rateLimit: 5,
-});
+})
 
 // Verify connection configuration
 transporter.verify((error) => {
@@ -49,8 +77,9 @@ transporter.verify((error) => {
     } else {
         console.log('✅ Server is ready to take our messages')
     }
-});
+})
 
+// Template rendering helper
 async function renderTemplate(templateName: string, data: Record<string, unknown>) {
     const templatePath = path.join(process.cwd(), 'src', 'emails', `${templateName}.ejs`)
     const html = await fs.readFile(templatePath, 'utf8')
@@ -60,145 +89,160 @@ async function renderTemplate(templateName: string, data: Record<string, unknown
 }
 
 // Retry with exponential backoff
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function sendWithRetry(mailOptions: any, emailType: string, maxRetries = 3, baseDelay = 1000) {
-    let attempt = 0;
-    let lastError: unknown = null;
+async function sendWithRetry(
+    mailOptions: nodemailer.SendMailOptions,
+    emailType: string,
+    maxRetries = 3,
+    baseDelay = 1000
+) {
+    let attempt = 0
+    let lastError: unknown = null
 
     while (attempt < maxRetries) {
         try {
-            const info = await transporter.sendMail(mailOptions);
-            emailMetrics.totalSent++;
-            updateDeliveryRate();
-            return { success: true, messageId: info.messageId, attempts: attempt + 1 };
+            const info = await transporter.sendMail(mailOptions)
+            emailMetrics.totalSent++
+            updateDeliveryRate()
+            return { success: true, messageId: info.messageId, attempts: attempt + 1 }
         } catch (error) {
-            lastError = error;
-            attempt++;
+            lastError = error
+            attempt++
 
             if (attempt < maxRetries) {
-                const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 500;
-                console.warn(`⚠️ Attempt ${attempt} failed for ${emailType}. Retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
+                const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 500
+                console.warn(`⚠️ Attempt ${attempt} failed for ${emailType}. Retrying in ${delay}ms...`)
+                await new Promise(resolve => setTimeout(resolve, delay))
             }
         }
     }
 
     // If we get here, all attempts failed
-    emailMetrics.totalFailed++;
-    updateDeliveryRate();
+    emailMetrics.totalFailed++
+    updateDeliveryRate()
     emailMetrics.lastFailed = {
         emailType,
-        recipient: mailOptions.to,
+        recipient: mailOptions.to as string,
         error: lastError,
         timestamp: new Date(),
-    };
+    }
 
-    console.error(`❌ All ${maxRetries} attempts failed for ${emailType} to ${mailOptions.to}`);
-    throw lastError;
+    console.error(`❌ All ${maxRetries} attempts failed for ${emailType} to ${mailOptions.to}`)
+    throw lastError
 }
 
 function updateDeliveryRate() {
-    const totalAttempts = emailMetrics.totalSent + emailMetrics.totalFailed;
+    const totalAttempts = emailMetrics.totalSent + emailMetrics.totalFailed
     emailMetrics.deliveryRate = totalAttempts > 0
         ? (emailMetrics.totalSent / totalAttempts) * 100
-        : 100;
+        : 100
 }
 
 // Export metrics for dashboard
 export async function getEmailMetrics(): Promise<EmailMetrics> {
-    return emailMetrics;
+    return emailMetrics
 }
 
-export async function sendDonationEmail({
-    to,
-    donorName,
-    amount,
-    donationType,
-    receiptUrl,
-    createdDate,
-    paymentMethod,
-    currency,
-    frequency,
-    isRecurring
-}: {
-    to: string
-    donorName: string
-    amount: number
-    donationType: string
-    receiptUrl?: string
-    createdDate?: Date | string
-    paymentMethod?: string
-    currency?: string
-    frequency: string
-    isRecurring: boolean
-}) {
-    const receiptNumber = `REC-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+// Main email functions
+export async function sendDonationEmail(params: DonationEmailParams) {
+    const receiptNumber = `DON-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
+    const formattedDate = params.createdDate
+        ? new Date(params.createdDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
+        : new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
 
     try {
-        // Format the date if provided
-        const formattedDate = createdDate
-            ? new Date(createdDate).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            })
-            : new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-        // Generate receipt number (you can customize this)
-
-        const html = await renderTemplate('donation-receipt', {
-            donorName,
-            amount,
-            donationType,
-            receiptUrl,
-            receiptNumber,
-            paymentMethod: paymentMethod || 'Card',
-            dateReceived: formattedDate,
-            currency: currency || 'USD',
-            frequency:
-                isRecurring
-        });
-
+        // Generate PDF receipt
         const pdfBytes = await generateDonationReceiptPDF({
-            donorName,
-            amount,
-            donationType,
-            receiptUrl,
+            donorName: params.donorName,
+            amount: params.amount,
+            donationType: params.donationType,
+            receiptUrl: params.receiptUrl,
             createdDate: formattedDate,
             receiptNumber,
-            paymentMethod,
-            currency,
-            frequency,
-            isRecurring
-        });
+            paymentMethod: params.paymentMethod,
+            currency: params.currency,
+            frequency: params.frequency,
+            isRecurring: params.isRecurring
+        })
 
-        const mailOptions = {
-            from: process.env.FROM_EMAIL! || 'no-reply@yourdomain.com',
-            to,
-            subject: `Your ${donationType} Donation Receipt - ${receiptNumber}`,
+        // Render email template
+        const html = await renderTemplate('donation-receipt', {
+            donorName: params.donorName,
+            amount: params.amount,
+            donationType: params.donationType,
+            receiptUrl: params.receiptUrl,
+            receiptNumber,
+            paymentMethod: params.paymentMethod || 'Card',
+            dateReceived: formattedDate,
+            currency: params.currency || 'USD',
+            frequency: params.frequency,
+            isRecurring: params.isRecurring,
+            unsubscribeLink: params.unsubscribeLink,
+            currentYear: new Date().getFullYear()
+        })
+
+        const mailOptions: nodemailer.SendMailOptions = {
+            from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
+            to: params.to,
+            subject: params.isRecurring
+                ? `Thank you for your recurring ${params.donationType} donation`
+                : `Thank you for your ${params.donationType} donation`,
             html,
             attachments: [
                 {
                     filename: `Donation_Receipt_${receiptNumber}.pdf`,
-                    content: pdfBytes,
+                    content: Buffer.from(pdfBytes),
                     encoding: 'base64',
                 },
             ],
-        };
+        }
 
-        const result = await sendWithRetry(mailOptions, 'donation-receipt');
-        console.log('✅ Donation email sent to', to, 'after', result.attempts, 'attempt(s)');
-        return result;
+        const result = await sendWithRetry(mailOptions, 'donation-receipt')
+        console.log('✅ Donation email sent to', params.to, 'after', result.attempts, 'attempt(s)')
+        return result
     } catch (error) {
-        console.error('❌ Error sending donation email:', error);
-        throw error;
+        console.error('❌ Error sending donation email:', error)
+        throw error
     }
 }
 
+export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams) {
+    try {
+        const html = await renderTemplate('payment-failed', {
+            donorName: params.donorName,
+            amount: params.amount,
+            currency: params.currency,
+            invoiceId: params.invoiceId,
+            hostedInvoiceUrl: params.hostedInvoiceUrl,
+            billingReason: params.billingReason,
+            retryLink: params.retryLink || `${process.env.NEXT_PUBLIC_SITE_URL}/donations/update-payment`,
+            currentYear: new Date().getFullYear()
+        })
+
+        const mailOptions: nodemailer.SendMailOptions = {
+            from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
+            to: params.to,
+            subject: `Payment issue with your recurring donation`,
+            html
+        }
+
+        const result = await sendWithRetry(mailOptions, 'payment-failed')
+        console.log('⚠️ Payment failed email sent to', params.to, 'after', result.attempts, 'attempt(s)')
+        return result
+    } catch (error) {
+        console.error('❌ Error sending payment failed email:', error)
+        throw error
+    }
+}
+
+// ... (keep your existing appointment, message notification, and other email functions)
 export async function sendAppointmentEmail({
     to,
     fullName,
