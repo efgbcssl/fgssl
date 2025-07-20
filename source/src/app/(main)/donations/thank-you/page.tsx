@@ -8,23 +8,31 @@ import { useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 
+// Enhanced type definitions
 interface ReceiptData {
-    donorName: string
-    donorEmail: string
+    donorName?: string
+    donorEmail?: string
     donorPhone?: string
-    amount: number
-    currency: string
-    donationType: string
-    paymentMethod: string
+    amount?: number
+    currency?: string
+    donationType?: string
+    paymentMethod?: string
     receiptUrl?: string
-    created: number
+    created?: number
     frequency?: string
     isRecurring: boolean
 }
 
 interface PaymentResult {
-    status: string
+    status: 'succeeded' | 'processing' | 'failed' | 'requires_action'
     receipt?: ReceiptData
+    error?: string
+}
+
+interface VerificationResponse {
+    status: string
+    donation?: Partial<ReceiptData>
+    active?: boolean
     error?: string
 }
 
@@ -51,118 +59,118 @@ const BIBLE_QUOTES = [
     }
 ]
 
+const MAX_VERIFICATION_ATTEMPTS = 5
+const RETRY_DELAY = 2000 // 2 seconds
+
+
 export default function ThankYouPage() {
     const searchParams = useSearchParams()
     const { toast } = useToast()
 
     const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null)
     const [loading, setLoading] = useState(true)
-    const [randomQuote, setRandomQuote] = useState(BIBLE_QUOTES[0])
+    const [randomQuote] = useState(() => BIBLE_QUOTES[Math.floor(Math.random() * BIBLE_QUOTES.length)])
     const [verificationAttempts, setVerificationAttempts] = useState(0)
 
     useEffect(() => {
-        // Select a random Bible quote
-        setRandomQuote(BIBLE_QUOTES[Math.floor(Math.random() * BIBLE_QUOTES.length)])
+        const paymentIntentId = searchParams.get("payment_intent")
+        const subscriptionId = searchParams.get("subscription_id")
+        const setupIntentId = searchParams.get("setup_intent")
+        const successParam = searchParams.get("success")
 
-        async function verifyPayment() {
-            const paymentIntentId = searchParams.get("payment_intent")
-            const subscriptionId = searchParams.get("subscription_id")
-            const successParam = searchParams.get("success")
+        // Immediate success cases from URL params
+        if (successParam === "true" || setupIntentId) {
+            setPaymentResult({ status: "succeeded" })
+            setLoading(false)
+            return
+        }
 
-            if (successParam === "true") {
-                setPaymentResult({ status: "succeeded" })
-                setLoading(false)
-                return
-            }
-
-            if (!paymentIntentId && !subscriptionId) {
-                setPaymentResult({ status: "missing_params" })
-                setLoading(false)
-                return
-            }
-
-            try {
-                const endpoint = subscriptionId
-                    ? `/api/stripe/verify-subscription?subscription_id=${subscriptionId}`
-                    : `/api/stripe/verify-payment?payment_intent=${paymentIntentId}`
-
-                const res = await fetch(endpoint)
-                const data = await res.json()
-
-                if (!res.ok) throw new Error(data.error || "Payment verification failed")
-
-                const isSuccess = data.status === "succeeded" ||
-                    data.status === "active" ||
-                    data.active === true
-                if (!isSuccess) {
-                    // If not successful but might still be processing (especially for subscriptions)
-                    if (verificationAttempts < 3 && subscriptionId) {
-                        setTimeout(() => {
-                            setVerificationAttempts(prev => prev + 1)
-                            verifyPayment()
-                        }, 2000) // Retry after 2 seconds
-                        return
-                    }
-
-                    setPaymentResult({
-                        status: data.status || "failed",
-                        error: data.error
-                    })
-                } else {
-                    const donation = data.donation || {}
-                    setPaymentResult({
-                        status: "succeeded",
-                        receipt: {
-                            donorName: donation.donorName || "Anonymous",
-                            donorEmail: donation.donorEmail,
-                            donorPhone: donation.donorPhone,
-                            amount: donation.amount || 0,
-                            currency: donation.currency || 'USD',
-                            donationType: donation.donationType || 'Offering',
-                            paymentMethod: donation.paymentMethod || 'card',
-                            receiptUrl: donation.receiptUrl,
-                            created: donation.created || Date.now(),
-                            frequency: donation.frequency,
-                            isRecurring: donation.isRecurring || false
-                        }
-                    })
-                }
-            } catch (err: unknown) {
-                console.error("Payment verification error:", err)
-                const message = err instanceof Error ? err.message : "Payment verification failed"
-
-                // Only show toast if we're not going to retry
-                if (verificationAttempts >= 3 || !subscriptionId) {
-                    toast({
-                        title: "Verification Error",
-                        description: message,
-                        variant: "destructive",
-                    })
-                }
-
-                setPaymentResult({
-                    status: "verification_failed",
-                    error: message
-                })
-            } finally {
-                setLoading(false)
-            }
+        // If no IDs to verify, show error
+        if (!paymentIntentId && !subscriptionId) {
+            setPaymentResult({
+                status: "failed",
+                error: "Missing payment verification parameters"
+            })
+            setLoading(false)
+            return
         }
 
         verifyPayment()
-    }, [searchParams, toast, verificationAttempts])
+    }, [searchParams])
 
-    const isSuccessful = () => {
-        if (!paymentResult) return false
+    async function verifyPayment() {
+        const paymentIntentId = searchParams.get("payment_intent")
+        const subscriptionId = searchParams.get("subscription_id")
 
-        // Explicit success cases
-        if (paymentResult.status === "succeeded") return true
+        try {
+            setLoading(true)
 
-        // Check for subscription success params in URL
-        const subscriptionSuccess = searchParams.get("subscription") === "true"
-        const successParam = searchParams.get("success") === "true"
+            const endpoint = subscriptionId
+                ? `/api/stripe/verify-subscription?subscription_id=${subscriptionId}`
+                : `/api/stripe/verify-payment?payment_intent=${paymentIntentId}`
 
-        return subscriptionSuccess || successParam
+            const res = await fetch(endpoint)
+            const data: VerificationResponse = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || "Payment verification failed")
+            }
+
+            // Handle successful verification
+            if (data.status === "succeeded" || data.status === "active" || data.active) {
+                setPaymentResult({
+                    status: "succeeded",
+                    receipt: {
+                        donorName: data.donation?.donorName || "Anonymous",
+                        donorEmail: data.donation?.donorEmail || "",
+                        donorPhone: data.donation?.donorPhone,
+                        amount: data.donation?.amount || 0,
+                        currency: data.donation?.currency || 'USD',
+                        donationType: data.donation?.donationType || 'Donation',
+                        paymentMethod: data.donation?.paymentMethod || 'card',
+                        receiptUrl: data.donation?.receiptUrl,
+                        created: data.donation?.created || Date.now(),
+                        frequency: data.donation?.frequency,
+                        isRecurring: Boolean(subscriptionId)
+                    }
+                })
+                setLoading(false)
+                return
+            }
+
+            // Handle processing/retry cases
+            if (verificationAttempts < MAX_VERIFICATION_ATTEMPTS) {
+                setTimeout(() => {
+                    setVerificationAttempts(prev => prev + 1)
+                    verifyPayment()
+                }, RETRY_DELAY)
+            } else {
+                setPaymentResult({
+                    status: "failed",
+                    error: data.error || "Payment is still processing. Please check your email for confirmation."
+                })
+                setLoading(false)
+            }
+        } catch (err: unknown) {
+            console.error("Payment verification error:", err)
+            const message = err instanceof Error ? err.message : "Payment verification failed"
+
+            setPaymentResult({
+                status: "failed",
+                error: message
+            })
+
+            // Only show toast if we're not going to retry
+            if (verificationAttempts >= MAX_VERIFICATION_ATTEMPTS) {
+                toast({
+                    title: "Verification Error",
+                    description: message,
+                    variant: "destructive",
+                })
+            }
+
+            setLoading(false)
+        }
     }
 
     if (loading) {
@@ -178,14 +186,16 @@ export default function ThankYouPage() {
                     </motion.div>
                     <h1 className="text-2xl font-bold text-gray-800">Verifying Your Donation</h1>
                     <p className="text-gray-600">
-                        We&apos;re confirming your generous gift...
+                        {verificationAttempts > 0
+                            ? `Still verifying... (attempt ${verificationAttempts + 1} of ${MAX_VERIFICATION_ATTEMPTS})`
+                            : "We're confirming your generous gift..."}
                     </p>
                 </div>
             </div>
         )
     }
 
-    if (!isSuccessful()) {
+    if (!paymentResult || paymentResult.status !== "succeeded") {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-gradient-to-b from-blue-50 to-white">
                 <div className="max-w-md space-y-6">
@@ -199,7 +209,7 @@ export default function ThankYouPage() {
                     <h1 className="text-2xl font-bold text-gray-800">Donation Not Completed</h1>
                     <p className="text-gray-600">
                         {paymentResult?.error ||
-                            "We encountered an issue processing your donation. Please try again or contact our support team."}
+                            "We encountered an issue processing your donation. Please check your email for confirmation or try again."}
                     </p>
                     <div className="pt-4 space-y-2">
                         <Button asChild className="w-full">
@@ -218,10 +228,10 @@ export default function ThankYouPage() {
         )
     }
 
-    const receipt = paymentResult!.receipt!
+    const receipt = paymentResult.receipt!
     // In your thank-you page component
     const formattedDate = receipt?.created
-        ? new Date(receipt.created).toLocaleDateString('en-US', {
+        ? new Date(receipt.created * 1000).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -287,7 +297,7 @@ export default function ThankYouPage() {
                         <div className="space-y-2">
                             <p className="text-sm text-gray-500">Amount</p>
                             <p className="font-medium">
-                                {receipt.currency.toUpperCase()} {receipt.amount.toFixed(2)}
+                                {(receipt.currency ?? 'USD').toUpperCase()} {(receipt.amount ?? 0).toFixed(2)}
                             </p>
                         </div>
                         <div className="space-y-2">

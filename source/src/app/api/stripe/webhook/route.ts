@@ -16,7 +16,7 @@ interface DonorRecord {
   email: string
   phone?: string
   totalDonations?: number
-  lastDonationDate?: string
+  lastDonationDate?: Date | string
   donationFrequency?: string
 }
 
@@ -35,26 +35,35 @@ interface DonationRecord {
   stripeChargeId?: string
   stripeSubscriptionId?: string
   receiptUrl?: string
-  date: string
+  date: Date | string
 }
 
 export async function POST(req: Request) {
+  console.log('🔵 [WEBHOOK START] Received webhook request')
+  console.log('🔵 Reading request body...')
   const body = await req.text()
   const sig = (await headers()).get('stripe-signature')
+  console.log('🟢 Request body read successfully')
+  console.log('ℹ️ Headers:', { sig })
 
   if (!sig) {
+    console.log('🔴 Missing Stripe signature header')
     return NextResponse.json(
       { error: 'Missing Stripe signature' },
       { status: 400 }
     )
   }
 
+  console.log('🔵 Verifying webhook signature...')
   let event: Stripe.Event
 
   try {
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret)
+    console.log('🟢 Webhook signature verified successfully')
+    console.log(`ℹ️ Event type: ${event.type}`)
+    console.log('ℹ️ Event data:', JSON.stringify(event.data.object, null, 2))
   } catch (err) {
-    console.error('⚠️ Webhook signature verification failed:', err)
+    console.error('🔴 Webhook signature verification failed:', err)
     return NextResponse.json(
       { error: 'Invalid signature' },
       { status: 400 }
@@ -99,13 +108,17 @@ export async function POST(req: Request) {
 
 // Helper functions for each event type
 async function handlePaymentIntentSucceeded(event: Stripe.Event) {
+  console.log('🔵 [PAYMENT_INTENT] Handling payment_intent.succeeded')
   const paymentIntent = event.data.object as Stripe.PaymentIntent
   const metadata = paymentIntent.metadata || {}
 
   console.log(`💳 PaymentIntent succeeded: ${paymentIntent.id}`)
 
+  console.log(`ℹ️ PaymentIntent ID: ${paymentIntent.id}`)
+  console.log('ℹ️ Metadata:', metadata)
+
   // Skip if this is a subscription payment (handled by invoice.payment_succeeded)
-  if (metadata.subscriptionId || paymentIntent.invoice) {
+  if (metadata.subscriptionId || (paymentIntent as any).invoice) {
     console.log('⏭️ Skipping subscription payment (handled by invoice webhook)')
     return NextResponse.json({ received: true })
   }
@@ -449,42 +462,40 @@ async function saveDonationRecord(data: {
   stripeSubscriptionId?: string
   receiptUrl?: string
   created: Date
-}): Promise<{ donor: DonorRecord, donation: DonationRecord }> {
-
-  // Validate required data
-  if (!data.email || !data.amount) {
-    throw new Error('Missing required donation data: email or amount')
-  }
-
+}): Promise<{ donor: DonorRecord; donation: DonationRecord }> {
   try {
-    // Save/update donor with proper error handling
+    // Convert dates to ISO strings for Xata
+    const lastDonationDate = data.created.toISOString()
+    const donationDate = data.created.toISOString()
+
+    // 1. Upsert donor record
     let donor = await xata.db.donors
       .filter({ email: data.email })
       .getFirst()
 
-    const donorUpdate: Partial<DonorRecord> = {
+    const donorUpdate = {
       name: data.name,
       phone: data.phone,
       totalDonations: (donor?.totalDonations || 0) + data.amount,
-      lastDonationDate: data.created.toISOString(),
+      lastDonationDate,
       donationFrequency: data.frequency
     }
 
     if (donor) {
-      donor = await xata.db.donors.update(donor.email, donorUpdate)
+      donor = await xata.db.donors.update(donor.xata_id, donorUpdate)
     } else {
       donor = await xata.db.donors.create({
         ...donorUpdate,
         email: data.email
-      } as DonorRecord)
+      })
     }
 
     if (!donor) {
-      throw new Error('Failed to create or update donor record')
+      throw new Error('Failed to create/update donor record')
     }
 
-    // Save donation record with better error handling
-    const donationRecord: DonationRecord = {
+    // 2. Create donation record
+    const donationData = {
       amount: data.amount,
       currency: data.currency,
       donationType: data.donationType,
@@ -499,18 +510,38 @@ async function saveDonationRecord(data: {
       stripeChargeId: data.stripeChargeId,
       stripeSubscriptionId: data.stripeSubscriptionId,
       receiptUrl: data.receiptUrl,
-      date: data.created.toISOString()
+      date: donationDate
     }
 
-    const donation = await xata.db.donations.create(donationRecord)
-
+    const donation = await xata.db.donations.create(donationData)
     if (!donation) {
       throw new Error('Failed to create donation record')
     }
 
-    return { donor: donor as DonorRecord, donation }
+    console.log('✅ Successfully saved records to Xata:',
+      { donorId: donor.xata_id, donationId: donation.xata_id })
+
+    return {
+      donor: {
+        ...donor,
+        phone: donor.phone ?? undefined,
+        lastDonationDate: donor.lastDonationDate instanceof Date
+          ? donor.lastDonationDate.toISOString()
+          : donor.lastDonationDate
+      },
+      donation: {
+        ...donation,
+        donorPhone: donation.donorPhone ?? undefined,
+        stripeChargeId: donation.stripeChargeId ?? undefined,
+        stripePaymentIntentId: donation.stripePaymentIntentId ?? undefined,
+        stripeSubscriptionId: donation.stripeSubscriptionId ?? undefined,
+        date: (donation as any).date instanceof Date
+          ? (donation as any).date.toISOString()
+          : (donation as any).date
+      }
+    }
   } catch (error) {
-    console.error('Database error saving donation:', error)
-    throw new Error(`Failed to save donation record: ${error}`)
+    console.error('❌ Database save error:', error)
+    throw error
   }
 }

@@ -490,7 +490,7 @@ function PaymentForm({
                 const result = await stripe.confirmPayment({
                     elements,
                     confirmParams: {
-                        return_url: `${window.location.origin}/donations/thank-you`,
+                        return_url: `${window.location.origin}/donations/thank-you?payment_intent={PAYMENT_INTENT_ID}`,
                         receipt_email: email,
                     },
                     redirect: 'if_required',
@@ -501,7 +501,7 @@ function PaymentForm({
                 }
 
                 if (result.paymentIntent?.status === 'succeeded') {
-                    window.location.href = '/donations/thank-you'
+                    window.location.href = `/donations/thank-you?payment_intent=${result.paymentIntent.id}`
                     return
                 }
             }
