@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { headers } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail, sendPaymentFailedEmail } from '@/lib/email'
@@ -40,7 +40,7 @@ interface DonationRecord {
   date: Date | string
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   console.log('🔵 [WEBHOOK START] Received webhook request')
   console.log('🔵 Reading request body...')
   const body = await req.text()
