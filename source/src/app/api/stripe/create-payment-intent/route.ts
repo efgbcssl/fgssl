@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         const body = await request.json()
         console.log('✅ Parsed request body:', body)
 
-        const { name, amount, donationType, currency = 'usd', metadata } = body
+        const { name, amount, donationType, currency = 'usd', metadata, email, phone } = body
 
         console.log('🔍 Validating amount...')
         if (isNaN(amount) || amount <= 0) {
@@ -26,10 +26,11 @@ export async function POST(request: Request) {
         const paymentIntent = await stripe.paymentIntents.create({
             amount,
             currency,
-            customer: metadata?.customerId, // Optional
+            customer: metadata?.customerId,
             metadata: {
-                ...metadata,
                 donorName: name,
+                donorEmail: email,
+                donorPhone: phone,
                 donationType
             },
             automatic_payment_methods: {

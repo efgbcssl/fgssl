@@ -12,6 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
 interface DonorRecord {
+  xata_id?: string
   name?: string
   email: string
   phone?: string
@@ -21,6 +22,7 @@ interface DonorRecord {
 }
 
 interface DonationRecord {
+  xata_id?: string
   amount: number
   currency: string
   donationType: string
@@ -113,9 +115,8 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
   const metadata = paymentIntent.metadata || {}
 
   console.log(`💳 PaymentIntent succeeded: ${paymentIntent.id}`)
-
   console.log(`ℹ️ PaymentIntent ID: ${paymentIntent.id}`)
-  console.log('ℹ️ Metadata:', metadata)
+  console.log('ℹ️ Metadata:', JSON.stringify(metadata, null, 2))
 
   // Skip if this is a subscription payment (handled by invoice.payment_succeeded)
   if (metadata.subscriptionId || (paymentIntent as any).invoice) {
@@ -124,23 +125,38 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
   }
 
   // Get charge details for receipt
-  const charge = paymentIntent.latest_charge
-    ? await stripe.charges.retrieve(paymentIntent.latest_charge as string)
-    : null
+  let charge: Stripe.Charge | null = null
+  if (paymentIntent.latest_charge) {
+    try {
+      charge = await stripe.charges.retrieve(
+        typeof paymentIntent.latest_charge === 'string'
+          ? paymentIntent.latest_charge
+          : paymentIntent.latest_charge.id,
+        { expand: ['payment_intent'] }
+      )
+      console.log('⚡ Charge details retrieved:', charge?.id)
+    } catch (err) {
+      console.error('⚠️ Failed to retrieve charge:', err)
+    }
+  }
 
-  // Prepare donor data
+  // Prepare comprehensive donor data
   const donorData = {
-    name: metadata.donorName || 'Anonymous',
-    email: metadata.donorEmail || (charge?.billing_details?.email || ''),
-    phone: metadata.donorPhone || (charge?.billing_details?.phone || ''),
+    name: metadata.donorName || charge?.billing_details?.name || 'Anonymous',
+    email: metadata.donorEmail || charge?.billing_details?.email || '',
+    phone: metadata.donorPhone || charge?.billing_details?.phone || '',
     amount: paymentIntent.amount / 100,
     currency: paymentIntent.currency.toUpperCase(),
     donationType: metadata.donationType || 'General Donation',
     frequency: metadata.frequency || 'one-time',
-    paymentMethod: getPaymentMethodType(charge),
+    paymentMethod: charge ? getPaymentMethodType(charge) : 'card',
     receiptUrl: charge?.receipt_url || '',
-    created: new Date(paymentIntent.created * 1000)
+    stripeChargeId: charge?.id || null,
+    created: new Date(paymentIntent.created * 1000),
+    paymentIntentId: paymentIntent.id
   }
+
+  console.log('📋 Prepared donor data:', JSON.stringify(donorData, null, 2))
 
   if (!donorData.email) {
     console.error('❌ Missing donor email in payment intent:', paymentIntent.id)
@@ -149,33 +165,49 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
 
   // Save donor and donation records
   try {
+    console.log('💾 Attempting to save donation record...')
     const { donor, donation } = await saveDonationRecord({
       ...donorData,
       isRecurring: false,
       stripePaymentIntentId: paymentIntent.id,
-      stripeChargeId: charge?.id
+      stripeChargeId: donorData.stripeChargeId ?? undefined,
+    })
+
+    console.log('✅ Database records saved:', {
+      donorId: donor?.xata_id,
+      donationId: donation?.xata_id
     })
 
     // Send confirmation email
-    await sendDonationEmail({
-      to: donorData.email,
-      donorName: donorData.name,
-      amount: donorData.amount,
-      donationType: donorData.donationType,
-      receiptUrl: donorData.receiptUrl,
-      createdDate: donorData.created,
-      paymentMethod: donorData.paymentMethod,
-      currency: donorData.currency,
-      frequency: donorData.frequency,
-      isRecurring: false
-    })
+    if (donorData.email) {
+      console.log('📧 Preparing to send confirmation email...')
+      await sendDonationEmail({
+        to: donorData.email,
+        donorName: donorData.name,
+        amount: donorData.amount,
+        donationType: donorData.donationType,
+        receiptUrl: donorData.receiptUrl,
+        createdDate: donorData.created,
+        paymentMethod: donorData.paymentMethod,
+        currency: donorData.currency,
+        frequency: donorData.frequency,
+        isRecurring: false
+      })
+      console.log('✉️ Confirmation email sent')
+    }
 
-    console.log(`✅ Processed one-time payment ${paymentIntent.id}`)
+    console.log(`✅ Successfully processed payment ${paymentIntent.id}`)
   } catch (error) {
     console.error(`❌ Failed to process payment ${paymentIntent.id}:`, error)
+    // Consider retry logic or dead letter queue here
   }
 
-  return NextResponse.json({ received: true })
+  return NextResponse.json({
+    received: true,
+    processed: true,
+    paymentIntentId: paymentIntent.id,
+    chargeId: charge?.id
+  })
 }
 
 async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
