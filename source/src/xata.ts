@@ -361,14 +361,6 @@ const tables = [
         comment: '{"xata.type":"text"}',
       },
       {
-        name: "donationFrequency",
-        type: "text",
-        notNull: false,
-        unique: false,
-        defaultValue: null,
-        comment: "",
-      },
-      {
         name: "donationType",
         type: "text",
         notNull: true,
@@ -399,6 +391,14 @@ const tables = [
         unique: false,
         defaultValue: null,
         comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "frequency",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
       },
       {
         name: "isRecurring",

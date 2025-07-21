@@ -1,0 +1,20 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d1ur1iaoqhr2s1o71h9g",
+    "operations": [
+      {
+        "alter_column": {
+          "name": "frequency",
+          "table": "donations",
+          "column": "donationFrequency"
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d1ur1iaoqhr2s1o71h9g",
+  "parent": "mig_d1uqoo3j0aqdfvuvd5ug",
+  "schema": "public",
+  "startedAt": "2025-07-21T03:15:22.083746Z"
+}
