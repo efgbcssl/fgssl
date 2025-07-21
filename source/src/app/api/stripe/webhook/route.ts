@@ -567,6 +567,7 @@ async function saveDonationRecord(data: {
         stripeChargeId: donation.stripeChargeId ?? undefined,
         stripePaymentIntentId: donation.stripePaymentIntentId ?? undefined,
         stripeSubscriptionId: donation.stripeSubscriptionId ?? undefined,
+        frequency: donation.frequency === null ? undefined : donation.frequency,
         date: (donation as any).date instanceof Date
           ? (donation as any).date.toISOString()
           : (donation as any).date
