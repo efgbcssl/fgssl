@@ -5,6 +5,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail, sendPaymentFailedEmail } from '@/lib/email'
+import crypto from 'crypto'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-05-28.basil'
@@ -40,13 +41,22 @@ interface DonationRecord {
   date: Date | string
 }
 
+
 export async function POST(req: NextRequest) {
   console.log('🔵 [WEBHOOK START] Received webhook request')
-  console.log('🔵 Reading request body...')
-  const body = await req.text()
-  const sig = (await headers()).get('stripe-signature') as string
-  console.log('🟢 Request body read successfully')
-  console.log('ℹ️ Headers:', { sig })
+
+  // Fix 1: Await the headers() function in Next.js App Router
+  let sig: string | null = null
+
+  try {
+    const headersList = await headers() // Add await here
+    sig = headersList.get('stripe-signature')
+  } catch {
+    // Fallback to req.headers if headers() doesn't work
+    sig = req.headers.get('stripe-signature')
+  }
+
+  console.log('ℹ️ Signature header:', { sig })
 
   if (!sig) {
     console.log('🔴 Missing Stripe signature header')
@@ -56,29 +66,97 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  console.log('🔵 Verifying webhook signature...')
-  let event: Stripe.Event
+  console.log('🔵 Reading request body...')
+
+  // Fix 2: Use arrayBuffer() instead of text() to preserve exact bytes
+  let rawBody: Buffer
 
   try {
-    event = stripe.webhooks.constructEvent(body, sig, endpointSecret)
-    console.log('🟢 Webhook signature verified successfully')
-    console.log(`ℹ️ Event type: ${event.type}`)
-    console.log('ℹ️ Event data:', JSON.stringify(event.data.object, null, 2))
-  } catch (err) {
-    console.error('🔴 Webhook signature verification failed:', err)
+    // Read as ArrayBuffer to preserve exact byte representation
+    const arrayBuffer = await req.arrayBuffer()
+    rawBody = Buffer.from(arrayBuffer)
+
+    console.log('🟢 Request body read successfully')
+    console.log('📏 Buffer length:', rawBody.length)
+
+  } catch (error) {
+    console.error('🔴 Error reading request body:', error)
     return NextResponse.json(
-      { error: 'Invalid signature' },
+      { error: 'Error reading request body' },
       { status: 400 }
     )
   }
 
-  console.log(`🔔 Received event type: ${event.type}`)
+  console.log('🔵 Verifying webhook signature...')
+  console.log('🔑 Using endpoint secret:', endpointSecret ? 'Present' : 'Missing')
+
+  let event: Stripe.Event
+
+  try {
+    // Use the raw buffer for signature verification
+    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret)
+    console.log('🟢 Webhook signature verified successfully')
+    console.log(`ℹ️ Event type: ${event.type}`)
+    console.log('ℹ️ Event ID:', event.id)
+
+  } catch (err) {
+    console.error('🔴 Webhook signature verification failed:', err)
+
+    // Additional debugging info
+    console.log('🔍 Debug info:')
+    console.log('  - Signature header:', sig)
+    console.log('  - Body type:', typeof rawBody)
+    console.log('  - Body length:', rawBody.length)
+    console.log('  - Endpoint secret length:', endpointSecret?.length || 0)
+    console.log('  - First 100 chars of body:', rawBody.toString().substring(0, 100))
+
+    // For development: Try with tolerance
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        console.log('🔄 Retrying with tolerance for development...')
+        event = stripe.webhooks.constructEvent(rawBody, sig as string, endpointSecret, 300) // 5 minute tolerance
+        console.log('🟢 Webhook verified with tolerance')
+      } catch (toleranceErr) {
+        console.error('🔴 Even tolerance verification failed:', toleranceErr)
+
+        // Additional debugging for development
+        console.log('🔍 Additional debug info:')
+        console.log('  - Raw signature parts:', sig.split(','))
+        console.log('  - Body as string hash:', crypto.createHash('sha256').update(rawBody).digest('hex'))
+
+        return NextResponse.json(
+          {
+            error: 'Invalid signature',
+            debug: process.env.NODE_ENV === 'development' ? {
+              message: err instanceof Error ? err.message : undefined,
+              signatureHeader: sig,
+              bodyLength: rawBody.length
+            } : undefined
+          },
+          { status: 400 }
+        )
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 400 }
+      )
+    }
+  }
+
+  console.log(`🔔 Processing event type: ${event.type}`)
 
   try {
     switch (event.type as string) {
+      case 'payment_intent.created': // Add this case
+        console.log('ℹ️ Payment intent created, no action needed')
+        return NextResponse.json({ received: true })
       case 'payment_intent.succeeded':
         return await handlePaymentIntentSucceeded(event)
-        break
+      case 'charge.succeeded':
+        return await handleChargeSucceeded(event)
+      case 'charge.updated':
+        return await handleChargeUpdated(event)
       case 'invoice.payment_succeeded':
         return await handleInvoicePaymentSucceeded(event)
       case 'customer.subscription.created':
@@ -91,7 +169,6 @@ export async function POST(req: NextRequest) {
         return await handlePaymentFailed(event)
       case 'invoice.payment_action_required':
         return await handlePaymentActionRequired(event)
-      // Additional events for better subscription management
       case 'customer.subscription.past_due':
         return await handleSubscriptionPastDue(event)
       case 'customer.subscription.unpaid':
@@ -108,6 +185,36 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+// Add these handler functions if they don't exist
+async function handleChargeSucceeded(event: Stripe.Event) {
+  console.log('💳 Processing charge.succeeded')
+  const charge = event.data.object as Stripe.Charge
+
+  // You might want to handle this similar to payment_intent.succeeded
+  // or just acknowledge it if you're already handling payment_intent.succeeded
+
+  console.log(`✅ Charge succeeded: ${charge.id} for ${charge.amount}`)
+  return NextResponse.json({ received: true })
+}
+
+async function handleChargeUpdated(event: Stripe.Event) {
+  console.log('🔄 Processing charge.updated')
+  const charge = event.data.object as Stripe.Charge
+
+  // Handle charge updates (like receipt URL updates)
+  console.log(`🔄 Charge updated: ${charge.id}`)
+
+  return NextResponse.json({ received: true })
+}
+
+// Make sure to export the config for body parsing
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
 
 // Helper functions for each event type
 async function handlePaymentIntentSucceeded(event: Stripe.Event) {

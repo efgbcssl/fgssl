@@ -410,18 +410,18 @@ function PaymentForm({
     const { toast } = useToast()
 
     async function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault()
+        event.preventDefault();
 
         if (!stripe || !elements || !paymentElementReady) {
             toast({
                 title: "Payment not ready",
                 description: "Please wait for the payment form to finish loading",
                 variant: "destructive"
-            })
-            return
+            });
+            return;
         }
 
-        setIsSubmitting(true)
+        setIsSubmitting(true);
 
         try {
             if (setupIntentData?.isSubscription && setupIntentData?.customerId) {
@@ -432,10 +432,10 @@ function PaymentForm({
                         return_url: `${window.location.origin}/donations/processing`,
                     },
                     redirect: 'if_required'
-                })
+                });
 
                 if (confirmError) {
-                    throw confirmError
+                    throw confirmError;
                 }
 
                 if (setupIntent?.status === 'succeeded') {
@@ -448,12 +448,12 @@ function PaymentForm({
                             paymentMethodId: setupIntent.payment_method,
                             customerId: setupIntentData.customerId
                         })
-                    })
+                    });
 
-                    const subscriptionData = await subscriptionRes.json()
+                    const subscriptionData = await subscriptionRes.json();
 
                     if (!subscriptionRes.ok) {
-                        throw new Error(subscriptionData.message || 'Failed to create subscription')
+                        throw new Error(subscriptionData.message || 'Failed to create subscription');
                     }
 
                     if (subscriptionData.requiresAction && subscriptionData.clientSecret) {
@@ -461,48 +461,62 @@ function PaymentForm({
                         const { error: confirmError } = await stripe.confirmPayment({
                             clientSecret: subscriptionData.clientSecret,
                             redirect: 'if_required'
-                        })
+                        });
 
                         if (confirmError) {
-                            throw confirmError
+                            throw confirmError;
                         }
                     }
 
-                    // Redirect to success page
-                    window.location.href = `/donations/thank-you?subscription_id=${subscriptionData.subscriptionId}&success=true`
-                    return
+                    // Build redirect URL with all necessary parameters
+                    const redirectUrl = new URL(
+                        `/donations/thank-you`,
+                        window.location.origin
+                    );
+
+                    redirectUrl.searchParams.append('subscription_id', subscriptionData.subscriptionId);
+                    redirectUrl.searchParams.append('success', 'true');
+                    redirectUrl.searchParams.append('name', encodeURIComponent(setupIntentData.subscriptionData.name));
+                    redirectUrl.searchParams.append('email', encodeURIComponent(setupIntentData.subscriptionData.email));
+                    redirectUrl.searchParams.append('amount', setupIntentData.subscriptionData.amount.toString());
+                    redirectUrl.searchParams.append('donationType', encodeURIComponent(setupIntentData.subscriptionData.donationType));
+                    redirectUrl.searchParams.append('frequency', setupIntentData.subscriptionData.frequency);
+
+                    window.location.href = redirectUrl.toString();
+                    return;
                 }
             } else if (setupIntentData?.requiresAction && setupIntentData?.clientSecret) {
                 // Handle payment intent confirmation for subscriptions
                 const { error: confirmError } = await stripe.confirmPayment({
                     clientSecret: setupIntentData.clientSecret,
                     redirect: 'if_required'
-                })
+                });
 
                 if (confirmError) {
-                    throw confirmError
+                    throw confirmError;
                 }
 
-                window.location.href = '/donations/thank-you?subscription=true'
-                return
+                // For cases where we don't have all subscription data
+                window.location.href = '/donations/thank-you?subscription=true';
+                return;
             } else {
                 // Handle regular one-time payment
                 const result = await stripe.confirmPayment({
                     elements,
                     confirmParams: {
-                        return_url: `${window.location.origin}/donations/thank-you?payment_intent={PAYMENT_INTENT_ID}`,
+                        return_url: `${window.location.origin}/donations/thank-you?payment_intent={PAYMENT_INTENT_ID}&amount=${amount}&donationType=${encodeURIComponent(donationType)}`,
                         receipt_email: email,
                     },
                     redirect: 'if_required',
-                })
+                });
 
                 if (result.error) {
-                    throw result.error
+                    throw result.error;
                 }
 
                 if (result.paymentIntent?.status === 'succeeded') {
-                    window.location.href = `/donations/thank-you?payment_intent=${result.paymentIntent.id}`
-                    return
+                    window.location.href = `/donations/thank-you?payment_intent=${result.paymentIntent.id}&amount=${amount}&donationType=${encodeURIComponent(donationType)}`;
+                    return;
                 }
             }
         } catch (err: unknown) {
@@ -514,9 +528,9 @@ function PaymentForm({
                 title: "Payment Error",
                 description: message,
                 variant: "destructive"
-            })
+            });
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
     }
 
