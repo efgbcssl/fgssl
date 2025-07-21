@@ -201,6 +201,7 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
     console.error(`❌ Failed to process payment ${paymentIntent.id}:`, error)
     // Consider retry logic or dead letter queue here
   }
+  console.log(`🏁 Completed processing for ${paymentIntent.id}`);
 
   return NextResponse.json({
     received: true,
