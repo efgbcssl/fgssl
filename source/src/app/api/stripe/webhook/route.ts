@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   console.log('🔵 [WEBHOOK START] Received webhook request')
   console.log('🔵 Reading request body...')
   const body = await req.text()
-  const sig = (await headers()).get('stripe-signature')
+  const sig = (await headers()).get('stripe-signature') as string
   console.log('🟢 Request body read successfully')
   console.log('ℹ️ Headers:', { sig })
 
@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
     switch (event.type as string) {
       case 'payment_intent.succeeded':
         return await handlePaymentIntentSucceeded(event)
+        break
       case 'invoice.payment_succeeded':
         return await handleInvoicePaymentSucceeded(event)
       case 'customer.subscription.created':
