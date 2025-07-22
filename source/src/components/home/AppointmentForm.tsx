@@ -98,114 +98,99 @@ export default function AppointmentForm() {
   }, [checkBookedSlots])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    console.log('Form submission started')
+    e.preventDefault();
+
+    // Basic validation
     if (!date || !time) {
-      console.log('Validation failed: date or time missing', { date, time })
       toast({
         title: "Error",
         description: "Please select a date and time.",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
     if (bookedSlots.includes(time)) {
-      console.log('Validation failed: time slot already booked', { time, bookedSlots })
       toast({
         title: "Error",
         description: "The selected time slot is already booked.",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const formElement = e.currentTarget
-      const formData = new FormData(formElement)
-      const formValues = Object.fromEntries(formData.entries())
-      console.log('Form values extracted:', formValues)
+      const formElement = e.currentTarget;
+      const formData = new FormData(formElement);
+      const formValues = Object.fromEntries(formData.entries());
 
+      // Validate required fields
       if (!formValues.fullName || !formValues.phoneNumber || !formValues.email) {
-        console.log('Validation failed: missing required fields', formValues)
-        throw new Error("Please fill in all required fields.")
+        throw new Error("Please fill in all required fields.");
       }
 
-      const time24 = formatAMPMto24(time)
-      const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd')
-      const appointmentDateTime = new Date(`${dateStr}T${time24}:00`)
-      const appointmentDateTimeInTz = toZonedTime(appointmentDateTime, TIMEZONE)
-      const easternDateTime = new Date(`${dateStr}T${time24}:00`)
-      const utcDateTime = fromZonedTime(easternDateTime, TIMEZONE)
-      const isoString = formatInTimeZone(appointmentDateTimeInTz, TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX")
-      const zonedDateTime = toZonedTime(easternDateTime, TIMEZONE);
+      // Convert selected time to 24-hour format
+      const time24 = formatAMPMto24(time);
+      const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd');
 
-      console.log('Date/time processing:', {
-        time,
-        time24,
-        dateStr,
-        easternDateTime,
-        utcDateTime: utcDateTime.toISOString()
-      })
-      console.log('Corrected Time Conversion:', {
-        userSelected: `${date.toDateString()} ${time} (EAT)`,
-        storedAsEastern: formatInTimeZone(zonedDateTime, TIMEZONE, 'yyyy-MM-dd HH:mm'),
-        storedAsUTC: zonedDateTime.toISOString()
-      });
-      console.log('Selected local time:', `${dateStr}T${time24}:00`) // 2025-07-19T10:00:00
-      console.log('Timezone-converted:', isoString) // Should be 2025-07-19T10:00:00-04:00 (for EDT)
+      // Create the appointment datetime in New York timezone
+      const nyDateTime = toZonedTime(
+        new Date(`${dateStr}T${time24}:00`),
+        TIMEZONE
+      );
 
+      // Convert to UTC for the API
+      const utcDateTime = fromZonedTime(nyDateTime, TIMEZONE);
+
+      // Prepare appointment data
       const appointmentData = {
         fullName: formValues.fullName as string,
         email: formValues.email as string,
         phoneNumber: formValues.phoneNumber as string,
-        preferredDate: zonedDateTime.toISOString(),
+        preferredDate: utcDateTime.toISOString(),
         medium: medium as 'in-person' | 'online',
         status: 'pending',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      console.log('Final appointment data being sent:', appointmentData)
+
+      // Submit to API
       const response = await fetch('/api/appointments', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(appointmentData)
-      })
-      console.log('API response status:', response.status)
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.log('API error response:', errorData)
-        throw new Error(errorData.message || 'Failed to submit appointment')
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to submit appointment');
       }
-      const successData = await response.json()
-      console.log('API success response:', successData)
-      formElement.reset()
-      setDate(undefined)
-      setTime('')
-      setMedium('in-person')
-      setBookedSlots([])
+
+      // Reset form on success
+      formElement.reset();
+      setDate(undefined);
+      setTime('');
+      setMedium('in-person');
+      setBookedSlots([]);
 
       toast({
         title: "Success!",
         description: "Your appointment request has been submitted. We'll contact you to confirm.",
-      })
+      });
 
     } catch (error) {
-      console.error('Submit error:', error)
+      console.error('Submit error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const isDateDisabled = useCallback((date: Date) => {
     const nowInEastern = toZonedTime(new Date(), TIMEZONE)
