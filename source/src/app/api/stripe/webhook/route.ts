@@ -36,9 +36,9 @@ interface DonationRecord {
   paymentStatus: string
   isRecurring: boolean
   stripePaymentIntentId?: string
-  stripeChargeId?: string
-  stripeSubscriptionId?: string
-  receiptUrl?: string
+  stripeChargeId?: string | null
+  stripeSubscriptionId?: string | null
+  receiptUrl?: string | null
 }
 
 type PaymentMethodType = 'card' | 'bank' | 'other'
@@ -325,6 +325,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
       name: customerName,
       phone: (customer && typeof customer === 'object' && !('deleted' in customer))
         ? customer.phone
+        ?? undefined
         : undefined,
       amount: invoice.amount_paid / 100,
       currency: invoice.currency.toUpperCase(),
