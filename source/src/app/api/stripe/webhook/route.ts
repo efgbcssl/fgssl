@@ -1,17 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { headers } from 'next/headers'
-import { NextResponse, NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail, sendPaymentFailedEmail } from '@/lib/email'
-import crypto from 'crypto'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-05-28.basil'
 })
+
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
+// Type definitions
 interface DonorRecord {
   xata_id?: string
   name?: string
@@ -41,138 +40,52 @@ interface DonationRecord {
   date: Date | string
 }
 
+type PaymentMethodType = 'card' | 'bank' | 'other'
 
-export async function POST(req: NextRequest) {
-  console.log('🔵 [WEBHOOK START] Received webhook request')
+export async function POST(req: Request) {
+  console.log('🔵 [WEBHOOK] Received webhook request')
 
-  // Fix 1: Await the headers() function in Next.js App Router
-  let sig: string | null = null
-
-  try {
-    const headersList = await headers() // Add await here
-    sig = headersList.get('stripe-signature')
-  } catch {
-    // Fallback to req.headers if headers() doesn't work
-    sig = req.headers.get('stripe-signature')
-  }
-
-  console.log('ℹ️ Signature header:', { sig })
-
-  if (!sig) {
-    console.log('🔴 Missing Stripe signature header')
+  const signature = (await headers()).get('stripe-signature')
+  if (!signature) {
+    console.error('🔴 Missing Stripe signature header')
     return NextResponse.json(
       { error: 'Missing Stripe signature' },
       { status: 400 }
     )
   }
 
-  console.log('🔵 Reading request body...')
-
-  // Fix 2: Use arrayBuffer() instead of text() to preserve exact bytes
-  let rawBody: Buffer
+  const body = await req.text()
+  let event: Stripe.Event
 
   try {
-    // Read as ArrayBuffer to preserve exact byte representation
-    const arrayBuffer = await req.arrayBuffer()
-    rawBody = Buffer.from(arrayBuffer)
-
-    console.log('🟢 Request body read successfully')
-    console.log('📏 Buffer length:', rawBody.length)
-
-  } catch (error) {
-    console.error('🔴 Error reading request body:', error)
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      endpointSecret
+    )
+    console.log(`🟢 Webhook verified - Type: ${event.type}, ID: ${event.id}`)
+  } catch (err) {
+    console.error('🔴 Webhook verification failed:', err)
     return NextResponse.json(
-      { error: 'Error reading request body' },
+      { error: 'Invalid signature' },
       { status: 400 }
     )
   }
 
-  console.log('🔵 Verifying webhook signature...')
-  console.log('🔑 Using endpoint secret:', endpointSecret ? 'Present' : 'Missing')
-
-  let event: Stripe.Event
-
   try {
-    // Use the raw buffer for signature verification
-    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret)
-    console.log('🟢 Webhook signature verified successfully')
-    console.log(`ℹ️ Event type: ${event.type}`)
-    console.log('ℹ️ Event ID:', event.id)
-
-  } catch (err) {
-    console.error('🔴 Webhook signature verification failed:', err)
-
-    // Additional debugging info
-    console.log('🔍 Debug info:')
-    console.log('  - Signature header:', sig)
-    console.log('  - Body type:', typeof rawBody)
-    console.log('  - Body length:', rawBody.length)
-    console.log('  - Endpoint secret length:', endpointSecret?.length || 0)
-    console.log('  - First 100 chars of body:', rawBody.toString().substring(0, 100))
-
-    // For development: Try with tolerance
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        console.log('🔄 Retrying with tolerance for development...')
-        event = stripe.webhooks.constructEvent(rawBody, sig as string, endpointSecret, 300) // 5 minute tolerance
-        console.log('🟢 Webhook verified with tolerance')
-      } catch (toleranceErr) {
-        console.error('🔴 Even tolerance verification failed:', toleranceErr)
-
-        // Additional debugging for development
-        console.log('🔍 Additional debug info:')
-        console.log('  - Raw signature parts:', sig.split(','))
-        console.log('  - Body as string hash:', crypto.createHash('sha256').update(rawBody).digest('hex'))
-
-        return NextResponse.json(
-          {
-            error: 'Invalid signature',
-            debug: process.env.NODE_ENV === 'development' ? {
-              message: err instanceof Error ? err.message : undefined,
-              signatureHeader: sig,
-              bodyLength: rawBody.length
-            } : undefined
-          },
-          { status: 400 }
-        )
-      }
-    } else {
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 400 }
-      )
-    }
-  }
-
-  console.log(`🔔 Processing event type: ${event.type}`)
-
-  try {
-    switch (event.type as string) {
-      case 'payment_intent.created': // Add this case
-        console.log('ℹ️ Payment intent created, no action needed')
-        return NextResponse.json({ received: true })
+    switch (event.type) {
       case 'payment_intent.succeeded':
         return await handlePaymentIntentSucceeded(event)
-      case 'charge.succeeded':
-        return await handleChargeSucceeded(event)
-      case 'charge.updated':
-        return await handleChargeUpdated(event)
       case 'invoice.payment_succeeded':
         return await handleInvoicePaymentSucceeded(event)
+      case 'invoice.payment_failed':
+        return await handlePaymentFailed(event)
       case 'customer.subscription.created':
         return await handleSubscriptionCreated(event)
       case 'customer.subscription.updated':
         return await handleSubscriptionUpdated(event)
       case 'customer.subscription.deleted':
         return await handleSubscriptionDeleted(event)
-      case 'invoice.payment_failed':
-        return await handlePaymentFailed(event)
-      case 'invoice.payment_action_required':
-        return await handlePaymentActionRequired(event)
-      case 'customer.subscription.past_due':
-        return await handleSubscriptionPastDue(event)
-      case 'customer.subscription.unpaid':
-        return await handleSubscriptionUnpaid(event)
       default:
         console.log(`ℹ️ Unhandled event type: ${event.type}`)
         return NextResponse.json({ received: true })
@@ -186,522 +99,26 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Add these handler functions if they don't exist
-async function handleChargeSucceeded(event: Stripe.Event) {
-  console.log('💳 Processing charge.succeeded')
-  const charge = event.data.object as Stripe.Charge
+// Helper functions
+function getPaymentMethodDetails(charge: Stripe.Charge | null): {
+  type: PaymentMethodType
+  description: string
+} {
+  if (!charge) return { type: 'card', description: 'Card' }
 
-  // You might want to handle this similar to payment_intent.succeeded
-  // or just acknowledge it if you're already handling payment_intent.succeeded
+  const details = charge.payment_method_details
+  if (!details) return { type: 'card', description: 'Card' }
 
-  console.log(`✅ Charge succeeded: ${charge.id} for ${charge.amount}`)
-  return NextResponse.json({ received: true })
-}
-
-async function handleChargeUpdated(event: Stripe.Event) {
-  console.log('🔄 Processing charge.updated')
-  const charge = event.data.object as Stripe.Charge
-
-  // Handle charge updates (like receipt URL updates)
-  console.log(`🔄 Charge updated: ${charge.id}`)
-
-  return NextResponse.json({ received: true })
-}
-
-// Make sure to export the config for body parsing
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
-
-
-// Helper functions for each event type
-async function handlePaymentIntentSucceeded(event: Stripe.Event) {
-  // Start logging
-  console.log('🔵 [PAYMENT_INTENT] Starting payment_intent.succeeded handler');
-  console.log('ℹ️ Raw event type:', event.type);
-  console.log('ℹ️ Event ID:', event.id);
-  console.log('ℹ️ Event livemode:', event.livemode);
-
-  const paymentIntent = event.data.object as Stripe.PaymentIntent;
-  const metadata = paymentIntent.metadata || {};
-
-  console.log('💳 PaymentIntent details:', {
-    id: paymentIntent.id,
-    amount: paymentIntent.amount,
-    currency: paymentIntent.currency,
-    status: paymentIntent.status,
-    created: new Date(paymentIntent.created * 1000).toISOString()
-  });
-  console.log('📌 Metadata:', JSON.stringify(metadata, null, 2));
-
-  // Skip if this is a subscription payment
-  if (metadata.subscriptionId || (paymentIntent as any).invoice) {
-    console.log('⏭️ Skipping subscription payment (handled by invoice webhook)');
-    return NextResponse.json({ received: true });
-  }
-
-  // Retrieve charge details
-  console.log('🔍 Retrieving charge details...');
-  let charge: Stripe.Charge | null = null;
-  if (paymentIntent.latest_charge) {
-    try {
-      charge = await stripe.charges.retrieve(
-        typeof paymentIntent.latest_charge === 'string'
-          ? paymentIntent.latest_charge
-          : paymentIntent.latest_charge.id,
-        { expand: ['payment_intent'] }
-      );
-      console.log('⚡ Charge details:', {
-        id: charge.id,
-        amount: charge.amount,
-        receipt_url: charge.receipt_url ? 'available' : 'not available',
-        payment_method: charge.payment_method_details?.type
-      });
-    } catch (err) {
-      console.error('⚠️ Failed to retrieve charge:', err);
-    }
-  } else {
-    console.log('ℹ️ No charge details available');
-  }
-
-  // Prepare donor data with comprehensive fallbacks
-  const donorData = {
-    name: metadata.donorName || charge?.billing_details?.name || 'Anonymous',
-    email: metadata.donorEmail || charge?.billing_details?.email || '',
-    phone: metadata.donorPhone || charge?.billing_details?.phone || '',
-    amount: paymentIntent.amount / 100,
-    currency: paymentIntent.currency.toUpperCase(),
-    donationType: metadata.donationType || 'General Donation',
-    frequency: metadata.frequency || 'one-time',
-    paymentMethod: charge ? getPaymentMethodType(charge) : 'card',
-    receiptUrl: charge?.receipt_url || '',
-    stripeChargeId: charge?.id ?? undefined,
-    created: new Date(paymentIntent.created * 1000),
-    stripePaymentIntentId: paymentIntent.id,
-    isRecurring: false
-  };
-
-  console.log('📋 Complete donor data:', JSON.stringify({
-    ...donorData,
-    phone: donorData.phone ? '****' + donorData.phone.slice(-4) : 'not provided'
-  }, null, 2));
-
-  // Validate required fields
-  if (!donorData.email) {
-    console.error('❌ Missing donor email in payment intent');
-    return NextResponse.json(
-      { error: 'Missing donor email' },
-      { status: 400 }
-    );
-  }
-
-  if (donorData.amount <= 0) {
-    console.error('❌ Invalid amount:', donorData.amount);
-    return NextResponse.json(
-      { error: 'Invalid donation amount' },
-      { status: 400 }
-    );
-  }
-
-  // Save to database
-  console.log('💾 Attempting to save donation record...');
-  try {
-    const { donor, donation } = await saveDonationRecord(donorData);
-    console.log('✅ Database records saved:', {
-      donorId: donor?.xata_id,
-      donationId: donation?.xata_id,
-      amount: donation?.amount,
-      type: donation?.donationType
-    });
-
-    // Send confirmation email
-    if (donorData.email) {
-      console.log('📧 Preparing to send confirmation email...');
-      try {
-        await sendDonationEmail({
-          to: donorData.email,
-          donorName: donorData.name,
-          amount: donorData.amount,
-          donationType: donorData.donationType,
-          receiptUrl: donorData.receiptUrl,
-          createdDate: donorData.created,
-          paymentMethod: donorData.paymentMethod,
-          currency: donorData.currency,
-          frequency: donorData.frequency,
-          isRecurring: false
-        });
-        console.log('✉️ Email sent successfully');
-      } catch (emailError) {
-        console.error('⚠️ Failed to send email:', emailError);
-        // Consider queueing for retry
-      }
-    }
-
-    console.log(`✅ Successfully processed payment ${paymentIntent.id}`);
-    return NextResponse.json({
-      received: true,
-      processed: true,
-      paymentIntentId: paymentIntent.id,
-      chargeId: charge?.id,
-      amount: donorData.amount,
-      currency: donorData.currency
-    });
-  } catch (dbError) {
-    console.error('❌ Database save failed:', dbError);
-    return NextResponse.json(
-      { error: 'Failed to save donation record' },
-      { status: 500 }
-    );
-  }
-}
-
-async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
-  console.log('🔵 [INVOICE] Starting invoice payment succeeded handler');
-  console.log('ℹ️ Raw event type:', event.type);
-  console.log('ℹ️ Event ID:', event.id);
-
-  const invoice = event.data.object as Stripe.Invoice;
-  console.log('📄 Invoice details:', {
-    id: invoice.id,
-    amount_paid: invoice.amount_paid,
-    currency: invoice.currency,
-    customer_email: invoice.customer_email,
-    hosted_invoice_url: invoice.hosted_invoice_url
-  });
-
-  const subscriptionId = (invoice as any).subscription as string | null;
-  console.log('🔍 Subscription ID from invoice:', subscriptionId);
-
-  if (!subscriptionId) {
-    console.log('⏭️ Skipping non-subscription invoice');
-    return NextResponse.json({ received: true });
-  }
-
-  console.log('🔵 Retrieving subscription and customer details...');
-  try {
-    const [subscription, customer] = await Promise.all([
-      stripe.subscriptions.retrieve(subscriptionId, {
-        expand: ['items.data.price.product']
-      }),
-      stripe.customers.retrieve(invoice.customer as string)
-    ]);
-
-    console.log('✅ Retrieved subscription:', {
-      id: subscription.id,
-      status: subscription.status,
-      metadata: subscription.metadata
-    });
-
-    // Process customer details
-    let customerEmail = '';
-    let customerName = 'Recurring Donor';
-    let customerPhone: string | undefined;
-
-    if (customer && typeof customer === 'object' && !('deleted' in customer)) {
-      customerEmail = invoice.customer_email || customer.email || '';
-      customerName = customer.name || subscription.metadata?.donorName || 'Recurring Donor';
-      customerPhone = customer.phone || subscription.metadata?.donorPhone;
-
-      console.log('👤 Customer details:', {
-        email: customerEmail,
-        name: customerName,
-        phone: customerPhone ? '****' + customerPhone.slice(-4) : 'not provided'
-      });
-    } else if (invoice.customer_email) {
-      customerEmail = invoice.customer_email;
-      console.log('👤 Using invoice customer email:', customerEmail);
-    } else {
-      console.error('❌ Missing customer email on invoice');
-      return NextResponse.json(
-        { error: 'Missing customer email' },
-        { status: 400 }
-      );
-    }
-
-    // Determine payment method
-    console.log('💳 Determining payment method...');
-    let paymentMethod = 'card';
-    const paymentIntentId = (invoice as any).payment_intent as string | undefined;
-
-    if (paymentIntentId) {
-      try {
-        console.log('🔍 Retrieving payment intent:', paymentIntentId);
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-          expand: ['latest_charge']
-        });
-
-        const charge = paymentIntent.latest_charge as Stripe.Charge | null;
-        paymentMethod = getPaymentMethodType(charge);
-        console.log('✅ Payment method determined:', paymentMethod);
-      } catch (err) {
-        console.error('⚠️ Failed to retrieve payment method info:', err);
-      }
-    }
-
-    // Determine frequency
-    console.log('🔄 Determining donation frequency...');
-    let frequency = subscription.metadata?.frequency;
-    if (!frequency && subscription.items.data[0]?.price?.recurring?.interval) {
-      frequency = subscription.items.data[0].price.recurring.interval + 'ly';
-    }
-    frequency = frequency || 'monthly';
-    console.log('✅ Frequency:', frequency);
-
-    // Prepare donation data
-    const donationData = {
-      email: customerEmail,
-      name: customerName,
-      phone: customerPhone,
-      amount: invoice.amount_paid / 100,
-      currency: invoice.currency.toUpperCase(),
-      donationType: subscription.metadata?.donationType || 'Recurring Donation',
-      frequency,
-      paymentMethod,
-      isRecurring: true,
-      stripePaymentIntentId: paymentIntentId,
-      stripeSubscriptionId: subscription.id,
-      stripeChargeId: typeof (invoice as any).charge === 'string' ? (invoice as any).charge : null,
-      receiptUrl: invoice.hosted_invoice_url || '',
-      created: new Date(invoice.created * 1000)
-    };
-
-    console.log('📋 Complete donation data:', JSON.stringify({
-      ...donationData,
-      phone: donationData.phone ? '****' + donationData.phone.slice(-4) : null
-    }, null, 2));
-
-    // Save to database
-    console.log('💾 Saving to database...');
-    try {
-      const { donor, donation } = await saveDonationRecord(donationData);
-      console.log('✅ Database records saved:', {
-        donorId: donor?.xata_id,
-        donationId: donation?.xata_id
-      });
-
-      // Send confirmation email
-      if (donationData.email) {
-        console.log('📧 Sending confirmation email...');
-        try {
-          await sendDonationEmail({
-            to: donationData.email,
-            donorName: donationData.name,
-            amount: donationData.amount,
-            donationType: donationData.donationType,
-            receiptUrl: donationData.receiptUrl,
-            createdDate: donationData.created,
-            paymentMethod: donationData.paymentMethod,
-            currency: donationData.currency,
-            frequency: donationData.frequency,
-            isRecurring: true,
-            unsubscribeLink: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage?customer_id=${invoice.customer}`
-          });
-          console.log('✉️ Email sent successfully');
-        } catch (emailError) {
-          console.error('❌ Failed to send email:', emailError);
-        }
-      }
-
-      console.log(`🏁 Successfully processed recurring payment from invoice ${invoice.id}`);
-      return NextResponse.json({
-        received: true,
-        processed: true,
-        invoiceId: invoice.id,
-        amount: donationData.amount,
-        currency: donationData.currency
-      });
-    } catch (dbError) {
-      console.error('❌ Database save failed:', dbError);
-      return NextResponse.json(
-        { error: 'Failed to save donation record' },
-        { status: 500 }
-      );
-    }
-  } catch (error) {
-    console.error('🔥 Error processing invoice:', error);
-    return NextResponse.json(
-      { error: 'Failed to process invoice' },
-      { status: 500 }
-    );
-  }
-}
-
-async function handleSubscriptionCreated(event: Stripe.Event) {
-  const subscription = event.data.object as Stripe.Subscription
-  console.log(`🆕 Subscription created: ${subscription.id}, status: ${subscription.status}`)
-
-  // Log subscription creation for analytics/tracking
-  try {
-    const customer = await stripe.customers.retrieve(subscription.customer as string)
-    const customerEmail = customer && typeof customer === 'object' && !('deleted' in customer)
-      ? customer.email
-      : 'unknown'
-
-    console.log(`📊 New subscription: ${subscription.id} for ${customerEmail}`)
-
-    // You could add analytics tracking here
-    // await analytics.track('Subscription Created', { ... })
-  } catch (error) {
-    console.error('Failed to log subscription creation:', error)
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-async function handleSubscriptionUpdated(event: Stripe.Event) {
-  const subscription = event.data.object as Stripe.Subscription
-  console.log(`🔄 Subscription updated: ${subscription.id}, status: ${subscription.status}`)
-
-  // Handle status changes
-  if (subscription.status === 'active') {
-    console.log(`✅ Subscription ${subscription.id} is now active`)
-  } else if (subscription.status === 'canceled') {
-    console.log(`❌ Subscription ${subscription.id} was canceled`)
-    // Could send cancellation email here
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-async function handleSubscriptionDeleted(event: Stripe.Event) {
-  const subscription = event.data.object as Stripe.Subscription
-  console.log(`🗑️ Subscription deleted: ${subscription.id}`)
-
-  try {
-    const customer = await stripe.customers.retrieve(subscription.customer as string)
-    const customerEmail = customer && typeof customer === 'object' && !('deleted' in customer)
-      ? customer.email
-      : null
-
-    if (customerEmail) {
-      // Could send cancellation confirmation email
-      console.log(`📧 Subscription canceled for ${customerEmail}`)
-    }
-  } catch (error) {
-    console.error('Failed to process subscription deletion:', error)
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-async function handlePaymentFailed(event: Stripe.Event) {
-  const invoice = event.data.object as Stripe.Invoice
-  console.log(`⚠️ Invoice payment failed: ${invoice.id}`)
-
-  const subscriptionId = (invoice as any).subscription as string | null
-
-  // Get customer email and details
-  let customerEmail: string | null = null
-  let customerName = 'Donor'
-
-  try {
-    const customer = await stripe.customers.retrieve(invoice.customer as string)
-    if (customer && typeof customer === 'object' && !('deleted' in customer)) {
-      customerEmail = customer.email
-      customerName = customer.name || 'Donor'
-    }
-  } catch (error) {
-    console.error('Failed to retrieve customer for failed payment:', error)
-  }
-
-  if (customerEmail && subscriptionId) {
-    try {
-      // Get retry information
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-      const nextRetryDate = invoice.next_payment_attempt
-        ? new Date(invoice.next_payment_attempt * 1000)
-        : null
-
-      await sendPaymentFailedEmail({
-        to: customerEmail,
-        donorName: customerName,
-        invoiceId: invoice.id ?? '',
-        amount: invoice.amount_due / 100,
-        currency: invoice.currency.toUpperCase(),
-        hostedInvoiceUrl: invoice.hosted_invoice_url || '',
-        billingReason: invoice.billing_reason || 'subscription_cycle',
-        nextRetryDate: nextRetryDate ?? new Date(0),
-        updatePaymentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/update-payment?customer_id=${invoice.customer}`
-      })
-
-      console.log(`📧 Payment failure notification sent to ${customerEmail}`)
-    } catch (err) {
-      console.error('Failed to send payment failure email:', err)
+  if (details.card) {
+    return {
+      type: 'card',
+      description: `${details.card.brand} •••• ${details.card.last4}`
     }
   }
 
-  return NextResponse.json({ received: true })
+  return { type: 'other', description: details.type || 'Unknown' }
 }
 
-async function handlePaymentActionRequired(event: Stripe.Event) {
-  const invoice = event.data.object as Stripe.Invoice
-  console.log(`🔐 Payment action required for invoice: ${invoice.id}`)
-
-  // This could be used to notify users about 3D Secure or other authentication requirements
-  // For now, just log it
-  return NextResponse.json({ received: true })
-}
-
-async function handleSubscriptionPastDue(event: Stripe.Event) {
-  const subscription = event.data.object as Stripe.Subscription
-  console.log(`📅 Subscription past due: ${subscription.id}`)
-
-  try {
-    const customer = await stripe.customers.retrieve(subscription.customer as string)
-    const customerEmail = customer && typeof customer === 'object' && !('deleted' in customer)
-      ? customer.email
-      : null
-
-    if (customerEmail) {
-      // Send past due notification
-      console.log(`⚠️ Subscription ${subscription.id} is past due for ${customerEmail}`)
-      // Could send specific past due email here
-    }
-  } catch (error) {
-    console.error('Failed to handle past due subscription:', error)
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-async function handleSubscriptionUnpaid(event: Stripe.Event) {
-  const subscription = event.data.object as Stripe.Subscription
-  console.log(`💸 Subscription unpaid (final failure): ${subscription.id}`)
-
-  try {
-    const customer = await stripe.customers.retrieve(subscription.customer as string)
-    const customerEmail = customer && typeof customer === 'object' && !('deleted' in customer)
-      ? customer.email
-      : null
-
-    if (customerEmail) {
-      // Send final failure notification
-      console.log(`❌ Subscription ${subscription.id} failed permanently for ${customerEmail}`)
-      // Could send subscription canceled due to payment failure email
-    }
-  } catch (error) {
-    console.error('Failed to handle unpaid subscription:', error)
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-// Helper function to extract payment method type from charge
-function getPaymentMethodType(charge: Stripe.Charge | null): string {
-  if (!charge) return 'card'
-
-  if (charge.payment_method_details?.card) {
-    const brand = charge.payment_method_details.card.brand
-    const last4 = charge.payment_method_details.card.last4
-    return `${brand} •••• ${last4}`
-  }
-
-  return charge.payment_method_details?.type || 'card'
-}
-
-// Enhanced function to save donor and donation records
 async function saveDonationRecord(data: {
   email: string
   name: string
@@ -718,86 +135,297 @@ async function saveDonationRecord(data: {
   receiptUrl?: string
   created: Date
 }): Promise<{ donor: DonorRecord; donation: DonationRecord }> {
-  try {
-    // Convert dates to ISO strings for Xata
-    const lastDonationDate = data.created.toISOString()
-    const donationDate = data.created.toISOString()
+  console.log('💾 Saving donation record:', {
+    email: data.email,
+    amount: data.amount,
+    type: data.donationType,
+    isRecurring: data.isRecurring
+  })
 
-    // 1. Upsert donor record
-    let donor = await xata.db.donors
-      .filter({ email: data.email })
-      .getFirst()
+  const lastDonationDate = data.created.toISOString()
+  const donationDate = data.created.toISOString()
 
-    const donorUpdate = {
-      email: data.email,
-      name: data.name,
-      phone: data.phone,
-      totalDonations: (donor?.totalDonations || 0) + data.amount,
-      lastDonationDate,
-      donationFrequency: data.frequency
-    }
+  // Upsert donor
+  let donor = await xata.db.donors
+    .filter({ email: data.email })
+    .getFirst()
 
-    if (donor) {
-      donor = await xata.db.donors.update(donor.xata_id, donorUpdate)
-    } else {
-      donor = await xata.db.donors.create({
-        ...donorUpdate,
-        email: data.email
-      })
-    }
-
-    if (!donor) {
-      throw new Error('Failed to create/update donor record')
-    }
-
-    // 2. Create donation record
-    const donationData = {
-      amount: data.amount,
-      currency: data.currency,
-      donationType: data.donationType,
-      frequency: data.isRecurring ? (data.frequency || 'monthly') : 'one-time',
-      donorName: data.name,
-      donorEmail: data.email,
-      donorPhone: data.phone,
-      paymentMethod: data.paymentMethod,
-      paymentStatus: 'succeeded',
-      isRecurring: data.isRecurring,
-      stripePaymentIntentId: data.stripePaymentIntentId,
-      stripeChargeId: data.stripeChargeId,
-      stripeSubscriptionId: data.isRecurring ? (data.stripeSubscriptionId || null) : null, receiptUrl: data.receiptUrl,
-      date: data.created.toISOString()
-    }
-
-    const donation = await xata.db.donations.create(donationData)
-    if (!donation) {
-      throw new Error('Failed to create donation record')
-    }
-
-    console.log('✅ Successfully saved records to Xata:',
-      { donorId: donor.xata_id, donationId: donation.xata_id })
-
-    return {
-      donor: {
-        ...donor,
-        phone: donor.phone ?? undefined,
-        lastDonationDate: donor.lastDonationDate instanceof Date
-          ? donor.lastDonationDate.toISOString()
-          : donor.lastDonationDate
-      },
-      donation: {
-        ...donation,
-        donorPhone: donation.donorPhone ?? undefined,
-        stripeChargeId: donation.stripeChargeId ?? undefined,
-        stripePaymentIntentId: donation.stripePaymentIntentId ?? undefined,
-        stripeSubscriptionId: donation.stripeSubscriptionId ?? undefined,
-        frequency: donation.frequency === null ? undefined : donation.frequency,
-        date: (donation as any).date instanceof Date
-          ? (donation as any).date.toISOString()
-          : (donation as any).date
-      }
-    }
-  } catch (error) {
-    console.error('❌ Database save error:', error)
-    throw error
+  const donorUpdate = {
+    email: data.email,
+    name: data.name,
+    phone: data.phone,
+    totalDonations: (donor?.totalDonations || 0) + data.amount,
+    lastDonationDate,
+    donationFrequency: data.frequency || (data.isRecurring ? 'monthly' : 'one-time')
   }
+
+  donor = donor
+    ? await xata.db.donors.update(donor.xata_id, donorUpdate)
+    : await xata.db.donors.create(donorUpdate)
+
+  if (!donor) throw new Error('Failed to save donor record')
+
+  // Create donation
+  const donation = await xata.db.donations.create({
+    amount: data.amount,
+    currency: data.currency,
+    donationType: data.donationType,
+    frequency: data.isRecurring ? (data.frequency || 'monthly') : 'one-time',
+    donorName: data.name,
+    donorEmail: data.email,
+    donorPhone: data.phone,
+    paymentMethod: data.paymentMethod,
+    paymentStatus: 'succeeded',
+    isRecurring: data.isRecurring,
+    stripePaymentIntentId: data.stripePaymentIntentId,
+    stripeChargeId: data.stripeChargeId,
+    stripeSubscriptionId: data.isRecurring ? data.stripeSubscriptionId : undefined,
+    receiptUrl: data.receiptUrl,
+  })
+
+  if (!donation) throw new Error('Failed to save donation record')
+
+  return { donor, donation }
+}
+
+// Event handlers
+async function handlePaymentIntentSucceeded(event: Stripe.Event) {
+  const paymentIntent = event.data.object as Stripe.PaymentIntent
+  console.log('💳 PaymentIntent succeeded:', paymentIntent.id)
+
+  // Skip subscription payments (handled by invoice webhook)
+  if (paymentIntent.metadata?.subscriptionId || (paymentIntent as any).invoice) {
+    console.log('⏭️ Skipping subscription payment')
+    return NextResponse.json({ received: true })
+  }
+
+  // Get charge details
+  let charge: Stripe.Charge | null = null
+  if (paymentIntent.latest_charge) {
+    charge = await stripe.charges.retrieve(
+      typeof paymentIntent.latest_charge === 'string'
+        ? paymentIntent.latest_charge
+        : paymentIntent.latest_charge.id
+    )
+  }
+
+  const paymentMethod = getPaymentMethodDetails(charge)
+  const metadata = paymentIntent.metadata || {}
+
+  // Prepare donor data
+  const donorData = {
+    name: metadata.donorName || charge?.billing_details?.name || 'Anonymous',
+    email: metadata.donorEmail || charge?.billing_details?.email || '',
+    phone: metadata.donorPhone || charge?.billing_details?.phone || '',
+    amount: paymentIntent.amount / 100,
+    currency: paymentIntent.currency.toUpperCase(),
+    donationType: metadata.donationType || 'General Donation',
+    frequency: metadata.frequency || 'one-time',
+    paymentMethod: paymentMethod.description,
+    isRecurring: false,
+    stripePaymentIntentId: paymentIntent.id,
+    stripeChargeId: charge?.id,
+    receiptUrl: charge?.receipt_url || '',
+    created: new Date(paymentIntent.created * 1000)
+  }
+
+  // Validate required fields
+  if (!donorData.email) {
+    console.error('❌ Missing donor email')
+    return NextResponse.json(
+      { error: 'Missing donor email' },
+      { status: 400 }
+    )
+  }
+
+  // Save to database
+  try {
+    const { donor, donation } = await saveDonationRecord(donorData)
+    console.log('✅ Saved donation:', donation.xata_id)
+
+    // Send confirmation email
+    if (donorData.email) {
+      await sendDonationEmail({
+        to: donorData.email,
+        donorName: donorData.name,
+        amount: donorData.amount,
+        donationType: donorData.donationType,
+        receiptUrl: donorData.receiptUrl,
+        createdDate: donorData.created,
+        paymentMethod: donorData.paymentMethod,
+        currency: donorData.currency,
+        frequency: donorData.frequency,
+        isRecurring: false
+      })
+      console.log('✉️ Sent confirmation email')
+    }
+
+    return NextResponse.json({ received: true })
+  } catch (error) {
+    console.error('❌ Failed to save donation:', error)
+    return NextResponse.json(
+      { error: 'Failed to save donation' },
+      { status: 500 }
+    )
+  }
+}
+
+async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
+  const invoice = event.data.object as Stripe.Invoice
+  console.log('📄 Invoice payment succeeded:', invoice.id)
+
+  const subscriptionId = invoice.subscription as string | undefined
+  if (!subscriptionId) {
+    console.log('⏭️ Skipping non-subscription invoice')
+    return NextResponse.json({ received: true })
+  }
+
+  try {
+    // Get subscription and customer details
+    const [subscription, customer] = await Promise.all([
+      stripe.subscriptions.retrieve(subscriptionId),
+      stripe.customers.retrieve(invoice.customer as string)
+    ])
+
+    // Prepare customer data
+    const customerEmail = invoice.customer_email ||
+      (customer && typeof customer === 'object' && !('deleted' in customer)
+        ? customer.email
+        : '')
+    const customerName = (customer && typeof customer === 'object' && !('deleted' in customer)
+      ? customer.name
+      : '') || subscription.metadata?.donorName || 'Recurring Donor'
+
+    if (!customerEmail) {
+      console.error('❌ Missing customer email')
+      return NextResponse.json(
+        { error: 'Missing customer email' },
+        { status: 400 }
+      )
+    }
+
+    // Get payment method details
+    const paymentIntentId = invoice.payment_intent as string | undefined
+    let paymentMethod = 'card'
+    if (paymentIntentId) {
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+      const charge = paymentIntent.latest_charge as Stripe.Charge | null
+      paymentMethod = getPaymentMethodDetails(charge).description
+    }
+
+    // Determine frequency
+    let frequency = subscription.metadata?.frequency ||
+      (subscription.items.data[0]?.price?.recurring?.interval + 'ly') ||
+      'monthly'
+
+    // Prepare donation data
+    const donationData = {
+      email: customerEmail,
+      name: customerName,
+      phone: (customer && typeof customer === 'object' && !('deleted' in customer))
+        ? customer.phone
+        : undefined,
+      amount: invoice.amount_paid / 100,
+      currency: invoice.currency.toUpperCase(),
+      donationType: subscription.metadata?.donationType || 'Recurring Donation',
+      frequency,
+      paymentMethod,
+      isRecurring: true,
+      stripePaymentIntentId: paymentIntentId,
+      stripeSubscriptionId: subscription.id,
+      stripeChargeId: invoice.charge as string | undefined,
+      receiptUrl: invoice.hosted_invoice_url || '',
+      created: new Date(invoice.created * 1000)
+    }
+
+    // Save to database
+    const { donor, donation } = await saveDonationRecord(donationData)
+    console.log('✅ Saved recurring donation:', donation.xata_id)
+
+    // Send confirmation email
+    await sendDonationEmail({
+      to: customerEmail,
+      donorName: customerName,
+      amount: donationData.amount,
+      donationType: donationData.donationType,
+      receiptUrl: donationData.receiptUrl,
+      createdDate: donationData.created,
+      paymentMethod: donationData.paymentMethod,
+      currency: donationData.currency,
+      frequency: donationData.frequency,
+      isRecurring: true,
+      unsubscribeLink: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage?customer_id=${invoice.customer}`
+    })
+    console.log('✉️ Sent recurring donation email')
+
+    return NextResponse.json({ received: true })
+  } catch (error) {
+    console.error('❌ Failed to process invoice:', error)
+    return NextResponse.json(
+      { error: 'Failed to process invoice' },
+      { status: 500 }
+    )
+  }
+}
+
+async function handlePaymentFailed(event: Stripe.Event) {
+  const invoice = event.data.object as Stripe.Invoice
+  console.log('⚠️ Invoice payment failed:', invoice.id)
+
+  try {
+    const customer = await stripe.customers.retrieve(invoice.customer as string)
+    if (!customer || typeof customer !== 'object' || 'deleted' in customer) {
+      console.log('⏭️ Customer not found')
+      return NextResponse.json({ received: true })
+    }
+
+    const customerEmail = customer.email
+    if (!customerEmail) {
+      console.log('⏭️ No customer email')
+      return NextResponse.json({ received: true })
+    }
+
+    await sendPaymentFailedEmail({
+      to: customerEmail,
+      donorName: customer.name || 'Donor',
+      invoiceId: invoice.id,
+      amount: invoice.amount_due / 100,
+      currency: invoice.currency.toUpperCase(),
+      hostedInvoiceUrl: invoice.hosted_invoice_url || '',
+      nextRetryDate: invoice.next_payment_attempt
+        ? new Date(invoice.next_payment_attempt * 1000)
+        : undefined,
+      updatePaymentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/update-payment?customer_id=${invoice.customer}`
+    })
+    console.log('✉️ Sent payment failed email')
+
+    return NextResponse.json({ received: true })
+  } catch (error) {
+    console.error('❌ Failed to handle payment failure:', error)
+    return NextResponse.json({ received: true })
+  }
+}
+
+async function handleSubscriptionCreated(event: Stripe.Event) {
+  const subscription = event.data.object as Stripe.Subscription
+  console.log('🆕 Subscription created:', subscription.id)
+  return NextResponse.json({ received: true })
+}
+
+async function handleSubscriptionUpdated(event: Stripe.Event) {
+  const subscription = event.data.object as Stripe.Subscription
+  console.log('🔄 Subscription updated:', subscription.id)
+  return NextResponse.json({ received: true })
+}
+
+async function handleSubscriptionDeleted(event: Stripe.Event) {
+  const subscription = event.data.object as Stripe.Subscription
+  console.log('🗑️ Subscription deleted:', subscription.id)
+  return NextResponse.json({ received: true })
+}
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
 }

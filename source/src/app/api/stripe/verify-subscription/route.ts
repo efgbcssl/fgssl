@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-05-28.basil'
 })
@@ -124,18 +125,21 @@ async function formatSubscriptionResponse(subscription: Stripe.Subscription) {
             status: 'succeeded',
             active: true,
             donation: {
-                donorName: (customer as Stripe.Customer)?.name || subscription.metadata?.donorName || 'Recurring Donor',
-                donorEmail: (customer as Stripe.Customer)?.email || subscription.metadata?.donorEmail || '',
-                donorPhone: (customer as Stripe.Customer)?.phone || subscription.metadata?.donorPhone || '',
+                donorName: subscription.metadata?.donorName || (customer as Stripe.Customer)?.name || 'Recurring Donor',
+                donorEmail: subscription.metadata?.donorEmail || (customer as Stripe.Customer)?.email || '',
+                donorPhone: subscription.metadata?.donorPhone || (customer as Stripe.Customer)?.phone || '',
                 amount: amount,
                 currency: currency,
                 donationType: subscription.metadata?.donationType || 'Recurring Donation',
                 paymentMethod: paymentMethod,
                 receiptUrl: invoice?.hosted_invoice_url || '',
                 created: subscription.created,
-                frequency: frequency,
+                frequency: subscription.metadata?.frequency || price.recurring?.interval || 'monthly',
                 isRecurring: true,
-                subscriptionId: subscription.id
+                subscriptionId: subscription.id,
+                // Add these to ensure frontend gets the data:
+                originalAmount: subscription.metadata?.amount ?
+                    Number(subscription.metadata.amount) / 100 : amount
             }
         }
     } catch (error) {

@@ -141,7 +141,9 @@ export async function POST(req: Request) {
         donorEmail: email,
         donorPhone: phone || '',
         donationType,
-        frequency
+        frequency,
+        amount: amount.toString(),
+        originalAmount: amount.toString()
       }
     })
 
@@ -204,7 +206,15 @@ export async function POST(req: Request) {
       customerId: customer.id,
       status: subscription.status,
       paymentStatus,
-      message: 'Subscription created but payment status unclear'
+      message: 'Subscription created but payment status unclear',
+      donation: {
+        donorName: name,
+        donorEmail: email,
+        amount: amount / 100,
+        donationType,
+        frequency,
+        isRecurring: true
+      }
     })
 
   } catch (err) {

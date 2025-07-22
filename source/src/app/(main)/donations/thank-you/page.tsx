@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 
-// Enhanced type definitions with all required fields
 interface ReceiptData {
     donorName: string
     donorEmail: string
@@ -21,6 +20,7 @@ interface ReceiptData {
     created: number
     frequency?: string
     isRecurring: boolean
+    subscriptionId?: string
 }
 
 export default function ThankYouPage() {
@@ -39,50 +39,81 @@ export default function ThankYouPage() {
             const subscriptionId = searchParams.get("subscription_id")
             const successParam = searchParams.get("success")
 
-            // Default fallback receipt data
-            const defaultReceipt: ReceiptData = {
-                donorName: "Generous Donor",
-                donorEmail: "",
-                amount: 0,
-                currency: "USD",
-                donationType: "Donation",
-                paymentMethod: "card",
-                created: Date.now() / 1000,
-                isRecurring: false
+            // First check for direct data in URL parameters (for immediate display)
+            const urlName = searchParams.get("name")
+            const urlEmail = searchParams.get("email")
+            const urlAmount = searchParams.get("amount")
+            const urlType = searchParams.get("donationType")
+            const urlFrequency = searchParams.get("frequency")
+
+            if (urlName && urlAmount) {
+                setPaymentResult({
+                    status: "succeeded",
+                    receipt: {
+                        donorName: decodeURIComponent(urlName),
+                        donorEmail: urlEmail ? decodeURIComponent(urlEmail) : "",
+                        amount: Number(urlAmount),
+                        currency: "USD",
+                        donationType: urlType ? decodeURIComponent(urlType) : "Donation",
+                        paymentMethod: "card",
+                        created: Date.now() / 1000,
+                        frequency: urlFrequency || "one-time",
+                        isRecurring: !!subscriptionId,
+                        ...(subscriptionId && { subscriptionId })
+                    }
+                })
+                setLoading(false)
+
+                // Still verify in background but don't wait for it
+                if (subscriptionId) {
+                    verifyWithServer(subscriptionId)
+                }
+                return
             }
 
+            // Verify payment if we have IDs
             try {
-                // If success param exists but no IDs, use default receipt
-                if (successParam === "true" && !paymentIntentId && !subscriptionId) {
-                    setPaymentResult({
-                        status: "succeeded",
-                        receipt: defaultReceipt
-                    })
-                    setLoading(false)
-                    return
-                }
-
-                // Verify payment if we have IDs
-                if (paymentIntentId || subscriptionId) {
-                    const endpoint = subscriptionId
-                        ? `/api/stripe/verify-subscription?subscription_id=${subscriptionId}`
-                        : `/api/stripe/verify-payment?payment_intent=${paymentIntentId}`
-
-                    const res = await fetch(endpoint)
+                if (paymentIntentId) {
+                    const res = await fetch(`/api/stripe/verify-payment?payment_intent=${paymentIntentId}`)
                     const data = await res.json()
 
-                    if (!res.ok) throw new Error(data.error || "Verification failed")
+                    if (!res.ok) throw new Error(data.error || "Payment verification failed")
 
                     setPaymentResult({
                         status: "succeeded",
                         receipt: {
-                            ...defaultReceipt,
-                            ...data.donation,
-                            donorName: data.donation?.donorName || defaultReceipt.donorName,
-                            donorEmail: data.donation?.donorEmail || defaultReceipt.donorEmail
+                            donorName: data.donation?.donorName || "Generous Donor",
+                            donorEmail: data.donation?.donorEmail || "",
+                            amount: data.donation?.amount || 0,
+                            currency: data.donation?.currency || "USD",
+                            donationType: data.donation?.donationType || "Donation",
+                            paymentMethod: data.donation?.paymentMethod || "card",
+                            receiptUrl: data.donation?.receiptUrl,
+                            created: data.donation?.created || Date.now() / 1000,
+                            isRecurring: false
                         }
                     })
-                } else {
+                }
+                else if (subscriptionId) {
+                    await verifyWithServer(subscriptionId)
+                }
+                else if (successParam === "true") {
+                    // Fallback for successful payments without IDs
+                    setPaymentResult({
+                        status: "succeeded",
+                        receipt: {
+                            donorName: "Generous Donor",
+                            donorEmail: "",
+                            amount: 0,
+                            currency: "USD",
+                            donationType: "Donation",
+                            paymentMethod: "card",
+                            created: Date.now() / 1000,
+                            isRecurring: false
+                        }
+                    })
+                }
+                else {
                     throw new Error("Missing verification parameters")
                 }
             } catch (error) {
@@ -93,6 +124,42 @@ export default function ThankYouPage() {
                 })
             } finally {
                 setLoading(false)
+            }
+        }
+
+        const verifyWithServer = async (subscriptionId: string) => {
+            try {
+                const res = await fetch(`/api/stripe/verify-subscription?subscription_id=${subscriptionId}`)
+                const data = await res.json()
+
+                if (!res.ok) throw new Error(data.error || "Subscription verification failed")
+
+                setPaymentResult({
+                    status: "succeeded",
+                    receipt: {
+                        donorName: data.subscription?.donation?.donorName || "Recurring Donor",
+                        donorEmail: data.subscription?.donation?.donorEmail || "",
+                        donorPhone: data.subscription?.donation?.donorPhone || "",
+                        amount: data.subscription?.donation?.amount || 0,
+                        currency: data.subscription?.donation?.currency || "USD",
+                        donationType: data.subscription?.donation?.donationType || "Recurring Donation",
+                        paymentMethod: data.subscription?.donation?.paymentMethod || "card",
+                        receiptUrl: data.subscription?.donation?.receiptUrl,
+                        created: data.subscription?.donation?.created || Date.now() / 1000,
+                        frequency: data.subscription?.donation?.frequency || "monthly",
+                        isRecurring: true,
+                        subscriptionId
+                    }
+                })
+            } catch (error) {
+                console.error("Subscription verification error:", error)
+                // Don't override existing success state if URL params were good
+                if (!paymentResult) {
+                    setPaymentResult({
+                        status: "failed",
+                        error: "Subscription verification failed"
+                    })
+                }
             }
         }
 
@@ -132,7 +199,6 @@ export default function ThankYouPage() {
         )
     }
 
-    // Safe access to receipt with fallbacks
     const receipt = paymentResult.receipt || {
         donorName: "Generous Donor",
         donorEmail: "",
@@ -144,7 +210,7 @@ export default function ThankYouPage() {
         isRecurring: false
     }
 
-    const formattedDate = new Date((receipt.created || Date.now() / 1000) * 1000).toLocaleDateString('en-US', {
+    const formattedDate = new Date(receipt.created * 1000).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -165,17 +231,34 @@ export default function ThankYouPage() {
                     <div className="space-y-3">
                         <div className="flex justify-between">
                             <span className="text-gray-600">Amount:</span>
-                            <span>{receipt.currency} {(receipt.amount || 0).toFixed(2)}</span>
+                            <span>{receipt.currency} {receipt.amount.toFixed(2)}</span>
                         </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Type:</span>
+                            <span>{receipt.donationType}</span>
+                        </div>
+                        {receipt.isRecurring && (
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Frequency:</span>
+                                <span className="capitalize">
+                                    {receipt.frequency === "one-time" ? "One-Time" : receipt.frequency}
+                                </span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span className="text-gray-600">Date:</span>
                             <span>{formattedDate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Payment Method:</span>
+                            <span>{receipt.paymentMethod}</span>
                         </div>
                         {receipt.receiptUrl && (
                             <div className="pt-4">
                                 <a
                                     href={receipt.receiptUrl}
                                     target="_blank"
+                                    rel="noopener noreferrer"
                                     className="text-blue-600 hover:underline"
                                 >
                                     Download Receipt
@@ -184,6 +267,15 @@ export default function ThankYouPage() {
                         )}
                     </div>
                 </div>
+
+                {receipt.isRecurring && (
+                    <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+                        <p className="font-medium">Your recurring donation is active!</p>
+                        <p className="mt-1">
+                            You'll receive email confirmation and receipts for each payment.
+                        </p>
+                    </div>
+                )}
 
                 <div className="flex gap-3">
                     <Button asChild className="flex-1">
@@ -196,6 +288,16 @@ export default function ThankYouPage() {
                             <Heart className="mr-2 h-4 w-4" /> Donate Again
                         </Link>
                     </Button>
+                </div>
+
+                <div className="text-center text-sm text-gray-500 mt-4">
+                    <p>Questions about your donation?</p>
+                    <Link
+                        href="mailto:support@example.com"
+                        className="inline-flex items-center text-blue-600 hover:underline mt-1"
+                    >
+                        <Mail className="mr-1 h-4 w-4" /> Contact us
+                    </Link>
                 </div>
             </div>
         </div>
