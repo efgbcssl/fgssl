@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
@@ -15,7 +17,7 @@ interface DonorRecord {
   xata_id?: string
   name?: string
   email: string
-  phone?: string
+  phone?: string | null
   totalDonations?: number
   lastDonationDate?: Date | string
   donationFrequency?: string
@@ -26,10 +28,10 @@ interface DonationRecord {
   amount: number
   currency: string
   donationType: string
-  frequency?: string
+  frequency?: string | null
   donorName: string
   donorEmail: string
-  donorPhone?: string
+  donorPhone?: string | null
   paymentMethod: string
   paymentStatus: string
   isRecurring: boolean
@@ -37,7 +39,6 @@ interface DonationRecord {
   stripeChargeId?: string
   stripeSubscriptionId?: string
   receiptUrl?: string
-  date: Date | string
 }
 
 type PaymentMethodType = 'card' | 'bank' | 'other'
@@ -122,7 +123,7 @@ function getPaymentMethodDetails(charge: Stripe.Charge | null): {
 async function saveDonationRecord(data: {
   email: string
   name: string
-  phone?: string
+  phone?: string | undefined
   amount: number
   currency: string
   donationType: string
@@ -241,7 +242,7 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
   // Save to database
   try {
     const { donor, donation } = await saveDonationRecord(donorData)
-    console.log('✅ Saved donation:', donation.xata_id)
+    console.log('✅ Saved donation:', donation, donor)
 
     // Send confirmation email
     if (donorData.email) {
@@ -274,7 +275,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
   const invoice = event.data.object as Stripe.Invoice
   console.log('📄 Invoice payment succeeded:', invoice.id)
 
-  const subscriptionId = invoice.subscription as string | undefined
+  const subscriptionId = (invoice as any).subscription as string | undefined
   if (!subscriptionId) {
     console.log('⏭️ Skipping non-subscription invoice')
     return NextResponse.json({ received: true })
@@ -305,7 +306,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
     }
 
     // Get payment method details
-    const paymentIntentId = invoice.payment_intent as string | undefined
+    const paymentIntentId = (invoice as any).payment_intent as string | undefined
     let paymentMethod = 'card'
     if (paymentIntentId) {
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
@@ -314,7 +315,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
     }
 
     // Determine frequency
-    let frequency = subscription.metadata?.frequency ||
+    const frequency = subscription.metadata?.frequency ||
       (subscription.items.data[0]?.price?.recurring?.interval + 'ly') ||
       'monthly'
 
@@ -333,7 +334,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
       isRecurring: true,
       stripePaymentIntentId: paymentIntentId,
       stripeSubscriptionId: subscription.id,
-      stripeChargeId: invoice.charge as string | undefined,
+      stripeChargeId: (invoice as any).charge as string | undefined,
       receiptUrl: invoice.hosted_invoice_url || '',
       created: new Date(invoice.created * 1000)
     }
@@ -388,14 +389,15 @@ async function handlePaymentFailed(event: Stripe.Event) {
     await sendPaymentFailedEmail({
       to: customerEmail,
       donorName: customer.name || 'Donor',
-      invoiceId: invoice.id,
+      invoiceId: invoice.id ?? '',
       amount: invoice.amount_due / 100,
       currency: invoice.currency.toUpperCase(),
       hostedInvoiceUrl: invoice.hosted_invoice_url || '',
       nextRetryDate: invoice.next_payment_attempt
         ? new Date(invoice.next_payment_attempt * 1000)
-        : undefined,
-      updatePaymentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/update-payment?customer_id=${invoice.customer}`
+        : null,
+      updatePaymentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/update-payment?customer_id=${invoice.customer}`,
+      billingReason: invoice.billing_reason || null,
     })
     console.log('✉️ Sent payment failed email')
 

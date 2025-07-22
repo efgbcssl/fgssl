@@ -41,9 +41,9 @@ interface PaymentFailedEmailParams {
     currency: string
     invoiceId: string
     hostedInvoiceUrl?: string
-    billingReason: string
+    billingReason: string | null
     retryLink?: string
-    nextRetryDate: Date
+    nextRetryDate: Date | null
     updatePaymentUrl: string
 }
 
