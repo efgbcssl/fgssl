@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { columns } from "@/components/dashboard/appointments/columns"
 import { DataTable } from "@/components/dashboard/appointments/data-table"
 import { Appointment } from "@/types/appointments"
@@ -11,14 +11,14 @@ import { Button } from "@/components/ui/button"
 import { SendRemindersButton } from "@/components/dashboard/appointments/send-reminder-button"
 import { Calendar, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { subDays } from 'date-fns'
+import { subDays, isEqual } from 'date-fns'
 
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([])
-    const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const { toast } = useToast()
+    const abortControllerRef = useRef<AbortController | null>(null)
 
     // Filter states
     const [status, setStatus] = useState<string | null>(null)
@@ -30,6 +30,14 @@ export default function AppointmentsPage() {
     const [preferredDateRange, setPreferredDateRange] = useState<[Date, Date] | null>(null)
 
     const fetchAppointments = useCallback(async () => {
+        // Cancel previous request if it exists
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+        }
+
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
         setIsLoading(true)
         setError(null)
 
@@ -48,7 +56,9 @@ export default function AppointmentsPage() {
                 params.append('preferredTo', preferredDateRange[1].toISOString())
             }
 
-            const response = await fetch(`/api/appointments?${params.toString()}`)
+            const response = await fetch(`/api/appointments?${params.toString()}`, {
+                signal: controller.signal
+            })
 
             if (!response.ok) {
                 const errorData = await response.json()
@@ -57,43 +67,40 @@ export default function AppointmentsPage() {
 
             const data = await response.json()
             setAppointments(data)
-        } catch (err) {
-            console.error('Failed to fetch appointments:', err)
-            setError(err instanceof Error ? err.message : 'An unknown error occurred')
-            toast({
-                title: "Error",
-                description: "Failed to load appointments",
-                variant: "destructive"
-            })
+        } catch (err: unknown) {
+            if (err.name !== 'AbortError') {
+                console.error('Failed to fetch appointments:', err)
+                setError(err instanceof Error ? err.message : 'An unknown error occurred')
+                toast({
+                    title: "Error",
+                    description: "Failed to load appointments",
+                    variant: "destructive"
+                })
+            }
         } finally {
-            setIsLoading(false)
+            if (!controller.signal.aborted) {
+                setIsLoading(false)
+            }
+            abortControllerRef.current = null
         }
     }, [status, medium, createdDateRange, preferredDateRange, toast])
 
-    // Initial fetch and refetch when filters change
+    // Fetch data when filters change with debounce
     useEffect(() => {
-        fetchAppointments()
-    }, [fetchAppointments])
-
-    // Refresh function that can be passed to child components
-    useEffect(() => {
-        if (!isLoading) { // Prevent double fetch on initial load
+        const timer = setTimeout(() => {
             fetchAppointments()
+        }, 300) // 300ms debounce
+
+        return () => {
+            clearTimeout(timer)
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort()
+            }
         }
-    }, [status, medium, createdDateRange, preferredDateRange, toast, fetchAppointments, isLoading])
+    }, [fetchAppointments])
 
     const refreshData = () => {
         fetchAppointments()
-    }
-
-    if (error) {
-        return (
-            <ErrorComponent
-                title="Appointments Error"
-                message={error}
-                retryLink="/dashboard/appointments"
-            />
-        )
     }
 
     const clearAllFilters = () => {
@@ -101,7 +108,16 @@ export default function AppointmentsPage() {
         setMedium(null)
         setCreatedDateRange([subDays(new Date(), 30), new Date()])
         setPreferredDateRange(null)
-        refreshData()
+    }
+
+    if (error) {
+        return (
+            <ErrorComponent
+                title="Appointments Error"
+                message={error}
+                retryFn={fetchAppointments}
+            />
+        )
     }
 
     return (
@@ -118,6 +134,7 @@ export default function AppointmentsPage() {
                     <ExportButtons
                         data={appointments}
                         filename="appointments_export"
+                        disabled={isLoading || appointments.length === 0}
                     />
                     <Button
                         variant="outline"
@@ -135,6 +152,8 @@ export default function AppointmentsPage() {
                         Calendar View
                     </Button>
                     <SendRemindersButton
+                        disabled={isLoading || appointments.length === 0}
+                        onSuccess={refreshData}
                     />
                 </div>
             </div>
@@ -157,6 +176,18 @@ export default function AppointmentsPage() {
                 {isLoading ? (
                     <div className="flex justify-center items-center h-64">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : appointments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                        <p>No appointments found</p>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2"
+                            onClick={refreshData}
+                        >
+                            Refresh
+                        </Button>
                     </div>
                 ) : (
                     <DataTable

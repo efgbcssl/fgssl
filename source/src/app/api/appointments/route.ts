@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/appointments/route.ts
 import { NextResponse } from 'next/server'
