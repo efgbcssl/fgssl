@@ -115,7 +115,7 @@ export default function AppointmentsPage() {
             <ErrorComponent
                 title="Appointments Error"
                 message={error}
-            //retryFn={fetchAppointments}
+                retryLink="/dashboard/appointments"
             />
         )
     }
