@@ -11,9 +11,6 @@ const nextConfig: NextConfig = {
       'ik.imagekit.io',
       'images.unsplash.com',]
   },
-  api: {
-    bodyParser: false
-  },
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb', // Increase the limit for server actions

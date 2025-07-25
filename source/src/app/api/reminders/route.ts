@@ -1,101 +1,60 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
-import { sendReminderEmail, generateTimezoneInfo } from '@/lib/email'
-import { formatInTimeZone } from 'date-fns-tz'
+import { sendReminderEmail } from '@/lib/email'
+import { subHours } from 'date-fns';
 
 export async function GET() {
     try {
+
+        // Calculate time range (now to 24 hours from now)
         const now = new Date();
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const tomorrow = new Date(now);
+        tomorrow.setHours(now.getHours() + 24);
 
-        // Validate environment variables
-        if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-            throw new Error('Email server credentials not configured');
-        }
-
-        // Fetch upcoming appointments in the next 24 hours
+        // Fetch appointments that:
+        // 1. Are in the next 24 hours
+        // 2. Are pending
+        // 3. Haven't had a reminder sent (or it was sent >24h ago)
         const upcomingAppointments = await xata.db.appointments
             .filter('preferredDate', {
                 $ge: now.toISOString(),
                 $le: tomorrow.toISOString(),
             })
             .filter('status', 'pending')
-            .getMany();
-
-        const results = await Promise.all(
-            upcomingAppointments.map(async (appointment) => {
-                try {
-                    // Validate required fields
-                    if (!appointment.email || !appointment.fullName || !appointment.preferredDate || !appointment.xata_id) {
-                        throw new Error('Missing required appointment data');
+            .filter({
+                $not: {
+                    lastReminderSentAt: {
+                        $ge: subHours(now, 12).toISOString() // Prevent duplicates within 12h
                     }
-
-                    // Parse appointment date
-                    const appointmentDate = new Date(appointment.preferredDate);
-
-                    // Generate timezone information
-                    const timezoneInfo = await generateTimezoneInfo(appointmentDate);
-
-                    // Format dates for display
-                    const preferredDate = formatInTimeZone(appointmentDate, Intl.DateTimeFormat().resolvedOptions().timeZone, 'EEEE, MMMM do, yyyy');
-                    const preferredTime = formatInTimeZone(appointmentDate, Intl.DateTimeFormat().resolvedOptions().timeZone, 'h:mm a');
-
-                    // Send reminder email
-                    await sendReminderEmail({
-                        to: appointment.email,
-                        fullName: appointment.fullName,
-                        preferredDate,
-                        preferredTime,
-                        medium: appointment.medium || 'unknown',
-                        newYorkDate: timezoneInfo.newYorkDate,
-                        newYorkTime: timezoneInfo.newYorkTime,
-                        timeDifference: timezoneInfo.timeDifference,
-                        meetingLink: '',
-                        rescheduleLink: `${process.env.BASE_URL}/appointments/reschedule?id=${appointment.xata_id}`,
-                        cancelLink: `${process.env.BASE_URL}/appointments/cancel?id=${appointment.xata_id}`,
-                        unsubscribeLink: `${process.env.BASE_URL}/preferences?email=${encodeURIComponent(appointment.email)}`
-                    });
-
-                    // Update only existing fields
-                    const updateData: Record<string, any> = {
-                        reminderSent: true
-                    };
-
-                    // Try to update lastReminderSentAt if it exists (won't fail if column doesn't exist)
-                    try {
-                        updateData.lastReminderSentAt = new Date().toISOString();
-                    } catch (e) {
-                        console.log('lastReminderSentAt column not available, skipping');
-                    }
-
-                    const updatedRecord = await xata.db.appointments.update(appointment.xata_id, updateData);
-
-                    if (!updatedRecord) {
-                        throw new Error('Failed to update appointment record');
-                    }
-
-                    return { id: appointment.xata_id, status: 'success' };
-                } catch (error) {
-                    console.error(`Failed to process appointment ${appointment.xata_id}:`, error);
-                    return {
-                        id: appointment.xata_id,
-                        status: 'failed',
-                        error: error instanceof Error ? error.message : 'Unknown error',
-                    };
                 }
             })
-        );
+            .getMany();
+
+        // Process in batches to avoid rate limiting
+        const BATCH_SIZE = 10;
+        const results = [];
+
+        for (let i = 0; i < upcomingAppointments.length; i += BATCH_SIZE) {
+            const batch = upcomingAppointments.slice(i, i + BATCH_SIZE);
+            const batchResults = await Promise.all(
+                batch.map(processAppointmentReminder)
+            );
+            results.push(...batchResults);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay between batches
+        }
 
         return NextResponse.json({
             message: 'Reminder processing completed',
             stats: {
                 total: results.length,
-                success: results.filter((r) => r.status === 'success').length,
-                failed: results.filter((r) => r.status === 'failed').length,
+                success: results.filter(r => r.status === 'success').length,
+                failed: results.filter(r => r.status === 'failed').length,
             },
             results,
         });
+
     } catch (error) {
         console.error('Reminder job failed:', error);
         return NextResponse.json(
@@ -105,5 +64,36 @@ export async function GET() {
             },
             { status: 500 }
         );
+    }
+}
+
+async function processAppointmentReminder(appointment: any) {
+    try {
+        // Validate required fields
+        const requiredFields = ['email', 'fullName', 'preferredDate', 'xata_id'];
+        const missingFields = requiredFields.filter(f => !appointment[f]);
+
+        if (missingFields.length > 0) {
+            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+        }
+
+        // Process and send email
+        const result = await sendReminderEmail(appointment);
+
+        // Update database
+        await xata.db.appointments.update(appointment.xata_id, {
+            reminderSent: true,
+            lastReminderSentAt: new Date().toISOString(),
+            status: 'confirmed' // Or your desired status
+        });
+
+        return { id: appointment.xata_id, status: 'success' };
+    } catch (error) {
+        console.error(`Failed to process appointment ${appointment.xata_id}:`, error);
+        return {
+            id: appointment.xata_id,
+            status: 'failed',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }

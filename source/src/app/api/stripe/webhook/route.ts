@@ -146,6 +146,7 @@ async function saveDonationRecord(data: {
   const lastDonationDate = data.created.toISOString()
   const donationDate = data.created.toISOString()
 
+
   // Upsert donor
   let donor = await xata.db.donors
     .filter({ email: data.email })
@@ -288,6 +289,14 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
       stripe.customers.retrieve(invoice.customer as string)
     ])
 
+    console.log('🔵 Subscription retrieved:', subscription)
+    console.log('🔵 Customer retrieved:', customer)
+
+    if (subscription.status !== 'active') {
+      console.log(`⚠️ Unexpected subscription state: ${subscription.status}`);
+      console.log(`ℹ️ Subscription metadata: ${JSON.stringify(subscription.metadata)}`);
+      // Add additional logging or error handling as needed
+    }
     // Prepare customer data
     const customerEmail = invoice.customer_email ||
       (customer && typeof customer === 'object' && !('deleted' in customer)
@@ -309,9 +318,19 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
     const paymentIntentId = (invoice as any).payment_intent as string | undefined
     let paymentMethod = 'card'
     if (paymentIntentId) {
+      console.log('🔵 Payment intent ID:', paymentIntentId)
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-      const charge = paymentIntent.latest_charge as Stripe.Charge | null
-      paymentMethod = getPaymentMethodDetails(charge).description
+      console.log('🔵 Payment intent retrieved:', paymentIntent)
+      if (paymentIntent.latest_charge) {
+        const chargeId = typeof paymentIntent.latest_charge === 'string'
+          ? paymentIntent.latest_charge
+          : paymentIntent.latest_charge.id;
+        console.log('🔵 Charge ID:', chargeId)
+
+        const charge = await stripe.charges.retrieve(chargeId)
+        console.log('🔵 Charge retrieved:', charge)
+        paymentMethod = getPaymentMethodDetails(charge).description
+      }
     }
 
     // Determine frequency
@@ -340,25 +359,38 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
       created: new Date(invoice.created * 1000)
     }
 
+    console.log('🔵 Donation data:', donationData)
+
+
     // Save to database
-    const { donor, donation } = await saveDonationRecord(donationData)
-    console.log('✅ Saved recurring donation:', donation.xata_id)
+    try {
+      const { donor, donation } = await saveDonationRecord(donationData)
+      console.log('✅ Saved recurring donation:', donation.xata_id)
+    } catch (error) {
+      console.error('❌ Failed to save donation record:', error)
+    }
+
+    console.log('📨 Preparing to send recurring donation email to', customerEmail)
 
     // Send confirmation email
-    await sendDonationEmail({
-      to: customerEmail,
-      donorName: customerName,
-      amount: donationData.amount,
-      donationType: donationData.donationType,
-      receiptUrl: donationData.receiptUrl,
-      createdDate: donationData.created,
-      paymentMethod: donationData.paymentMethod,
-      currency: donationData.currency,
-      frequency: donationData.frequency,
-      isRecurring: true,
-      unsubscribeLink: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage?customer_id=${invoice.customer}`
-    })
-    console.log('✉️ Sent recurring donation email')
+    try {
+      await sendDonationEmail({
+        to: customerEmail,
+        donorName: customerName,
+        amount: donationData.amount,
+        donationType: donationData.donationType,
+        receiptUrl: donationData.receiptUrl || invoice.invoice_pdf || '',
+        createdDate: donationData.created,
+        paymentMethod: donationData.paymentMethod,
+        currency: donationData.currency,
+        frequency: donationData.frequency,
+        isRecurring: true,
+        unsubscribeLink: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage?customer_id=${invoice.customer}`
+      })
+      console.log('✉️ Sent recurring donation email')
+    } catch (error) {
+      console.error('❌ Failed to send donation email:', error)
+    }
 
     return NextResponse.json({ received: true })
   } catch (error) {
