@@ -5,6 +5,16 @@ import { xata } from '@/lib/xata'
 import { sendReminderEmail } from '@/lib/email'
 import { subHours } from 'date-fns';
 
+interface Appointment {
+    email: string;
+    fullName: string;
+    preferredDate: string; // or Date if you're working with Date objects
+    xata_id: string;
+    reminderSent?: boolean; // Optional if not always present
+    lastReminderSentAt?: string; // Optional if not always present
+    status: string; // Assuming status is a string
+}
+
 export async function GET() {
     try {
 
@@ -29,7 +39,7 @@ export async function GET() {
                         $ge: subHours(now, 12).toISOString() // Prevent duplicates within 12h
                     }
                 }
-            })
+            } as any)
             .getMany();
 
         // Process in batches to avoid rate limiting
@@ -71,7 +81,7 @@ async function processAppointmentReminder(appointment: any) {
     try {
         // Validate required fields
         const requiredFields = ['email', 'fullName', 'preferredDate', 'xata_id'];
-        const missingFields = requiredFields.filter(f => !appointment[f]);
+        const missingFields = requiredFields.filter(f => !appointment[f as keyof Appointment]);
 
         if (missingFields.length > 0) {
             throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
@@ -84,8 +94,8 @@ async function processAppointmentReminder(appointment: any) {
         await xata.db.appointments.update(appointment.xata_id, {
             reminderSent: true,
             lastReminderSentAt: new Date().toISOString(),
-            status: 'confirmed' // Or your desired status
-        });
+            status: 'completed' // Or your desired status
+        } as any);
 
         return { id: appointment.xata_id, status: 'success' };
     } catch (error) {
