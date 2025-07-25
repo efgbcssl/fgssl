@@ -68,7 +68,7 @@ export default function AppointmentsPage() {
             const data = await response.json()
             setAppointments(data)
         } catch (err: unknown) {
-            if (err.name !== 'AbortError') {
+            if (err instanceof Error && err.name !== 'AbortError') {
                 console.error('Failed to fetch appointments:', err)
                 setError(err instanceof Error ? err.message : 'An unknown error occurred')
                 toast({
