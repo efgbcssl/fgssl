@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { SendRemindersButton } from "@/components/dashboard/appointments/send-reminder-button"
 import { Calendar, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { subDays, isEqual } from 'date-fns'
+import { subDays } from 'date-fns'
 
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([])

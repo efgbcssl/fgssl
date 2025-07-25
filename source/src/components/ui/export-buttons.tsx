@@ -11,9 +11,10 @@ interface ExportButtonsProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: Record<string, any>[]
     filename: string
+    disabled: boolean
 }
 
-export function ExportButtons({ data, filename }: ExportButtonsProps) {
+export function ExportButtons({ data, filename, disabled }: ExportButtonsProps) {
     const headers = Object.keys(data[0] || {})
 
     const exportCSV = () => {

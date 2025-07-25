@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { Button } from '@/components/ui/button'
@@ -5,7 +6,12 @@ import { Clock, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useState } from 'react'
 
-export function SendRemindersButton() {
+interface SendRemindersButtonProps {
+    disabled: boolean;
+    onSuccess: () => void; // Add this line
+}
+
+export function SendRemindersButton({ disabled, onSuccess }: SendRemindersButtonProps) {
     const [isSending, setIsSending] = useState(false)
     const { toast } = useToast()
 
