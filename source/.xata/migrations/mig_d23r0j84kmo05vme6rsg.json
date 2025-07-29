@@ -1,0 +1,147 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d23r0j84kmo05vme6rsg",
+    "operations": [
+      {
+        "create_table": {
+          "name": "failedPayments",
+          "columns": [
+            {
+              "name": "customerEmail",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_text_length_customerEmail",
+                "constraint": "OCTET_LENGTH(\"customerEmail\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "customerName",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_text_length_customerName",
+                "constraint": "OCTET_LENGTH(\"customerName\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "amount",
+              "type": "double precision",
+              "nullable": true
+            },
+            {
+              "name": "currency",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_text_length_currency",
+                "constraint": "OCTET_LENGTH(\"currency\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "invoiceId",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_text_length_invoiceId",
+                "constraint": "OCTET_LENGTH(\"invoiceId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "subscriptionId",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_text_length_subscriptionId",
+                "constraint": "OCTET_LENGTH(\"subscriptionId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "failureReason",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_text_length_failureReason",
+                "constraint": "OCTET_LENGTH(\"failureReason\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "nextRetryDate",
+              "type": "timestamptz",
+              "nullable": true
+            },
+            {
+              "name": "isRecurring",
+              "type": "boolean",
+              "nullable": true
+            },
+            {
+              "name": "createdAt",
+              "type": "timestamptz",
+              "nullable": true
+            },
+            {
+              "name": "resolved",
+              "type": "boolean",
+              "nullable": true
+            },
+            {
+              "name": "resolvedAt",
+              "type": "timestamptz",
+              "nullable": true
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "failedPayments_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"failedPayments\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"failedPayments\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d23r0j84kmo05vme6rsg",
+  "parent": "mig_d23qqrqv618mdgrp19jg",
+  "schema": "public",
+  "startedAt": "2025-07-28T17:15:58.006242Z"
+}

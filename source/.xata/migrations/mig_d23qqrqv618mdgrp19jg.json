@@ -1,0 +1,137 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d23qqrqv618mdgrp19jg",
+    "operations": [
+      {
+        "create_table": {
+          "name": "subscriptionCancellation",
+          "columns": [
+            {
+              "name": "subscriptionId",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_text_length_subscriptionId",
+                "constraint": "OCTET_LENGTH(\"subscriptionId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "customerEmail",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_text_length_customerEmail",
+                "constraint": "OCTET_LENGTH(\"customerEmail\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "customerName",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_text_length_customerName",
+                "constraint": "OCTET_LENGTH(\"customerName\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "amount",
+              "type": "double precision",
+              "nullable": true
+            },
+            {
+              "name": "currency",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_text_length_currency",
+                "constraint": "OCTET_LENGTH(\"currency\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "frequency",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_text_length_frequency",
+                "constraint": "OCTET_LENGTH(\"frequency\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "cancelledAt",
+              "type": "timestamptz",
+              "nullable": true
+            },
+            {
+              "name": "cancellationReason",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_text_length_cancellationReason",
+                "constraint": "OCTET_LENGTH(\"cancellationReason\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "totalDonationsBeforeCancellation",
+              "type": "double precision",
+              "nullable": true
+            },
+            {
+              "name": "voluntaryCancellation",
+              "type": "boolean",
+              "nullable": true
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "subscriptionCancellation_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"subscriptionCancellation\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"subscriptionCancellation\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d23qqrqv618mdgrp19jg",
+  "parent": "mig_d23qkh05nt1729jqqfpg",
+  "schema": "public",
+  "startedAt": "2025-07-28T17:03:44.177733Z"
+}

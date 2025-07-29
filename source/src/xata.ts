@@ -300,6 +300,11 @@ const tables = [
         columns: ["donorPhone"],
         definition: 'CHECK ((octet_length("donorPhone") <= 204800))',
       },
+      donations_xata_text_length_donorsId: {
+        name: "donations_xata_text_length_donorsId",
+        columns: ["donorsId"],
+        definition: 'CHECK ((octet_length("donorsId") <= 204800))',
+      },
       donations_xata_text_length_notes: {
         name: "donations_xata_text_length_notes",
         columns: ["notes"],
@@ -341,6 +346,10 @@ const tables = [
       _pgroll_new_donations_xata_id_key: {
         name: "_pgroll_new_donations_xata_id_key",
         columns: ["xata_id"],
+      },
+      donations__pgroll_new_donorsId_key: {
+        name: "donations__pgroll_new_donorsId_key",
+        columns: ["donorsId"],
       },
     },
     columns: [
@@ -389,6 +398,14 @@ const tables = [
         type: "text",
         notNull: false,
         unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "donorsId",
+        type: "text",
+        notNull: false,
+        unique: true,
         defaultValue: null,
         comment: '{"xata.type":"text"}',
       },
@@ -506,6 +523,16 @@ const tables = [
         columns: ["xata_id"],
         definition: "CHECK ((length(xata_id) < 256))",
       },
+      donors_xata_text_length_activeSubscriptionId: {
+        name: "donors_xata_text_length_activeSubscriptionId",
+        columns: ["activeSubscriptionId"],
+        definition: 'CHECK ((octet_length("activeSubscriptionId") <= 204800))',
+      },
+      donors_xata_text_length_donorsId: {
+        name: "donors_xata_text_length_donorsId",
+        columns: ["donorsId"],
+        definition: 'CHECK ((octet_length("donorsId") <= 204800))',
+      },
       donors_xata_text_length_email: {
         name: "donors_xata_text_length_email",
         columns: ["email"],
@@ -521,6 +548,16 @@ const tables = [
         columns: ["phone"],
         definition: "CHECK ((octet_length(phone) <= 204800))",
       },
+      donors_xata_text_length_stripeCustomerId: {
+        name: "donors_xata_text_length_stripeCustomerId",
+        columns: ["stripeCustomerId"],
+        definition: 'CHECK ((octet_length("stripeCustomerId") <= 204800))',
+      },
+      donors_xata_text_length_subscriptionStatus: {
+        name: "donors_xata_text_length_subscriptionStatus",
+        columns: ["subscriptionStatus"],
+        definition: 'CHECK ((octet_length("subscriptionStatus") <= 204800))',
+      },
     },
     foreignKeys: {},
     primaryKey: [],
@@ -533,8 +570,28 @@ const tables = [
         name: "_pgroll_new_donors_xata_id_key",
         columns: ["xata_id"],
       },
+      donors__pgroll_new_donorsId_key: {
+        name: "donors__pgroll_new_donorsId_key",
+        columns: ["donorsId"],
+      },
     },
     columns: [
+      {
+        name: "activeSubscriptionId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "donorsId",
+        type: "text",
+        notNull: false,
+        unique: true,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
       {
         name: "email",
         type: "text",
@@ -544,9 +601,25 @@ const tables = [
         comment: '{"xata.type":"text"}',
       },
       {
+        name: "hasActiveSubscription",
+        type: "bool",
+        notNull: true,
+        unique: false,
+        defaultValue: "false",
+        comment: "",
+      },
+      {
         name: "lastDonationDate",
         type: "datetime",
         notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "lastUpdated",
+        type: "datetime",
+        notNull: false,
         unique: false,
         defaultValue: null,
         comment: "",
@@ -561,6 +634,38 @@ const tables = [
       },
       {
         name: "phone",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "stripeCustomerId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "subscriptionCancelledAt",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "subscriptionStartDate",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "subscriptionStatus",
         type: "text",
         notNull: false,
         unique: false,
@@ -972,6 +1077,184 @@ const tables = [
         name: "title",
         type: "text",
         notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
+    name: "failedPayments",
+    checkConstraints: {
+      failedPayments_xata_id_length_xata_id: {
+        name: "failedPayments_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      failedPayments_xata_text_length_currency: {
+        name: "failedPayments_xata_text_length_currency",
+        columns: ["currency"],
+        definition: "CHECK ((octet_length(currency) <= 204800))",
+      },
+      failedPayments_xata_text_length_customerEmail: {
+        name: "failedPayments_xata_text_length_customerEmail",
+        columns: ["customerEmail"],
+        definition: 'CHECK ((octet_length("customerEmail") <= 204800))',
+      },
+      failedPayments_xata_text_length_customerName: {
+        name: "failedPayments_xata_text_length_customerName",
+        columns: ["customerName"],
+        definition: 'CHECK ((octet_length("customerName") <= 204800))',
+      },
+      failedPayments_xata_text_length_failureReason: {
+        name: "failedPayments_xata_text_length_failureReason",
+        columns: ["failureReason"],
+        definition: 'CHECK ((octet_length("failureReason") <= 204800))',
+      },
+      failedPayments_xata_text_length_invoiceId: {
+        name: "failedPayments_xata_text_length_invoiceId",
+        columns: ["invoiceId"],
+        definition: 'CHECK ((octet_length("invoiceId") <= 204800))',
+      },
+      failedPayments_xata_text_length_subscriptionId: {
+        name: "failedPayments_xata_text_length_subscriptionId",
+        columns: ["subscriptionId"],
+        definition: 'CHECK ((octet_length("subscriptionId") <= 204800))',
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_failedPayments_xata_id_key: {
+        name: "_pgroll_new_failedPayments_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "amount",
+        type: "float",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "currency",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "customerEmail",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "customerName",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "failureReason",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "invoiceId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "isRecurring",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "nextRetryDate",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "resolved",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "resolvedAt",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "subscriptionId",
+        type: "text",
+        notNull: false,
         unique: false,
         defaultValue: null,
         comment: '{"xata.type":"text"}',
@@ -1610,6 +1893,168 @@ const tables = [
       },
     ],
   },
+  {
+    name: "subscriptionCancellation",
+    checkConstraints: {
+      subscriptionCancellation_xata_id_length_xata_id: {
+        name: "subscriptionCancellation_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      subscriptionCancellation_xata_text_length_cancellationReason: {
+        name: "subscriptionCancellation_xata_text_length_cancellationReason",
+        columns: ["cancellationReason"],
+        definition: 'CHECK ((octet_length("cancellationReason") <= 204800))',
+      },
+      subscriptionCancellation_xata_text_length_currency: {
+        name: "subscriptionCancellation_xata_text_length_currency",
+        columns: ["currency"],
+        definition: "CHECK ((octet_length(currency) <= 204800))",
+      },
+      subscriptionCancellation_xata_text_length_customerEmail: {
+        name: "subscriptionCancellation_xata_text_length_customerEmail",
+        columns: ["customerEmail"],
+        definition: 'CHECK ((octet_length("customerEmail") <= 204800))',
+      },
+      subscriptionCancellation_xata_text_length_customerName: {
+        name: "subscriptionCancellation_xata_text_length_customerName",
+        columns: ["customerName"],
+        definition: 'CHECK ((octet_length("customerName") <= 204800))',
+      },
+      subscriptionCancellation_xata_text_length_frequency: {
+        name: "subscriptionCancellation_xata_text_length_frequency",
+        columns: ["frequency"],
+        definition: "CHECK ((octet_length(frequency) <= 204800))",
+      },
+      subscriptionCancellation_xata_text_length_subscriptionId: {
+        name: "subscriptionCancellation_xata_text_length_subscriptionId",
+        columns: ["subscriptionId"],
+        definition: 'CHECK ((octet_length("subscriptionId") <= 204800))',
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_subscriptionCancellation_xata_id_key: {
+        name: "_pgroll_new_subscriptionCancellation_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "amount",
+        type: "float",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "cancellationReason",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "cancelledAt",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "currency",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "customerEmail",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "customerName",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "frequency",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "subscriptionId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "totalDonationsBeforeCancellation",
+        type: "float",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "voluntaryCancellation",
+        type: "bool",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
 ] as const;
 
 export type SchemaTables = typeof tables;
@@ -1633,6 +2078,9 @@ export type EventRegistrationRecord = EventRegistration & XataRecord;
 export type Events = InferredTypes["events"];
 export type EventsRecord = Events & XataRecord;
 
+export type FailedPayments = InferredTypes["failedPayments"];
+export type FailedPaymentsRecord = FailedPayments & XataRecord;
+
 export type Faqs = InferredTypes["faqs"];
 export type FaqsRecord = Faqs & XataRecord;
 
@@ -1645,6 +2093,11 @@ export type MessagesRecord = Messages & XataRecord;
 export type Posts = InferredTypes["posts"];
 export type PostsRecord = Posts & XataRecord;
 
+export type SubscriptionCancellation =
+  InferredTypes["subscriptionCancellation"];
+export type SubscriptionCancellationRecord = SubscriptionCancellation &
+  XataRecord;
+
 export type DatabaseSchema = {
   appointments: AppointmentsRecord;
   comments: CommentsRecord;
@@ -1652,10 +2105,12 @@ export type DatabaseSchema = {
   donors: DonorsRecord;
   event_registration: EventRegistrationRecord;
   events: EventsRecord;
+  failedPayments: FailedPaymentsRecord;
   faqs: FaqsRecord;
   likes: LikesRecord;
   messages: MessagesRecord;
   posts: PostsRecord;
+  subscriptionCancellation: SubscriptionCancellationRecord;
 };
 
 const DatabaseClient = buildClient();

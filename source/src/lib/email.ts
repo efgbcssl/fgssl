@@ -39,12 +39,53 @@ interface PaymentFailedEmailParams {
     donorName: string
     amount: number
     currency: string
-    invoiceId: string
+    invoiceId?: string
     hostedInvoiceUrl?: string
     billingReason: string | null
     retryLink?: string
     nextRetryDate: Date | null
     updatePaymentUrl: string
+    isRecurring?: boolean
+    subscriptionStatus?: string | null
+    willRetry?: boolean
+}
+
+interface SubscriptionConfirmationEmailData {
+    to: string
+    donorName: string
+    amount: number
+    currency: string
+    frequency: string
+    donationType: string
+    subscriptionId: string
+    nextBillingDate: Date
+    manageSubscriptionUrl: string
+    unsubscribeUrl: string
+}
+
+interface SubscriptionUpdateEmailData {
+    to: string
+    donorName: string
+    subscriptionId: string
+    changes: string[]
+    currentAmount: number
+    currency: string
+    frequency: string
+    nextBillingDate: Date
+    subscriptionStatus: string
+    manageSubscriptionUrl: string
+}
+
+interface SubscriptionCancellationEmailData {
+    to: string
+    donorName: string
+    subscriptionId: string
+    amount: number
+    currency: string
+    frequency: string
+    cancelledAt: Date
+    totalContributed: number
+    reactivateUrl: string
 }
 
 // Metrics tracking
@@ -222,14 +263,19 @@ export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams) {
             invoiceId: params.invoiceId,
             hostedInvoiceUrl: params.hostedInvoiceUrl,
             billingReason: params.billingReason,
-            retryLink: params.retryLink || `${process.env.NEXT_PUBLIC_SITE_URL}/donations/update-payment`,
+            retryLink: params.retryLink || params.updatePaymentUrl,
+            updatePaymentUrl: params.updatePaymentUrl,
+            nextRetryDate: params.nextRetryDate,
+            isRecurring: params.isRecurring || false,
+            subscriptionStatus: params.subscriptionStatus,
+            willRetry: params.willRetry || false,
             currentYear: new Date().getFullYear()
         })
 
         const mailOptions: nodemailer.SendMailOptions = {
             from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
             to: params.to,
-            subject: `Payment issue with your recurring donation`,
+            subject: `Payment ${params.isRecurring ? 'for recurring donation' : ''} failed - Action required`,
             html
         }
 
@@ -242,7 +288,111 @@ export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams) {
     }
 }
 
-// ... (keep your existing appointment, message notification, and other email functions)
+export async function sendSubscriptionConfirmationEmail(data: SubscriptionConfirmationEmailData) {
+    try {
+        const html = await renderTemplate('subscription-confirmation', {
+            donorName: data.donorName,
+            amount: data.amount,
+            currency: data.currency,
+            frequency: data.frequency,
+            donationType: data.donationType,
+            subscriptionId: data.subscriptionId,
+            nextBillingDate: data.nextBillingDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            manageSubscriptionUrl: data.manageSubscriptionUrl,
+            unsubscribeUrl: data.unsubscribeUrl,
+            currentYear: new Date().getFullYear()
+        })
+
+        const mailOptions: nodemailer.SendMailOptions = {
+            from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
+            to: data.to,
+            subject: `Thank you for your ${data.frequency} donation commitment!`,
+            html
+        }
+
+        const result = await sendWithRetry(mailOptions, 'subscription-confirmation')
+        console.log('✅ Subscription confirmation email sent to', data.to, 'after', result.attempts, 'attempt(s)')
+        return result
+    } catch (error) {
+        console.error('❌ Error sending subscription confirmation email:', error)
+        throw error
+    }
+}
+
+export async function sendSubscriptionUpdateEmail(data: SubscriptionUpdateEmailData) {
+    try {
+        const html = await renderTemplate('subscription-update', {
+            donorName: data.donorName,
+            subscriptionId: data.subscriptionId,
+            changes: data.changes,
+            currentAmount: data.currentAmount,
+            currency: data.currency,
+            frequency: data.frequency,
+            nextBillingDate: data.nextBillingDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            subscriptionStatus: data.subscriptionStatus,
+            manageSubscriptionUrl: data.manageSubscriptionUrl,
+            currentYear: new Date().getFullYear()
+        })
+
+        const mailOptions: nodemailer.SendMailOptions = {
+            from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
+            to: data.to,
+            subject: 'Your recurring donation has been updated',
+            html
+        }
+
+        const result = await sendWithRetry(mailOptions, 'subscription-update')
+        console.log('🔄 Subscription update email sent to', data.to, 'after', result.attempts, 'attempt(s)')
+        return result
+    } catch (error) {
+        console.error('❌ Error sending subscription update email:', error)
+        throw error
+    }
+}
+
+export async function sendSubscriptionCancellationEmail(data: SubscriptionCancellationEmailData) {
+    try {
+        const html = await renderTemplate('subscription-cancellation', {
+            donorName: data.donorName,
+            subscriptionId: data.subscriptionId,
+            amount: data.amount,
+            currency: data.currency,
+            frequency: data.frequency,
+            cancelledAt: data.cancelledAt.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            totalContributed: data.totalContributed,
+            reactivateUrl: data.reactivateUrl,
+            currentYear: new Date().getFullYear()
+        })
+
+        const mailOptions: nodemailer.SendMailOptions = {
+            from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
+            to: data.to,
+            subject: 'Your recurring donation has been cancelled',
+            html
+        }
+
+        const result = await sendWithRetry(mailOptions, 'subscription-cancellation')
+        console.log('🗑️ Subscription cancellation email sent to', data.to, 'after', result.attempts, 'attempt(s)')
+        return result
+    } catch (error) {
+        console.error('❌ Error sending subscription cancellation email:', error)
+        throw error
+    }
+}
+
+// Existing functions preserved
 export async function sendAppointmentEmail({
     to,
     fullName,

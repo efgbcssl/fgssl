@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Updated - <%= donorName %>
+    </title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: #4a6fa5;
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            height: 60px;
+            margin-bottom: 15px;
+        }
+
+        .church-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 10px 0 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .church-motto {
+            font-style: italic;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-top: 0;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .receipt-details {
+            background: #f8f9fa;
+            border-left: 4px solid #4a6fa5;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #4a6fa5;
+        }
+
+        .thank-you {
+            font-size: 18px;
+            text-align: center;
+            margin: 30px 0;
+            color: #2c3e50;
+        }
+
+        .verse {
+            font-style: italic;
+            text-align: center;
+            color: #666;
+            margin: 25px 0;
+            padding: 15px;
+            border-top: 1px dashed #ddd;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #a3c4ff;
+            text-decoration: none;
+        }
+
+        .receipt-btn {
+            display: inline-block;
+            background: #4a6fa5;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .detail-row {
+                flex-direction: column;
+            }
+
+            .detail-label {
+                margin-bottom: 5px;
+            }
+        }
+
+        .changes-list {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .change-item {
+            margin-bottom: 10px;
+            padding-left: 15px;
+            border-left: 2px solid #2196f3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../../public/logo.png" alt="Church Logo" class="logo">
+            <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
+            <div class="church-motto">Serving Christ Together</div>
+        </div>
+
+        <div class="content">
+            <h1>Your Recurring Donation Has Been Updated</h1>
+            <p>Dear <%= donorName %>,</p>
+
+            <p>We've successfully updated your recurring donation as requested. Here's a summary of the changes:</p>
+
+            <div class="changes-list">
+                <% changes.forEach(change=> { %>
+                    <div class="change-item">
+                        <strong>
+                            <%= change.field %>:
+                        </strong> Changed from <%= change.oldValue %> to <%= change.newValue %>
+                    </div>
+                    <% }); %>
+            </div>
+
+            <div class="receipt-details">
+                <div class="detail-row">
+                    <div class="detail-label">Current Amount:</div>
+                    <div>
+                        <%= currency %>
+                            <%= currentAmount.toFixed(2) %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Next Contribution:</div>
+                    <div>
+                        <%= nextBillingDate %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Status:</div>
+                    <div>
+                        <%= subscriptionStatus %>
+                    </div>
+                </div>
+            </div>
+
+            <p>You can review or make additional changes anytime through our <a
+                    href="<%= manageSubscriptionUrl %>">donation portal</a>.</p>
+
+            <div class="verse">
+                "Give, and it will be given to you. A good measure, pressed down, shaken together and running over, will
+                be poured into your lap."<br>
+                - Luke 6:38
+            </div>
+
+            <p>With gratitude for your continued support,</p>
+            <p>
+                <strong>Pastor Fitsum Yab</strong><br>
+                Grace Community Church
+            </p>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 10px;">
+                Ethiopian Full Gospel Believers Church (Silver Spring Local)<br>
+                914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA
+            </div>
+            <div>
+                <a href="mailto:giving@efgbcssl.org">giving@efgbcssl.org</a> |
+                <a href="tel:+12408210361">(240) 821-0361</a> |
+                <a href="https://efgbcssl.org">efgbcssl.org</a>
+            </div>
+            <div style="margin-top: 15px; opacity: 0.8;">
+                This receipt may be used for tax purposes. No goods or services were provided in exchange for
+                this
+                donation.
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

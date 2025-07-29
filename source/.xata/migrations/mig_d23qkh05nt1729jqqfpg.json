@@ -1,0 +1,98 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d23qkh05nt1729jqqfpg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "hasActiveSubscription",
+            "type": "boolean",
+            "default": "'false'"
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "stripeCustomerId",
+            "type": "text",
+            "check": {
+              "name": "donors_xata_text_length_stripeCustomerId",
+              "constraint": "OCTET_LENGTH(\"stripeCustomerId\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "activeSubscriptionId",
+            "type": "text",
+            "check": {
+              "name": "donors_xata_text_length_activeSubscriptionId",
+              "constraint": "OCTET_LENGTH(\"activeSubscriptionId\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "subscriptionStartDate",
+            "type": "timestamptz",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "subscriptionStatus",
+            "type": "text",
+            "check": {
+              "name": "donors_xata_text_length_subscriptionStatus",
+              "constraint": "OCTET_LENGTH(\"subscriptionStatus\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "subscriptionCancelledAt",
+            "type": "timestamptz",
+            "nullable": true
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "lastUpdated",
+            "type": "timestamptz",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d23qkh05nt1729jqqfpg",
+  "parent": "mig_d1ur1iaoqhr2s1o71h9g",
+  "schema": "public",
+  "startedAt": "2025-07-28T16:50:12.591189Z"
+}

@@ -1,0 +1,29 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d247drav618mdgrp1c20",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donations",
+          "column": {
+            "name": "donorsId",
+            "type": "text",
+            "check": {
+              "name": "donations_xata_text_length_donorsId",
+              "constraint": "OCTET_LENGTH(\"donorsId\") <= 204800"
+            },
+            "unique": true,
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d247drav618mdgrp1c20",
+  "parent": "mig_d2471kiv618mdgrp1bvg",
+  "schema": "public",
+  "startedAt": "2025-07-29T07:23:26.37852Z"
+}
