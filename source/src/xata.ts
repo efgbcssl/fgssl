@@ -528,6 +528,11 @@ const tables = [
         columns: ["activeSubscriptionId"],
         definition: 'CHECK ((octet_length("activeSubscriptionId") <= 204800))',
       },
+      donors_xata_text_length_donationFrequency: {
+        name: "donors_xata_text_length_donationFrequency",
+        columns: ["donationFrequency"],
+        definition: 'CHECK ((octet_length("donationFrequency") <= 204800))',
+      },
       donors_xata_text_length_donorsId: {
         name: "donors_xata_text_length_donorsId",
         columns: ["donorsId"],
@@ -578,6 +583,14 @@ const tables = [
     columns: [
       {
         name: "activeSubscriptionId",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "donationFrequency",
         type: "text",
         notNull: false,
         unique: false,

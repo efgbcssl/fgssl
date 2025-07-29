@@ -1,0 +1,28 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2486g05nt1729jqqhqg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "donors",
+          "column": {
+            "name": "donationFrequency",
+            "type": "text",
+            "check": {
+              "name": "donors_xata_text_length_donationFrequency",
+              "constraint": "OCTET_LENGTH(\"donationFrequency\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2486g05nt1729jqqhqg",
+  "parent": "mig_d247drav618mdgrp1c20",
+  "schema": "public",
+  "startedAt": "2025-07-29T08:16:01.634142Z"
+}

@@ -27,7 +27,7 @@ interface DonorRecord {
   phone?: string | null
   totalDonations?: number
   lastDonationDate?: Date
-  donationFrequency?: string
+  donationFrequency?: string | null
   hasActiveSubscription?: boolean
   stripeCustomerId?: string | null
   activeSubscriptionId?: string | null
@@ -812,7 +812,7 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
     // Update donor record
     try {
       if (donor) {
-        await xata.db.donors.update(donor.donorsId, {
+        await xata.db.donors.update(donor.xata_id, {
           hasActiveSubscription: false,
           subscriptionStatus: 'cancelled',
           subscriptionCancelledAt: cancelledAt,
