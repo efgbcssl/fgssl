@@ -10,20 +10,42 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
-export function Navbar() {
+interface NavbarProps {
+    className?: string;
+    onMenuToggle?: () => void; // For mobile sidebar toggle
+}
+
+export function Navbar({ className, onMenuToggle }: NavbarProps) {
     const { setTheme } = useTheme();
 
     return (
-        <header className="flex items-center h-16 px-6 border-b border-border bg-card">
+        <header className={cn(
+            "sticky top-0 z-40 flex items-center h-16 px-4 sm:px-6 border-b border-border bg-card backdrop-blur supports-[backdrop-filter]:bg-card/80",
+            className
+        )}>
             <div className="flex items-center justify-between w-full">
-                <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="icon" className="md:hidden">
+                <div className="flex items-center gap-4">
+                    {/* Mobile menu button - only shows on small screens */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="md:hidden"
+                        onClick={onMenuToggle}
+                    >
                         <Icons.menu className="h-5 w-5" />
+                        <span className="sr-only">Toggle menu</span>
                     </Button>
-                    <h1 className="text-lg font-heading font-semibold">Dashboard</h1>
+
+                    {/* Logo/Brand - hidden on mobile if you want */}
+                    <div className="hidden md:flex items-center">
+                        <h1 className="text-lg font-heading font-semibold">Dashboard</h1>
+                    </div>
                 </div>
-                <div className="flex items-center space-x-4">
+
+                <div className="flex items-center gap-2 sm:gap-4">
+                    {/* Theme Toggle */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -34,21 +56,27 @@ export function Navbar() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => setTheme("light")}>
+                                <Icons.sun className="mr-2 h-4 w-4" />
                                 Light
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setTheme("dark")}>
+                                <Icons.moon className="mr-2 h-4 w-4" />
                                 Dark
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setTheme("system")}>
+                                <Icons.monitor className="mr-2 h-4 w-4" />
                                 System
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <Button variant="ghost" size="icon">
+                    {/* Notifications - hidden on small screens if needed */}
+                    <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
                         <Icons.bell className="h-5 w-5" />
+                        <span className="sr-only">Notifications</span>
                     </Button>
 
+                    {/* User Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -67,7 +95,7 @@ export function Navbar() {
                                 <Icons.settings className="mr-2 h-4 w-4" />
                                 Settings
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive">
                                 <Icons.logout className="mr-2 h-4 w-4" />
                                 Log out
                             </DropdownMenuItem>

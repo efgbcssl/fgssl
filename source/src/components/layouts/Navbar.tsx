@@ -97,9 +97,11 @@ export default function Navbar() {
                                 {item.name}
                             </Link>
                         ))}
-                        <Button className="w-full mt-3 bg-church-primary hover:bg-church-primary/90 text-white">
-                            Join Us
-                        </Button>
+                        <Link href="/donations">
+                            <Button className="w-full mt-3 bg-church-primary hover:bg-church-primary/90 text-white">
+                                Donate
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             )}

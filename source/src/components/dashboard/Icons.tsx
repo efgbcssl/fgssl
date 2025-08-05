@@ -1,4 +1,8 @@
-import { Sun, Moon, Menu, Bell, User, Settings, LogOut } from 'lucide-react';
+import {
+    Sun, Moon, Menu, Bell, User, Settings, LogOut,
+    Heart, Repeat, CalendarCheck, Mail, TrendingUp,
+    Plus, CalendarPlus, FileText, Monitor
+} from 'lucide-react';
 
 export const Icons = {
     sun: Sun,
@@ -6,8 +10,17 @@ export const Icons = {
     menu: Menu,
     bell: Bell,
     user: User,
+    monitor: Monitor,
     settings: Settings,
     logout: LogOut,
+    heart: Heart,
+    repeat: Repeat,
+    calendarCheck: CalendarCheck,
+    mail: Mail,
+    trendingUp: TrendingUp,
+    plus: Plus,
+    calendarPlus: CalendarPlus,
+    fileText: FileText,
     logo: ({ className }: { className?: string }) => (
         <svg viewBox="0 0 24 24" fill="currentColor" className={`h-6 w-6 ${className}`}>
             <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" />
@@ -25,7 +38,7 @@ export const Icons = {
     ),
     calendar: ({ className }: { className?: string }) => (
         <svg viewBox="0 0 24 24" fill="currentColor" className={`h-5 w-5 ${className}`}>
-            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 01-2-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
     ),
     donate: ({ className }: { className?: string }) => (

@@ -45,6 +45,15 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                     {children}
                 </main>
             </div>
+            
+            {/* Add mobile sidebar toggle functionality */}
+            <Sidebar className="hidden md:block" />
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <Navbar className="md:hidden" /> {/* Example: show only on mobile */}
+                <main className="flex-1 overflow-y-auto p-4 md:p-6">
+                    {children}
+                </main>
+            </div>
         </>
     );
 }

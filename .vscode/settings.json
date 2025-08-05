@@ -18,5 +18,8 @@
         "titleBar.inactiveBackground": "#1e4b4099",
         "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#1e4b40"
+    "peacock.color": "#1e4b40",
+    "cSpell.words": [
+        "xata"
+    ]
 }
