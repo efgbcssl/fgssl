@@ -43,7 +43,7 @@ const donationTypeColors: Record<string, string> = {
     building: '#9CA3AF',        // Cement-gray tone - for infrastructure/building
     missions: '#2563EB',        // Deep blue - symbolic of outreach/global efforts
     offerings: '#F59E0B',       // Golden yellow - giving/offering
-    tithe: '#10B981',           // Green - growth, firstfruits
+    tithe: '#10B981',           // Green - growth, first fruits
     special: '#8B5CF6',         // Purple - distinction, uniqueness
     education: '#3B82F6',       // Sky blue - clarity, learning
     default: '#D1D5DB'          // Soft neutral gray - fallback

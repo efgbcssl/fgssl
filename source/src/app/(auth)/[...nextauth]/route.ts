@@ -16,7 +16,7 @@ const handler = NextAuth({
         }),
     ],
     pages: {
-        signIn: '/auth/login', // Optional: Custom SignIn page
+        signIn: '/auth/login', 
     },
     callbacks: {
         async jwt({ token, account, profile }) {
