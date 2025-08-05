@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Navbar } from '@/components/dashboard/NavBar';
 import { SessionProvider } from 'next-auth/react';
-//import {auth} from '@/app/(auth)/[...nextauth]'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-body' });
 const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-heading' });
@@ -20,8 +19,6 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-
-    //const session = await auth();
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={cn(
@@ -30,11 +27,11 @@ export default async function RootLayout({
                 montserrat.variable
             )}>
                 <SessionProvider>
-                <div className="flex h-screen overflow-hidden">
-                    <DashboardLayout>
-                        {children}
-                    </DashboardLayout>
-                </div>
+                    <div className="flex h-screen overflow-hidden">
+                        <DashboardLayout>
+                            {children}
+                        </DashboardLayout>
+                    </div>
                 </SessionProvider>
             </body>
         </html>
@@ -44,18 +41,17 @@ export default async function RootLayout({
 function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <>
-            <Sidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
-                <Navbar />
-                <main className="flex-1 overflow-y-auto p-6">
-                    {children}
-                </main>
-            </div>
-            
-            {/* Add mobile sidebar toggle functionality */}
+            {/* Desktop Sidebar - always visible on md+ screens */}
             <Sidebar className="hidden md:block" />
+            
+            {/* Mobile Sidebar - would need toggle functionality */}
+            {/* <Sidebar className="md:hidden" /> */}
+            
             <div className="flex flex-col flex-1 overflow-hidden">
-                <Navbar className="md:hidden" /> {/* Example: show only on mobile */}
+                {/* Single Navbar instance */}
+                <Navbar />
+                
+                {/* Single Main content area */}
                 <main className="flex-1 overflow-y-auto p-4 md:p-6">
                     {children}
                 </main>

@@ -12,6 +12,8 @@ import {
   sendSubscriptionCancellationEmail
 } from '@/lib/email'
 import { randomUUID } from 'crypto'
+import { generateUnsubscribeLink } from '@/lib/stripeHelper'
+import { createExpiringToken } from '@/lib/utils';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-05-28.basil'
@@ -471,6 +473,8 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
 
     // Send confirmation email
     try {
+      const unsubscribeLink = await generateUnsubscribeLink(subscription.id, customerEmail);
+      
       await sendDonationEmail({
         to: customerEmail,
         donorName: customerName,
@@ -482,7 +486,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
         currency: donationData.currency,
         frequency: donationData.frequency,
         isRecurring: true,
-        unsubscribeLink: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage?customer_id=${invoice.customer}`
+        unsubscribeLink: unsubscribeLink
       })
       console.log('✉️ Sent recurring donation email')
     } catch (error) {

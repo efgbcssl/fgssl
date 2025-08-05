@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import jwt from 'jsonwebtoken';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -173,4 +174,18 @@ export function validateFileSize(
     return `File too large. Maximum size: ${formatBytes(maxSize)}`;
   }
   return null;
+}
+
+export async function createExpiringToken(subscriptionId: string, email: string): Promise<string> {
+  if (!process.env.SECRET_KEY_FOR_TOKENS) {
+    throw new Error('SECRET_KEY_FOR_TOKENS environment variable not set');
+  }
+
+  const payload = {
+    sub: subscriptionId,
+    email: email,
+    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days expiry
+  };
+  
+  return jwt.sign(payload, process.env.SECRET_KEY_FOR_TOKENS);
 }
