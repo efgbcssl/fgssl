@@ -285,9 +285,7 @@ export default function AppointmentForm() {
 
     return (
       <span className="text-sm text-gray-500 ml-2">
-        (Your Current Time: {currentTime.localTime} •<br />
-        Eastern Current Time: {currentTime.easternTime} •
-        {currentTime.timeDifference})
+        Your Current Time (አሁን ባሉበት ስፍራ ሰዓቱ): {currentTime.localTime}
       </span>
     );
   };
@@ -485,16 +483,19 @@ export default function AppointmentForm() {
                     return (
                       <div className="mt-2 text-sm text-gray-600 space-y-1">
                         <div>
-                          <span className="font-medium">Your local time:</span> {date.toLocaleDateString()} at {time}
+                          <span className="font-medium">Your appointment date and time (ቀጠሮ የያዙበት ቀን እና ሰዓት):</span> {date.toLocaleDateString()} at {time}
                         </div>
+                        {/*}
                         <div className="text-xs">
-                          <span className="font-medium">Church time (Maryland):</span> {
+                          <span className="font-medium">Church time in Maryland (አሁን በ ሜሪላንድ/ቸርች ስዓት አቆጣጠር):</span> {
                             formatInTimeZone(churchTime, TIMEZONE, 'EEEE, MMMM d, yyyy h:mm a')
                           } (Eastern Time)
                         </div>
+                        
                         <div className="text-xs text-blue-600">
                           <span className="font-medium">Note:</span> Maryland time is {timeDiffText} your local time • Same calendar day
                         </div>
+                        */}
                       </div>
                     )
                   })()}

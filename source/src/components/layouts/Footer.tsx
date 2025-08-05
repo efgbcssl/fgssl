@@ -88,7 +88,8 @@ const Footer = () => {
                         </div>
                     </div>
 
-                    {/* Newsletter */}
+                    {/*
+                    
                     <div>
                         <h3 className="text-lg font-bold mb-6 font-heading">Subscribe to Our Newsletter</h3>
                         <p className="text-gray-300 mb-4">Stay updated with our latest sermons and events.</p>
@@ -107,6 +108,7 @@ const Footer = () => {
                             </button>
                         </form>
                     </div>
+                    */}
                 </div>
 
                 <hr className="my-8 border-gray-700" />
