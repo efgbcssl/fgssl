@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/accordion"
 import { useEffect, useState } from 'react'
 import { FAQ } from '@/types/faq'
+import Link from "next/link"
 
 export default function FAQSection() {
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -79,12 +80,12 @@ export default function FAQSection() {
             <p className="text-church-muted mb-4">
               Don&apos;t see your question listed? Feel free to reach out to us directly.
             </p>
-            <a
+            <Link
               href="/contact"
               className="text-church-primary font-medium hover:text-church-primary/80 transition-colors"
             >
               Contact us for more information &rarr;
-            </a>
+            </Link>
           </div>
         </div>
       </div>

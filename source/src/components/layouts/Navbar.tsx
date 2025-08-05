@@ -63,7 +63,7 @@ export default function Navbar() {
                         </Button>
                     </Link>
                     <Link href="/login">
-                        <Button>
+                        <Button className=''>
                             Become A Family
                         </Button>
                     </Link>
