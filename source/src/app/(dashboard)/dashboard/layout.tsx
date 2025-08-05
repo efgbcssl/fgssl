@@ -4,6 +4,8 @@ import '@/styles/globals.css';
 import { cn } from '@/lib/utils';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Navbar } from '@/components/dashboard/NavBar';
+import { SessionProvider } from 'next-auth/react';
+//import {auth} from '@/app/(auth)/[...nextauth]'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-body' });
 const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-heading' });
@@ -13,11 +15,13 @@ export const metadata: Metadata = {
     description: 'Administrative dashboard for church management',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+
+    //const session = await auth();
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={cn(
@@ -25,11 +29,13 @@ export default function RootLayout({
                 inter.variable,
                 montserrat.variable
             )}>
+                <SessionProvider>
                 <div className="flex h-screen overflow-hidden">
                     <DashboardLayout>
                         {children}
                     </DashboardLayout>
                 </div>
+                </SessionProvider>
             </body>
         </html>
     );

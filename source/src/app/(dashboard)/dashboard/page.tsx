@@ -41,12 +41,12 @@ export default function DashboardPage() {
     const { data: session, status } = useSession();
 
     useEffect(() => {
-        if (status === 'loading') return; // Avoid fetching data while loading
+        //if (status === 'loading') return; 
 
-        if (status === 'unauthenticated') {
-            router.push("/auth/signin");
+        /*if (status === 'unauthenticated') {
+            router.push("/login");
             return;
-        }
+        }*/
 
         // Fetch dashboard data
         const fetchData = async () => {

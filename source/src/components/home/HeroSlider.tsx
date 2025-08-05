@@ -17,7 +17,7 @@ const slides = [
     title: "The Ethiopian Full Gospel Belivers Church (Silver Spring Local)",
     subtitle: "የኢትዮጵያ ሙሉ ወንጌል አማኞች ቤተ ክርስቲያን (ሲልቨር ስፕሪንግ አጥቢያ)",
     buttonText: "Join Us Sunday",
-    buttonLink: "/about",
+    buttonLink: "/login",
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const slides = [
     title: "Experience Worship",
     subtitle: "Connect with God and fellow believers",
     buttonText: "Service Times",
-    buttonLink: "/about",
+    buttonLink: "/login",
   },
   {
     id: 3,
@@ -33,7 +33,7 @@ const slides = [
     title: "Make a Difference",
     subtitle: "Serve in our community outreach programs",
     buttonText: "Get Involved",
-    buttonLink: "/contact",
+    buttonLink: "/donations",
   },
   {
     id: 4,
@@ -41,7 +41,7 @@ const slides = [
     title: "Make a Difference",
     subtitle: "Serve in our community outreach programs",
     buttonText: "Get Involved",
-    buttonLink: "/about",
+    buttonLink: "/donations",
   },
   {
     id: 5,
@@ -49,7 +49,7 @@ const slides = [
     title: "Make a Difference",
     subtitle: "Serve in our community outreach programs",
     buttonText: "Get Involved",
-    buttonLink: "/about",
+    buttonLink: "/donations",
   },
 ]
 
