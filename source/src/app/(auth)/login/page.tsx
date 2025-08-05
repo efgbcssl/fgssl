@@ -13,10 +13,19 @@ const SignInPage = () => {
     return (
         <div className="min-h-screen bg-church-light flex flex-col items-center justify-center p-6">
             <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden p-8 text-center">
-                {/* Church Logo Placeholder - Replace with your actual logo */}
-                <div className="mb-6 flex justify-center">
-                    <div className="w-24 h-24 rounded-full bg-church-primary flex items-center justify-center text-white text-2xl font-bold">
-                        Ethiopian Full Gospel Believers Church (Silver Spring Local)
+                {/* Church Logo and Name */}
+                <div className="mb-6 flex flex-col items-center gap-4">
+                    <div className="w-24 h-24 rounded-full bg-church-primary flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                        <Image
+                            src="/logo.png"
+                            alt="EFGBC Logo"
+                            width={96}
+                            height={96}
+                            className="object-cover"
+                        />
+                    </div>
+                    <div className="text-church-dark font-medium">
+                        Ethiopian Full Gospel Believers Church <br />(Silver Spring Local)
                     </div>
                 </div>
 

@@ -1,3 +1,5 @@
+import Link from "next/dist/client/link";
+
 export default function Register() {
     return (
         <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-lg shadow">
@@ -47,9 +49,9 @@ export default function Register() {
                 </button>
             </form>
             <div className="mt-4 text-center">
-                <a href="/login" className="text-blue-600 hover:underline">
+                <Link href="/login" className="text-blue-600 hover:underline">
                     Already have an account? Login
-                </a>
+                </Link>
             </div>
         </div>
     )

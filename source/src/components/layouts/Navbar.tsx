@@ -62,6 +62,11 @@ export default function Navbar() {
                             Donate
                         </Button>
                     </Link>
+                    <Link href="/login">
+                        <Button>
+                            Become A Family
+                        </Button>
+                    </Link>
                 </div>
 
                 {/* Mobile menu button */}
@@ -100,6 +105,11 @@ export default function Navbar() {
                         <Link href="/donations">
                             <Button className="w-full mt-3 bg-church-primary hover:bg-church-primary/90 text-white">
                                 Donate
+                            </Button>
+                        </Link>
+                        <Link href="/login">
+                            <Button className='w-full mt-3'>
+                                Become A Family
                             </Button>
                         </Link>
                     </div>
