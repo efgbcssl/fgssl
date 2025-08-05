@@ -12,7 +12,7 @@ import {
   sendSubscriptionCancellationEmail
 } from '@/lib/email'
 import { randomUUID } from 'crypto'
-import { generateUnsubscribeLink } from '@/lib/stripeHelper'
+import { generateUnsubscribeLink } from '@/lib/helper'
 import { createExpiringToken } from '@/lib/utils';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -474,6 +474,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
     // Send confirmation email
     try {
       const unsubscribeLink = await generateUnsubscribeLink(subscription.id, customerEmail);
+      console.log("unsubscribe link ", unsubscribeLink)
       
       await sendDonationEmail({
         to: customerEmail,
@@ -656,7 +657,8 @@ async function handleSubscriptionCreated(event: Stripe.Event) {
     } catch (error) {
       console.error('❌ Failed to update donor record:', error)
     }
-
+const unsubscribeLink = await generateUnsubscribeLink(subscription.id, customerEmail);
+      console.log("unsubscribe link ", unsubscribeLink)
     // Send subscription confirmation email
     await sendSubscriptionConfirmationEmail({
       to: customerEmail,
@@ -667,8 +669,8 @@ async function handleSubscriptionCreated(event: Stripe.Event) {
       donationType: subscription.metadata?.donationType || 'Recurring Donation',
       subscriptionId: subscription.id,
       nextBillingDate: new Date((subscription as any).current_period_end * 1000),
-      manageSubscriptionUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage?customer_id=${customer.id}`,
-      unsubscribeUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/cancel?subscription_id=${subscription.id}`
+      manageSubscriptionUrl: unsubscribeLink,
+      unsubscribeUrl: unsubscribeLink
     })
 
     console.log('✉️ Sent subscription confirmation email')

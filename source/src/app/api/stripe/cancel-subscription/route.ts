@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import {stripe} from '@/lib/stripe';
+import stripe from '@/lib/stripe';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -31,6 +31,7 @@ export async function GET(request: Request) {
 
         // Cancel subscription
         const cancelledSubscription = await stripe.subscriptions.cancel(subscriptionId);
+        console.log('Subscription cancelled:', cancelledSubscription.id);
 
         // Redirect to confirmation page
         return NextResponse.redirect(new URL('/donations/manage?cancelled=true', request.url));
