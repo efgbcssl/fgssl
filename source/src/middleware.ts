@@ -83,9 +83,6 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-<<<<<<< Current (Your changes)
-    matcher: ["/resourcesssss/:path*"]
-=======
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
@@ -97,5 +94,4 @@ export const config = {
      */
     "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.).*)",
   ],
->>>>>>> Incoming (Background Agent changes)
 }
