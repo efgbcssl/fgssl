@@ -1,50 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import NextAuth, { type NextAuthConfig, type User } from "next-auth";
+import NextAuth from "next-auth";
 import GoogleProvider, { type GoogleProfile } from "next-auth/providers/google";
 import AppleProvider, { type AppleProfile } from "next-auth/providers/apple";
 import { xata } from "@/lib/xata";
-import type { AdapterUser } from "next-auth/adapters";
-import type { JWT } from "next-auth/jwt";
-import type { Session } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
+import { randomUUID } from 'crypto';
 
-interface AccountsRecord {
-    userId?: string | { xata_id: string };
-    user?: string; // Should be a string for the linked user ID
-    provider: string;
-    providerAccountId: string;
-    type: string;
-    access_token?: string;
-    expires_at?: number;
-    token_type?: string;
-    scope?: string;
-    id_token?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
+// Type declarations are in src/types/next-auth.d.ts
 
-// Extend the User type to include your custom fields
-declare module "next-auth" {
-    interface User {
-        id?: string;
-        role: string;
-    }
-    interface Session {
-        user: User & {
-            id: string;
-            role: string;
-        };
-    }
-}
-
-declare module "next-auth/jwt" {
-    interface JWT {
-        id: string;
-        role: string;
-    }
-}
-
-export const authOptions: NextAuthConfig = {
+const authConfig: NextAuthConfig = {
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -67,24 +32,41 @@ export const authOptions: NextAuthConfig = {
                     throw new Error("No email provided");
                 }
                 console.log("User Email:", user.email);
-                console.log("checking for existing user in database");
+                console.log("Checking for existing user in database");
 
                 // Check if user exists in database
-                const existingUser = await xata.db.users
+                let existingUser = await xata.db.users
                     .filter({ email: user.email })
                     .getFirst();
 
                 if (!existingUser) {
                     // Create new user if doesn't exist
                     console.log("Creating new user in database");
-                    await xata.db.users.create({
+                    const userId = randomUUID();
+                    existingUser = await xata.db.users.create({
+                        id: userId,
                         email: user.email,
                         name: user.name || profile?.name || "New User",
                         image: user.image || (profile as GoogleProfile)?.picture || null,
                         role: "member",
+                        phone: null,
+                        emailVerified: null,
                         createdAt: new Date(),
                         updatedAt: new Date(),
                     });
+                    
+                    if (!existingUser) {
+                        throw new Error("Failed to create user");
+                    }
+                    console.log("New user created with ID:", existingUser.id);
+                } else {
+                    // Update existing user's last login and other info if needed
+                    await xata.db.users.update(existingUser.xata_id, {
+                        name: user.name || existingUser.name,
+                        image: user.image || existingUser.image,
+                        updatedAt: new Date(),
+                    });
+                    console.log("Existing user updated:", existingUser.id);
                 }
 
                 // Link account if it doesn't exist
@@ -99,28 +81,28 @@ export const authOptions: NextAuthConfig = {
 
                     if (!existingAccount) {
                         console.log("Creating new account in database");
-                        const userRecord = await xata.db.users
-                            .filter({ email: user.email })
-                            .getFirst();
-
-                        if (userRecord) {
-                            const newAccount = await xata.db.accounts.create({
-                                userId: { xata_id: existingUser?.id },
-                                provider: account.provider,
-                                providerAccountId: account.providerAccountId,
-                                type: account.type,
-                                access_token: account.access_token,
-                                expires_at: account.expires_at ?? null,
-                                expires_attr: account.expires_at ? new Date(account.expires_at * 1000) : null,
-                                token_type: account.token_type,
-                                scope: account.scope,
-                                id_token: account.id_token,
-                                createdAt: new Date(),
-                                updatedAt: new Date(),
-                            }) as AccountsRecord;
-                        }
+                        
+                        await xata.db.accounts.create({
+                            userId: existingUser.xata_id,
+                            provider: account.provider,
+                            providerAccountId: account.providerAccountId,
+                            type: account.type,
+                            access_token: account.access_token || null,
+                            expires_at: account.expires_at || null,
+                            expires_att: account.expires_at ? new Date(account.expires_at * 1000).toISOString() : null,
+                            token_type: account.token_type || null,
+                            scope: account.scope || null,
+                            id_token: account.id_token || null,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                        });
+                        
+                        console.log("Account linked successfully");
+                    } else {
+                        console.log("Account already exists");
                     }
                 }
+                
                 console.log("User signed in successfully");
                 return true;
             } catch (error) {
@@ -128,20 +110,23 @@ export const authOptions: NextAuthConfig = {
                 return false;
             }
         },
-        async jwt({ token, user }: { token: JWT; user?: User | AdapterUser }) {
+        async jwt({ token, user }) {
             if (user?.email) {
                 const dbUser = await xata.db.users
                     .filter({ email: user.email })
                     .getFirst();
 
                 if (dbUser) {
-                    token.id = dbUser.id;
+                    token.id = dbUser.xata_id;
                     token.role = dbUser.role;
+                    token.email = dbUser.email;
+                    token.name = dbUser.name;
+                    token.picture = dbUser.image;
                 }
             }
             return token;
         },
-        async session({ session, token }: { session: Session; token: JWT }) {
+        async session({ session, token }) {
             if (session.user && token.id && token.role) {
                 session.user.id = token.id;
                 session.user.role = token.role;
@@ -157,6 +142,6 @@ export const authOptions: NextAuthConfig = {
     debug: process.env.NODE_ENV === "development",
 };
 
-const handler = NextAuth(authOptions);
+const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-export { handler as GET, handler as POST };
+export const { GET, POST } = handlers;

@@ -22,8 +22,9 @@ interface SubscriptionDetails {
 }
 
 interface ApiResponse {
-  subscription: SubscriptionDetails
-  token: string
+  subscription?: SubscriptionDetails
+  token?: string
+  error?: string
 }
 
 export default function UnsubscribePage() {
@@ -50,7 +51,7 @@ export default function UnsubscribePage() {
     fetch(`/api/cancel-subscription?token=${tokenParam}&sub=${subParam}`)
       .then(response => response.json())
       .then((data: ApiResponse) => {
-        if (data.subscription) {
+        if (data.subscription && data.token) {
           setSubscription(data.subscription)
           setToken(data.token)
         } else {
