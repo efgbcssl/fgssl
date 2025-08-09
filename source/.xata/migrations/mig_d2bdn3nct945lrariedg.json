@@ -1,0 +1,20 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2bdn3nct945lrariedg",
+    "operations": [
+      {
+        "alter_column": {
+          "name": "expires_att",
+          "table": "accounts",
+          "column": "expires_at"
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2bdn3nct945lrariedg",
+  "parent": "mig_d2bbr6nct945lrarie90",
+  "schema": "public",
+  "startedAt": "2025-08-09T05:24:31.349919Z"
+}

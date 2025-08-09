@@ -1,0 +1,44 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2bbr6nct945lrarie90",
+    "operations": [
+      {
+        "add_column": {
+          "up": "''",
+          "table": "users",
+          "column": {
+            "name": "id",
+            "type": "text",
+            "check": {
+              "name": "users_xata_text_length_id",
+              "constraint": "OCTET_LENGTH(\"id\") <= 204800"
+            },
+            "unique": true,
+            "comment": "{\"xata.type\":\"text\"}"
+          }
+        }
+      },
+      {
+        "add_column": {
+          "table": "users",
+          "column": {
+            "name": "image",
+            "type": "text",
+            "check": {
+              "name": "users_xata_text_length_image",
+              "constraint": "OCTET_LENGTH(\"image\") <= 204800"
+            },
+            "comment": "{\"xata.type\":\"text\"}",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2bbr6nct945lrarie90",
+  "parent": "mig_d2bank8bs5avv4bj64tg",
+  "schema": "public",
+  "startedAt": "2025-08-09T03:16:43.719829Z"
+}

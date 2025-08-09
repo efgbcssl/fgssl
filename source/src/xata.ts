@@ -22,8 +22,8 @@ const tables = [
       },
       accounts_xata_text_length_expires_at: {
         name: "accounts_xata_text_length_expires_at",
-        columns: ["expires_at"],
-        definition: "CHECK ((octet_length(expires_at) <= 204800))",
+        columns: ["expires_att"],
+        definition: "CHECK ((octet_length(expires_att) <= 204800))",
       },
       accounts_xata_text_length_id_token: {
         name: "accounts_xata_text_length_id_token",
@@ -92,6 +92,14 @@ const tables = [
       },
       {
         name: "expires_at",
+        type: "int",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "expires_att",
         type: "text",
         notNull: false,
         unique: false,
@@ -2382,6 +2390,16 @@ const tables = [
         columns: ["email"],
         definition: "CHECK ((octet_length(email) <= 204800))",
       },
+      users_xata_text_length_id: {
+        name: "users_xata_text_length_id",
+        columns: ["id"],
+        definition: "CHECK ((octet_length(id) <= 204800))",
+      },
+      users_xata_text_length_image: {
+        name: "users_xata_text_length_image",
+        columns: ["image"],
+        definition: "CHECK ((octet_length(image) <= 204800))",
+      },
       users_xata_text_length_name: {
         name: "users_xata_text_length_name",
         columns: ["name"],
@@ -2409,6 +2427,10 @@ const tables = [
         name: "_pgroll_new_users_xata_id_key",
         columns: ["xata_id"],
       },
+      users__pgroll_new_id_key: {
+        name: "users__pgroll_new_id_key",
+        columns: ["id"],
+      },
     },
     columns: [
       {
@@ -2435,6 +2457,22 @@ const tables = [
         unique: false,
         defaultValue: null,
         comment: "",
+      },
+      {
+        name: "id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "image",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
       },
       {
         name: "name",

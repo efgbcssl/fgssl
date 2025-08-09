@@ -1,0 +1,24 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2bdor9abui1ml6v6vkg",
+    "operations": [
+      {
+        "add_column": {
+          "table": "accounts",
+          "column": {
+            "name": "expires_at",
+            "type": "int",
+            "comment": "",
+            "nullable": true
+          }
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2bdor9abui1ml6v6vkg",
+  "parent": "mig_d2bdn3nct945lrariedg",
+  "schema": "public",
+  "startedAt": "2025-08-09T05:28:14.371208Z"
+}
