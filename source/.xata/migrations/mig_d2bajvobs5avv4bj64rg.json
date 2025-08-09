@@ -1,0 +1,155 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2bajvobs5avv4bj64rg",
+    "operations": [
+      {
+        "create_table": {
+          "name": "accounts",
+          "columns": [
+            {
+              "name": "userId",
+              "type": "text",
+              "comment": "{\"xata.link\":\"users\"}",
+              "references": {
+                "name": "userId_link",
+                "table": "users",
+                "column": "xata_id",
+                "on_delete": "SET NULL"
+              }
+            },
+            {
+              "name": "provider",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_provider",
+                "constraint": "OCTET_LENGTH(\"provider\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "providerAccountId",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_providerAccountId",
+                "constraint": "OCTET_LENGTH(\"providerAccountId\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "type",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_type",
+                "constraint": "OCTET_LENGTH(\"type\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "access_token",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_access_token",
+                "constraint": "OCTET_LENGTH(\"access_token\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "expires_at",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_expires_at",
+                "constraint": "OCTET_LENGTH(\"expires_at\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "token_type",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_token_type",
+                "constraint": "OCTET_LENGTH(\"token_type\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "scope",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_scope",
+                "constraint": "OCTET_LENGTH(\"scope\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "id_token",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_text_length_id_token",
+                "constraint": "OCTET_LENGTH(\"id_token\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "createdAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "updatedAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "accounts_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"accounts\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"accounts\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2bajvobs5avv4bj64rg",
+  "parent": "mig_d2bagrgbs5avv4bj64qg",
+  "schema": "public",
+  "startedAt": "2025-08-09T01:53:04.430449Z"
+}

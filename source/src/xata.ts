@@ -8,6 +8,197 @@ import type {
 
 const tables = [
   {
+    name: "accounts",
+    checkConstraints: {
+      accounts_xata_id_length_xata_id: {
+        name: "accounts_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      accounts_xata_text_length_access_token: {
+        name: "accounts_xata_text_length_access_token",
+        columns: ["access_token"],
+        definition: "CHECK ((octet_length(access_token) <= 204800))",
+      },
+      accounts_xata_text_length_expires_at: {
+        name: "accounts_xata_text_length_expires_at",
+        columns: ["expires_at"],
+        definition: "CHECK ((octet_length(expires_at) <= 204800))",
+      },
+      accounts_xata_text_length_id_token: {
+        name: "accounts_xata_text_length_id_token",
+        columns: ["id_token"],
+        definition: "CHECK ((octet_length(id_token) <= 204800))",
+      },
+      accounts_xata_text_length_provider: {
+        name: "accounts_xata_text_length_provider",
+        columns: ["provider"],
+        definition: "CHECK ((octet_length(provider) <= 204800))",
+      },
+      accounts_xata_text_length_providerAccountId: {
+        name: "accounts_xata_text_length_providerAccountId",
+        columns: ["providerAccountId"],
+        definition: 'CHECK ((octet_length("providerAccountId") <= 204800))',
+      },
+      accounts_xata_text_length_scope: {
+        name: "accounts_xata_text_length_scope",
+        columns: ["scope"],
+        definition: "CHECK ((octet_length(scope) <= 204800))",
+      },
+      accounts_xata_text_length_token_type: {
+        name: "accounts_xata_text_length_token_type",
+        columns: ["token_type"],
+        definition: "CHECK ((octet_length(token_type) <= 204800))",
+      },
+      accounts_xata_text_length_type: {
+        name: "accounts_xata_text_length_type",
+        columns: ["type"],
+        definition: "CHECK ((octet_length(type) <= 204800))",
+      },
+    },
+    foreignKeys: {
+      userId_link: {
+        name: "userId_link",
+        columns: ["userId"],
+        referencedTable: "users",
+        referencedColumns: ["xata_id"],
+        onDelete: "SET NULL",
+      },
+    },
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_accounts_xata_id_key: {
+        name: "_pgroll_new_accounts_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "access_token",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue:
+          "'2025-08-09 01:53:04.665898+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "expires_at",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "id_token",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "provider",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "providerAccountId",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "scope",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "token_type",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "type",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue:
+          "'2025-08-09 01:53:04.665898+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "userId",
+        type: "link",
+        link: { table: "users" },
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"users"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "appointments",
     checkConstraints: {
       appointments_xata_id_length_xata_id: {
@@ -1907,6 +2098,116 @@ const tables = [
     ],
   },
   {
+    name: "sessions",
+    checkConstraints: {
+      sessions_xata_id_length_xata_id: {
+        name: "sessions_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      sessions_xata_text_length_sessionToken: {
+        name: "sessions_xata_text_length_sessionToken",
+        columns: ["sessionToken"],
+        definition: 'CHECK ((octet_length("sessionToken") <= 204800))',
+      },
+    },
+    foreignKeys: {
+      userId_link: {
+        name: "userId_link",
+        columns: ["userId"],
+        referencedTable: "users",
+        referencedColumns: ["xata_id"],
+        onDelete: "SET NULL",
+      },
+    },
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_sessions_sessionToken_key: {
+        name: "_pgroll_new_sessions_sessionToken_key",
+        columns: ["sessionToken"],
+      },
+      _pgroll_new_sessions_xata_id_key: {
+        name: "_pgroll_new_sessions_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "'2025-08-09 01:57:38.0412+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "expires",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "sessionToken",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "'2025-08-09 01:57:38.0412+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "userId",
+        type: "link",
+        link: { table: "users" },
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.link":"users"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
     name: "subscriptionCancellation",
     checkConstraints: {
       subscriptionCancellation_xata_id_length_xata_id: {
@@ -2068,10 +2369,237 @@ const tables = [
       },
     ],
   },
+  {
+    name: "users",
+    checkConstraints: {
+      users_xata_id_length_xata_id: {
+        name: "users_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      users_xata_text_length_email: {
+        name: "users_xata_text_length_email",
+        columns: ["email"],
+        definition: "CHECK ((octet_length(email) <= 204800))",
+      },
+      users_xata_text_length_name: {
+        name: "users_xata_text_length_name",
+        columns: ["name"],
+        definition: "CHECK ((octet_length(name) <= 204800))",
+      },
+      users_xata_text_length_phone: {
+        name: "users_xata_text_length_phone",
+        columns: ["phone"],
+        definition: "CHECK ((octet_length(phone) <= 204800))",
+      },
+      users_xata_text_length_role: {
+        name: "users_xata_text_length_role",
+        columns: ["role"],
+        definition: "CHECK ((octet_length(role) <= 204800))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_users_email_key: {
+        name: "_pgroll_new_users_email_key",
+        columns: ["email"],
+      },
+      _pgroll_new_users_xata_id_key: {
+        name: "_pgroll_new_users_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "createdAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue:
+          "'2025-08-09 01:46:24.135183+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "email",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "emailVerified",
+        type: "datetime",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "name",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "phone",
+        type: "text",
+        notNull: false,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "role",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: "'member'::text",
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue:
+          "'2025-08-09 01:46:24.135183+00'::timestamp with time zone",
+        comment: "",
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
+  {
+    name: "verification_tokens",
+    checkConstraints: {
+      verification_tokens_xata_id_length_xata_id: {
+        name: "verification_tokens_xata_id_length_xata_id",
+        columns: ["xata_id"],
+        definition: "CHECK ((length(xata_id) < 256))",
+      },
+      verification_tokens_xata_text_length_identifier: {
+        name: "verification_tokens_xata_text_length_identifier",
+        columns: ["identifier"],
+        definition: "CHECK ((octet_length(identifier) <= 204800))",
+      },
+      verification_tokens_xata_text_length_token: {
+        name: "verification_tokens_xata_text_length_token",
+        columns: ["token"],
+        definition: "CHECK ((octet_length(token) <= 204800))",
+      },
+    },
+    foreignKeys: {},
+    primaryKey: [],
+    uniqueConstraints: {
+      _pgroll_new_verification_tokens_token_key: {
+        name: "_pgroll_new_verification_tokens_token_key",
+        columns: ["token"],
+      },
+      _pgroll_new_verification_tokens_xata_id_key: {
+        name: "_pgroll_new_verification_tokens_xata_id_key",
+        columns: ["xata_id"],
+      },
+    },
+    columns: [
+      {
+        name: "expires",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: "",
+      },
+      {
+        name: "identifier",
+        type: "text",
+        notNull: true,
+        unique: false,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "token",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: null,
+        comment: '{"xata.type":"text"}',
+      },
+      {
+        name: "xata_createdat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_id",
+        type: "text",
+        notNull: true,
+        unique: true,
+        defaultValue: "('rec_'::text || (xata_private.xid())::text)",
+        comment: "",
+      },
+      {
+        name: "xata_updatedat",
+        type: "datetime",
+        notNull: true,
+        unique: false,
+        defaultValue: "now()",
+        comment: "",
+      },
+      {
+        name: "xata_version",
+        type: "int",
+        notNull: true,
+        unique: false,
+        defaultValue: "0",
+        comment: "",
+      },
+    ],
+  },
 ] as const;
 
 export type SchemaTables = typeof tables;
 export type InferredTypes = SchemaInference<SchemaTables>;
+
+export type Accounts = InferredTypes["accounts"];
+export type AccountsRecord = Accounts & XataRecord;
 
 export type Appointments = InferredTypes["appointments"];
 export type AppointmentsRecord = Appointments & XataRecord;
@@ -2106,12 +2634,22 @@ export type MessagesRecord = Messages & XataRecord;
 export type Posts = InferredTypes["posts"];
 export type PostsRecord = Posts & XataRecord;
 
+export type Sessions = InferredTypes["sessions"];
+export type SessionsRecord = Sessions & XataRecord;
+
 export type SubscriptionCancellation =
   InferredTypes["subscriptionCancellation"];
 export type SubscriptionCancellationRecord = SubscriptionCancellation &
   XataRecord;
 
+export type Users = InferredTypes["users"];
+export type UsersRecord = Users & XataRecord;
+
+export type VerificationTokens = InferredTypes["verification_tokens"];
+export type VerificationTokensRecord = VerificationTokens & XataRecord;
+
 export type DatabaseSchema = {
+  accounts: AccountsRecord;
   appointments: AppointmentsRecord;
   comments: CommentsRecord;
   donations: DonationsRecord;
@@ -2123,7 +2661,10 @@ export type DatabaseSchema = {
   likes: LikesRecord;
   messages: MessagesRecord;
   posts: PostsRecord;
+  sessions: SessionsRecord;
   subscriptionCancellation: SubscriptionCancellationRecord;
+  users: UsersRecord;
+  verification_tokens: VerificationTokensRecord;
 };
 
 const DatabaseClient = buildClient();

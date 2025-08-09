@@ -1,0 +1,80 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2bank8bs5avv4bj64tg",
+    "operations": [
+      {
+        "create_table": {
+          "name": "verification_tokens",
+          "columns": [
+            {
+              "name": "identifier",
+              "type": "text",
+              "check": {
+                "name": "verification_tokens_xata_text_length_identifier",
+                "constraint": "OCTET_LENGTH(\"identifier\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "token",
+              "type": "text",
+              "check": {
+                "name": "verification_tokens_xata_text_length_token",
+                "constraint": "OCTET_LENGTH(\"token\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "expires",
+              "type": "timestamptz"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "verification_tokens_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"verification_tokens\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"verification_tokens\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2bank8bs5avv4bj64tg",
+  "parent": "mig_d2bam48bs5avv4bj64sg",
+  "schema": "public",
+  "startedAt": "2025-08-09T02:00:49.816214Z"
+}

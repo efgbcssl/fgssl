@@ -1,0 +1,112 @@
+{
+  "done": true,
+  "migration": {
+    "name": "mig_d2bagrgbs5avv4bj64qg",
+    "operations": [
+      {
+        "create_table": {
+          "name": "users",
+          "columns": [
+            {
+              "name": "email",
+              "type": "text",
+              "check": {
+                "name": "users_xata_text_length_email",
+                "constraint": "OCTET_LENGTH(\"email\") <= 204800"
+              },
+              "unique": true,
+              "comment": "{\"xata.type\":\"text\"}"
+            },
+            {
+              "name": "name",
+              "type": "text",
+              "check": {
+                "name": "users_xata_text_length_name",
+                "constraint": "OCTET_LENGTH(\"name\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "phone",
+              "type": "text",
+              "check": {
+                "name": "users_xata_text_length_phone",
+                "constraint": "OCTET_LENGTH(\"phone\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "nullable": true
+            },
+            {
+              "name": "role",
+              "type": "text",
+              "check": {
+                "name": "users_xata_text_length_role",
+                "constraint": "OCTET_LENGTH(\"role\") <= 204800"
+              },
+              "comment": "{\"xata.type\":\"text\"}",
+              "default": "'member'"
+            },
+            {
+              "name": "emailVerified",
+              "type": "timestamptz",
+              "nullable": true
+            },
+            {
+              "name": "createdAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "updatedAt",
+              "type": "timestamptz",
+              "default": "'now()'"
+            },
+            {
+              "name": "xata_updatedat",
+              "type": "timestamptz",
+              "default": "now()"
+            },
+            {
+              "name": "xata_id",
+              "type": "text",
+              "check": {
+                "name": "users_xata_id_length_xata_id",
+                "constraint": "length(\"xata_id\") < 256"
+              },
+              "unique": true,
+              "default": "'rec_' || xata_private.xid()"
+            },
+            {
+              "name": "xata_version",
+              "type": "integer",
+              "default": "0"
+            },
+            {
+              "name": "xata_createdat",
+              "type": "timestamptz",
+              "default": "now()"
+            }
+          ]
+        }
+      },
+      {
+        "sql": {
+          "up": "ALTER TABLE \"users\" REPLICA IDENTITY FULL",
+          "onComplete": true
+        }
+      },
+      {
+        "sql": {
+          "up": "CREATE TRIGGER xata_maintain_metadata_trigger_pgroll\n  BEFORE INSERT OR UPDATE\n  ON \"users\"\n  FOR EACH ROW\n  EXECUTE FUNCTION xata_private.maintain_metadata_trigger_pgroll()",
+          "onComplete": true
+        }
+      }
+    ]
+  },
+  "migrationType": "pgroll",
+  "name": "mig_d2bagrgbs5avv4bj64qg",
+  "parent": "mig_d2486g05nt1729jqqhqg",
+  "schema": "public",
+  "startedAt": "2025-08-09T01:46:23.976534Z"
+}
