@@ -12,7 +12,30 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Loader2, FileAudio, FileText, Search, Youtube } from 'lucide-react';
+import { 
+    Trash2, 
+    Loader2, 
+    FileAudio, 
+    FileText, 
+    Search, 
+    Youtube, 
+    Upload, 
+    Play, 
+    Pause, 
+    Download,
+    Eye,
+    Edit,
+    MoreHorizontal,
+    Star,
+    Tag,
+    Calendar,
+    User,
+    BarChart3,
+    TrendingUp,
+    Files,
+    Music,
+    Video
+} from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +45,31 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Image from "next/image"
 import { ToastAction } from "@/components/ui/toast"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import type { Resource as ResourceType, ResourceStats } from '@/types/resources'
 
 interface YouTubeMetadata {
     description?: string;
@@ -30,16 +78,18 @@ interface YouTubeMetadata {
     thumbnail?: File | null;
 }
 
-interface Resource {
+interface AdminResource {
     fileId: string;
     name: string;
     type: 'audio' | 'pdf' | 'video';
     url: string;
     downloadable?: boolean;
     uploadedAt: string;
+    date?: string;
     size: number;
     youtubeId?: string;
     youtubeMetadata?: YouTubeMetadata;
+    featured?: boolean;
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -50,7 +100,7 @@ const ACCEPTED_FILE_TYPES = {
 };
 
 export default function AdminResourcesPage() {
-    const [resources, setResources] = useState<Resource[]>([]);
+    const [resources, setResources] = useState<AdminResource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [tab, setTab] = useState<'audio' | 'pdf' | 'video'>('audio');
     const [title, setTitle] = useState('');
@@ -66,9 +116,12 @@ export default function AdminResourcesPage() {
     const [privacyStatus, setPrivacyStatus] = useState<'public' | 'unlisted' | 'private'>('unlisted');
     const [tags, setTags] = useState('');
     const [thumbnail, setThumbnail] = useState<File | null>(null);
+    const [category, setCategory] = useState<'sermons' | 'studies' | 'events' | 'music' | 'other'>('sermons');
+    const [featured, setFeatured] = useState(false);
+    const [stats, setStats] = useState<ResourceStats | null>(null);
     const { toast } = useToast();
 
-    const pageSize = 6;
+    const pageSize = 8;
 
     // Debounce search input
     useEffect(() => {
@@ -80,13 +133,59 @@ export default function AdminResourcesPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
+    const calculateStats = useCallback((allResources: AdminResource[]) => {
+        const totalSize = allResources.reduce((acc, resource) => {
+            return acc + ((resource as any).fileSize || 0);
+        }, 0);
+
+        const resourcesByType = {
+            pdf: allResources.filter(r => r.type === 'pdf').length,
+            audio: allResources.filter(r => r.type === 'audio').length,
+            video: allResources.filter(r => r.type === 'video').length,
+        };
+
+        const recentUploads = allResources
+            .sort((a, b) => {
+                const aDate = new Date(a.uploadedAt || a.date || '').getTime();
+                const bDate = new Date(b.uploadedAt || b.date || '').getTime();
+                return bDate - aDate;
+            })
+            .slice(0, 5);
+
+        const popularResources = allResources
+            .filter(r => r.featured)
+            .slice(0, 5);
+
+        return {
+            totalResources: allResources.length,
+            totalSize,
+            resourcesByType,
+            recentUploads: recentUploads as any,
+            popularResources: popularResources as any
+        };
+    }, []);
+
     const fetchResources = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/dashboard/resources/imagekit?type=${tab}`);
-            if (!res.ok) throw new Error('Failed to fetch resources');
-            const data = await res.json();
-            setResources(data);
+            // Fetch all resource types for stats
+            const [audioRes, pdfRes, videoRes] = await Promise.all([
+                fetch('/api/dashboard/resources/imagekit?type=audio'),
+                fetch('/api/dashboard/resources/imagekit?type=pdf'),
+                fetch('/api/dashboard/resources/imagekit?type=video')
+            ]);
+
+            const [audioData, pdfData, videoData] = await Promise.all([
+                audioRes.ok ? audioRes.json() : [],
+                pdfRes.ok ? pdfRes.json() : [],
+                videoRes.ok ? videoRes.json() : []
+            ]);
+
+            const allResources = [...audioData, ...pdfData, ...videoData];
+            const currentTabResources = allResources.filter(r => r.type === tab);
+            
+            setResources(currentTabResources);
+            setStats(calculateStats(allResources));
         } catch (error) {
             toast({
                 title: 'Error',
@@ -96,7 +195,7 @@ export default function AdminResourcesPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [tab, toast]);
+    }, [tab, toast, calculateStats]);
 
     useEffect(() => {
         fetchResources();
@@ -209,6 +308,10 @@ export default function AdminResourcesPage() {
         formData.append('title', title);
         formData.append('type', tab);
         formData.append('downloadable', String(downloadable));
+        formData.append('category', category);
+        formData.append('featured', String(featured));
+        formData.append('description', description);
+        formData.append('tags', tags);
 
         try {
             const xhr = new XMLHttpRequest();
@@ -247,6 +350,10 @@ export default function AdminResourcesPage() {
             setTitle('');
             setFile(null);
             setDownloadable(true);
+            setDescription('');
+            setTags('');
+            setCategory('sermons');
+            setFeatured(false);
             // Refresh resources
             await fetchResources();
         } catch (error) {
@@ -396,8 +503,73 @@ export default function AdminResourcesPage() {
     };
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">Manage Resources</h1>
+        <div className="p-6 max-w-7xl mx-auto space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">Resource Management</h1>
+                    <p className="text-gray-600">Upload and manage your multimedia content</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => window.location.href = '/resources'}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview Site
+                    </Button>
+                </div>
+            </div>
+
+            {/* Stats Cards */}
+            {stats && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Resources</CardTitle>
+                            <Files className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.totalResources}</div>
+                            <p className="text-xs text-muted-foreground">
+                                {formatBytes(stats.totalSize)} total size
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Videos</CardTitle>
+                            <Video className="h-4 w-4 text-red-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.resourcesByType.video}</div>
+                            <p className="text-xs text-muted-foreground">
+                                YouTube & uploaded videos
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Audio Files</CardTitle>
+                            <Music className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.resourcesByType.audio}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Sermons & music files
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Documents</CardTitle>
+                            <FileText className="h-4 w-4 text-green-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.resourcesByType.pdf}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Study guides & materials
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             <Tabs defaultValue="audio" value={tab} onValueChange={val => setTab(val as 'audio' | 'pdf')}>
                 <TabsList>
@@ -413,56 +585,118 @@ export default function AdminResourcesPage() {
                 </TabsList>
 
                 <TabsContent value="audio" className="mt-6">
-                    <div className="space-y-4">
-                        <div>
-                            <Label>Title *</Label>
-                            <Input
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                placeholder="My Audio Resource"
-                            />
-                        </div>
-
-                        <div>
-                            <Label>Audio File *</Label>
-                            <Input
-                                type="file"
-                                onChange={handleFileChange}
-                                accept={ACCEPTED_FILE_TYPES.audio.join(',')}
-                            />
-                            {file && (
-                                <div className="mt-2 text-sm text-muted-foreground">
-                                    Selected: {file.name} ({formatBytes(file.size)} of max {formatBytes(50 * 1024 * 1024)})
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Music className="h-5 w-5 text-blue-500" />
+                                Upload Audio File
+                            </CardTitle>
+                            <CardDescription>
+                                Upload audio files like sermons, music, or podcasts
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Title *</Label>
+                                    <Input
+                                        value={title}
+                                        onChange={e => setTitle(e.target.value)}
+                                        placeholder="Sunday Service - Week 1"
+                                    />
                                 </div>
+                                <div>
+                                    <Label>Category *</Label>
+                                    <Select value={category} onValueChange={setCategory as any}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="sermons">Sermons</SelectItem>
+                                            <SelectItem value="music">Music</SelectItem>
+                                            <SelectItem value="studies">Bible Studies</SelectItem>
+                                            <SelectItem value="events">Events</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label>Description</Label>
+                                <Textarea
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    placeholder="Brief description of the audio content..."
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Tags (comma separated)</Label>
+                                <Input
+                                    value={tags}
+                                    onChange={e => setTags(e.target.value)}
+                                    placeholder="worship, sermon, sunday, faith"
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Audio File *</Label>
+                                <Input
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    accept={ACCEPTED_FILE_TYPES.audio.join(',')}
+                                />
+                                {file && (
+                                    <div className="mt-2 text-sm text-muted-foreground">
+                                        Selected: {file.name} ({formatBytes(file.size)} of max {formatBytes(50 * 1024 * 1024)})
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        id="downloadable"
+                                        checked={downloadable}
+                                        onCheckedChange={setDownloadable}
+                                    />
+                                    <Label htmlFor="downloadable">Allow downloads</Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        id="featured"
+                                        checked={featured}
+                                        onCheckedChange={setFeatured}
+                                    />
+                                    <Label htmlFor="featured">Mark as featured</Label>
+                                </div>
+                            </div>
+
+                            <Button
+                                onClick={handleUpload}
+                                className="w-full"
+                                disabled={uploading || !file || !title.trim()}
+                            >
+                                {uploading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Uploading... ({uploadProgress}%)
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload Audio
+                                    </>
+                                )}
+                            </Button>
+
+                            {uploading && (
+                                <Progress value={uploadProgress} className="h-2" />
                             )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Switch
-                                id="downloadable"
-                                checked={downloadable}
-                                onCheckedChange={setDownloadable}
-                            />
-                            <Label htmlFor="downloadable">Allow downloads</Label>
-                        </div>
-
-                        <Button
-                            onClick={handleUpload}
-                            className="mt-2"
-                            disabled={uploading || !file || !title.trim()}
-                        >
-                            {uploading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Uploading... ({uploadProgress}%)
-                                </>
-                            ) : 'Upload Audio'}
-                        </Button>
-
-                        {uploading && (
-                            <Progress value={uploadProgress} className="h-2" />
-                        )}
-                    </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="pdf" className="mt-6">
