@@ -166,7 +166,7 @@ console.log("Existing User:", existingUser);
             name: `__Secure-next-auth.session-token`,
             options: {
                 httpOnly: true,
-                sameSite: "lax",
+                sameSite: "none",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
                 domain: process.env.NODE_ENV === "production"
