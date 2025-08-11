@@ -203,4 +203,4 @@ const authConfig: NextAuthConfig = {
 export const { GET, POST } = NextAuth(authConfig).handlers;
 
 // Optional: Specify Edge runtime for better performance (if your providers support it)
-export const runtime = "nodejs";
+export const runtime = "edge";
