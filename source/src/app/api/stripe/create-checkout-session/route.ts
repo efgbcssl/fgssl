@@ -3,9 +3,9 @@ import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
 import { xata } from '@/lib/xata'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil' // Updated to the required API version
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: Request) {
     const { eventId, name, email, priceId, successUrl, cancelUrl } = await req.json()

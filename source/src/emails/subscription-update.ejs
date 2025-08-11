@@ -157,7 +157,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="../../public/logo.png" alt="Church Logo" class="logo">
+            <img src="<%= siteUrl %>/logo.png" alt="Church Logo" class="logo">
             <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
             <div class="church-motto">Serving Christ Together</div>
         </div>
@@ -169,13 +169,9 @@
             <p>We've successfully updated your recurring donation as requested. Here's a summary of the changes:</p>
 
             <div class="changes-list">
-                <% changes.forEach(change=> { %>
-                    <div class="change-item">
-                        <strong>
-                            <%= change.field %>:
-                        </strong> Changed from <%= change.oldValue %> to <%= change.newValue %>
-                    </div>
-                    <% }); %>
+                <% changes.forEach(change => { %>
+                    <div class="change-item"><%= change %></div>
+                <% }); %>
             </div>
 
             <div class="receipt-details">

@@ -3,9 +3,9 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil'
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 interface RequestBody {
   name: string
@@ -220,7 +220,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('🔥 Subscription error:', err)
 
-    if (err instanceof stripe.errors.StripeError) {
+    if (err instanceof Stripe.errors.StripeError) {
       const { type, code, message } = err
 
       if (code === 'card_declined' || code === 'insufficient_funds') {

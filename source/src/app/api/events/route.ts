@@ -17,7 +17,7 @@ export async function GET() {
         }
 
         // Clean the data before returning
-        const cleanedEvents = events.map(event => ({
+        const cleanedEvents = events.map((event: any) => ({
             id: event.xata_id,
             title: event.title,
             description: event.description,
