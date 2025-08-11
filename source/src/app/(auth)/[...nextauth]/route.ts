@@ -68,7 +68,7 @@ const authConfig: NextAuthConfig = {
                 const existingUser = await xata.db.users
                     .filter({ email: user.email })
                     .getFirst();
-console.log("Existing User:", existingUser);
+                console.log("Existing User:", existingUser);
                 const dbUser = existingUser
                     ? await xata.db.users.update(existingUser.xata_id, userData)
                     : await xata.db.users.create({
@@ -91,7 +91,6 @@ console.log("Existing User:", existingUser);
                         type: account.type,
                         access_token: account.access_token || null,
                         expires_at: account.expires_at || null,
-                        expires_att: account.expires_at ? new Date(account.expires_at * 1000).toISOString() : null,
                         token_type: account.token_type || null,
                         scope: account.scope || null,
                         id_token: account.id_token || null,
