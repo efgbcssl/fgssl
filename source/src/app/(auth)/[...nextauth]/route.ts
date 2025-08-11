@@ -16,6 +16,7 @@ const authConfig: NextAuthConfig = {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
             profile(profile: GoogleProfile) {
+                console.log("Google profile received:", profile);
                 return {
                     id: profile.sub,
                     name: profile.name,
@@ -43,7 +44,7 @@ const authConfig: NextAuthConfig = {
     },
     callbacks: {
         async signIn({ user, account, profile }) {
-            console.log("SignIn Callback:", { user, account, profile });
+            console.log("🔍 [signIn] START", { user, account, profile });
 
             // Block sign in if no email
             if (!user.email) {
@@ -63,12 +64,11 @@ const authConfig: NextAuthConfig = {
                     emailVerified: new Date(),
                     updatedAt: new Date(),
                 };
-                console.log("User Data to Save:", userData);
-
+                console.log("💾 Attempting DB upsert:", userData);
                 const existingUser = await xata.db.users
                     .filter({ email: user.email })
                     .getFirst();
-                console.log("Existing User:", existingUser);
+                console.log("📦 Existing user from DB:", existingUser);
                 const dbUser = existingUser
                     ? await xata.db.users.update(existingUser.xata_id, userData)
                     : await xata.db.users.create({
@@ -81,9 +81,10 @@ const authConfig: NextAuthConfig = {
                     console.error("Failed to create/update user");
                     return false;
                 }
-
+                console.log("✅ DB user after save:", dbUser);
                 // Handle account linking if OAuth provider
                 if (account) {
+                    console.log("🔗 Linking account:", account);
                     const accountData = {
                         userId: dbUser.xata_id,
                         provider: account.provider,
@@ -113,7 +114,7 @@ const authConfig: NextAuthConfig = {
                         await xata.db.accounts.update(existingAccount.xata_id, accountData);
                     }
                 }
-
+                console.log("✅ [signIn] SUCCESS");
                 return true;
             } catch (error) {
                 console.error("SignIn Error:", error);
@@ -121,12 +122,13 @@ const authConfig: NextAuthConfig = {
             }
         },
         async jwt({ token, user, account, profile }) {
+            console.log("🔑 [jwt] before update:", { token, user, account, profile });
             // Initial sign in
             if (account && user?.email) {
                 const dbUser = await xata.db.users
                     .filter({ email: user.email })
                     .getFirst();
-
+                console.log("📋 [jwt] DB user:", dbUser);
                 if (dbUser) {
                     token.id = dbUser.xata_id;
                     token.role = dbUser.role;
@@ -135,9 +137,11 @@ const authConfig: NextAuthConfig = {
                     token.picture = dbUser.image;
                 }
             }
+            console.log("🔑 [jwt] after update:", token);
             return token;
         },
         async session({ session, token }) {
+            console.log("🗂 [session] before update:", { session, token });
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.role = token.role as string;
@@ -145,9 +149,11 @@ const authConfig: NextAuthConfig = {
                 session.user.email = token.email as string;
                 session.user.image = token.picture as string | null;
             }
+            console.log("🗂 [session] after update:", session);
             return session;
         },
         async redirect({ url, baseUrl }) {
+            console.log("↩️ [redirect]", { url, baseUrl });
             // Allows relative callback URLs
             if (url.startsWith("/")) return `${baseUrl}${url}`;
             // Allows callback URLs on the same origin
@@ -162,26 +168,34 @@ const authConfig: NextAuthConfig = {
     },
     cookies: {
         sessionToken: {
-            name: `__Secure-next-auth.session-token`,
+            name: process.env.NODE_ENV === "production"
+                ? "__Secure-next-auth.session-token"
+                : "next-auth.session-token",
             options: {
                 httpOnly: true,
                 sameSite: "none",
                 path: "/",
-                secure: process.env.NODE_ENV === "production",
-                /*domain: process.env.NODE_ENV === "production"
-                    ? `.${process.env.NEXT_PUBLIC_DOMAIN}`
-                    : undefined,*/
+                secure: process.env.NODE_ENV === "production"
+                ? true
+                : false,
+                domain: process.env.NODE_ENV === "production"
+                    ? `fgssl.vercel.app`
+                    : undefined,
             },
         },
         callbackUrl: {
-            name: `__Secure-next-auth.callback-url`,
+            name: process.env.NODE_ENV === "production"
+                ? "__Secure-next-auth.session-token"
+                : "next-auth.session-token",
             options: {
-                sameSite: "lax",
+                sameSite: "none",
                 path: "/",
-                secure: process.env.NODE_ENV === "production",
-                /*domain: process.env.NODE_ENV === "production"
-                    ? `.${process.env.NEXT_PUBLIC_DOMAIN}`
-                    : undefined,*/
+                secure: process.env.NODE_ENV === "production"
+                ? true
+                : false,
+                domain: process.env.NODE_ENV === "production"
+                    ? `fgssl.vercel.app`
+                    : undefined,
             },
         },
 
