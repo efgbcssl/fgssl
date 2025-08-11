@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import Image from 'next/image'
 
-export default function SignInPage() {
+export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -15,8 +15,8 @@ export default function SignInPage() {
   // Fix callback URL to always use production domain
   const getSafeCallbackUrl = () => {
     const defaultUrl = `${window.location.origin}/dashboard`
-    const callbackUrl = searchParams.get('callbackUrl')
-    
+    const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+
     // Validate the callback URL is from our domain
     if (!callbackUrl) return defaultUrl
     try {
@@ -33,7 +33,10 @@ export default function SignInPage() {
   const handleSignIn = async (provider: 'google' | 'apple') => {
     setLoading(true)
     setError(null)
-    
+    const callbackUrl = getSafeCallbackUrl()
+    console.log('Attempting sign in with callback:', callbackUrl) // Debug log
+    signIn(provider, { callbackUrl })
+
     try {
       const callbackUrl = getSafeCallbackUrl()
       console.log('Attempting sign in with callback:', callbackUrl) // Debug log

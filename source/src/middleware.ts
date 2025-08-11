@@ -93,5 +93,6 @@ export const config = {
      * - public assets
      */
     "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.).*)",
+    '/profile'
   ],
 }
