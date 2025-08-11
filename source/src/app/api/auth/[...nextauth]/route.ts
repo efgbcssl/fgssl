@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
+'use server'
 
 import NextAuth from "next-auth";
 import GoogleProvider, { type GoogleProfile } from "next-auth/providers/google";
@@ -38,8 +38,8 @@ const authConfig: NextAuthConfig = {
         }),
     ],
     pages: {
-        signIn: "/login",
-        error: "/login",
+        signIn: "/auth/login",
+        error: "/auth/login",
     },
     callbacks: {
         async signIn({ user, account, profile }) {
