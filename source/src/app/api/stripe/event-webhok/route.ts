@@ -4,9 +4,9 @@ import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendEventRegistrationEmail } from '@/lib/email'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil'
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 const endpointSecret = process.env.STRIPE_EVENT_WEBHOOK_SECRET!
 
 export async function POST(req: Request) {

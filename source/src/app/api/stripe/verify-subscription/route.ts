@@ -3,10 +3,10 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
+export const dynamic = 'force-dynamic'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil'
-})
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
         const error = errorMap[subscription.status] || {
             status: 400,
-            message: 'Subscription not active'
+            message: `Subscription not active (status: ${subscription.status})`
         }
 
         console.log(`🔴 Subscription status: ${subscription.status}`)

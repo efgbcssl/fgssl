@@ -2,9 +2,9 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil'
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(request: Request) {
     console.log('📩 Received POST request to /create-payment-intent')
@@ -36,6 +36,7 @@ export async function POST(request: Request) {
             automatic_payment_methods: {
                 enabled: true,
             },
+            receipt_email: email, 
         })
         console.log('✅ PaymentIntent created:', paymentIntent.id)
 

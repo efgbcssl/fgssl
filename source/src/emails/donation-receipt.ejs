@@ -144,7 +144,7 @@
     <div class="container">
         <div class="header">
             <!-- Replace with your church logo -->
-            <img src="../../public/logo.png" alt="Church Logo" class="logo">
+            <img src="<%= siteUrl %>/logo.png" alt="Church Logo" class="logo">
             <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
             <div class="church-motto">Serving Christ Together</div>
         </div>
@@ -181,8 +181,7 @@
                 <div class="detail-row">
                     <div class="detail-label">Amount:</div>
                     <div>
-                        <%= currency %>
-                            <%= amount.toFixed(2) %> %>
+                        <%= currency %> <%= amount.toFixed(2) %>
                     </div>
 
                     <div class="detail-row">
