@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { xata } from '@/lib/xata'
 import { sendDonationEmail } from '@/lib/email'
-import { generateDonationReceiptPDF } from '@/lib/pdf'
+// import { generateDonationReceiptPDF } from '@/lib/pdf'
+
+export const dynamic = 'force-dynamic'
 
 interface PaymentIntentWithCharges extends Stripe.PaymentIntent {
     charges: Stripe.ApiList<Stripe.Charge>
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-05-28.basil'
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -148,22 +148,22 @@ export async function GET(request: Request) {
         console.log('🟢 Donation saved successfully:', newDonation.xata_id)
 
         // 8. Generate PDF receipt
-        console.log('🔵 Generating PDF receipt...')
-        try {
-            await generateDonationReceiptPDF({
-                donorName: receiptData.donorName,
-                amount: receiptData.amount,
-                donationType: receiptData.donationType,
-                receiptUrl: receiptData.receiptUrl,
-                createdDate: new Date(receiptData.created * 1000).toLocaleString(),
-                receiptNumber: paymentIntent.id.slice(-8), // Last 8 chars as receipt number
-                frequency: 'one-time',
-                isRecurring: false,
-            })
-            console.log('🟢 PDF generated successfully')
-        } catch (pdfError) {
-            console.error('❌ PDF generation failed:', pdfError)
-        }
+        // Removed here to avoid duplicate work, PDF will be attached via email generation
+        // try {
+        //     await generateDonationReceiptPDF({
+        //         donorName: receiptData.donorName,
+        //         amount: receiptData.amount,
+        //         donationType: receiptData.donationType,
+        //         receiptUrl: receiptData.receiptUrl,
+        //         createdDate: new Date(receiptData.created * 1000).toLocaleString(),
+        //         receiptNumber: paymentIntent.id.slice(-8), // Last 8 chars as receipt number
+        //         frequency: 'one-time',
+        //         isRecurring: false,
+        //     })
+        //     console.log('🟢 PDF generated successfully')
+        // } catch (pdfError) {
+        //     console.error('❌ PDF generation failed:', pdfError)
+        // }
 
         // 9. Send confirmation email
         console.log('🔵 Sending confirmation email...')

@@ -6,6 +6,7 @@ import path from 'path'
 import fs from 'fs/promises'
 import { generateDonationReceiptPDF } from './pdf'
 import { format, formatInTimeZone } from 'date-fns-tz'
+import { resend } from './resend'
 
 // Types
 interface EmailMetrics {
@@ -88,6 +89,9 @@ interface SubscriptionCancellationEmailData {
     reactivateUrl: string
 }
 
+// Env-based email provider selection
+const USE_RESEND = process.env.NODE_ENV === 'production' && !!process.env.RESEND_API_KEY
+
 // Metrics tracking
 const emailMetrics: EmailMetrics = {
     totalSent: 0,
@@ -95,7 +99,7 @@ const emailMetrics: EmailMetrics = {
     deliveryRate: 100,
 }
 
-// Email transporter with connection pooling
+// Email transporter with connection pooling (development)
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
@@ -111,25 +115,30 @@ const transporter = nodemailer.createTransport({
     rateLimit: 5,
 })
 
-// Verify connection configuration
-transporter.verify((error) => {
-    if (error) {
-        console.error('❌ SMTP connection error:', error)
-    } else {
-        console.log('✅ Server is ready to take our messages')
-    }
-})
+// Verify connection configuration in development only
+if (!USE_RESEND && process.env.SMTP_HOST) {
+    transporter.verify((error) => {
+        if (error) {
+            console.error('❌ SMTP connection error:', error)
+        } else {
+            console.log('✅ SMTP server is ready to take messages')
+        }
+    })
+}
 
 // Template rendering helper
 async function renderTemplate(templateName: string, data: Record<string, unknown>) {
     const templatePath = path.join(process.cwd(), 'src', 'emails', `${templateName}.ejs`)
     const html = await fs.readFile(templatePath, 'utf8')
-    return ejs.render(html, data, {
+    return ejs.render(html, {
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
+        ...data,
+    }, {
         root: path.join(process.cwd(), 'src', 'emails'),
     })
 }
 
-// Retry with exponential backoff
+// Unified send with retry across providers
 async function sendWithRetry(
     mailOptions: nodemailer.SendMailOptions,
     emailType: string,
@@ -141,17 +150,37 @@ async function sendWithRetry(
 
     while (attempt < maxRetries) {
         try {
-            const info = await transporter.sendMail(mailOptions)
-            emailMetrics.totalSent++
-            updateDeliveryRate()
-            return { success: true, messageId: info.messageId, attempts: attempt + 1 }
+            if (USE_RESEND) {
+                const attachments = (mailOptions.attachments as Array<{ filename: string; content: Buffer | string; contentType?: string }> | undefined)?.map(att => ({
+                    filename: att.filename,
+                    content: att.content as Buffer | string,
+                    contentType: att.contentType,
+                }))
+
+                const info = await resend.emails.send({
+                    from: (process.env.FROM_EMAIL! || 'donations@yourchurch.org'),
+                    to: [mailOptions.to as string],
+                    subject: mailOptions.subject as string,
+                    html: mailOptions.html as string,
+                    attachments,
+                })
+                if (info.error) throw info.error
+                emailMetrics.totalSent++
+                updateDeliveryRate()
+                return { success: true, messageId: info.data?.id || 'resend', attempts: attempt + 1 }
+            } else {
+                const info = await transporter.sendMail(mailOptions)
+                emailMetrics.totalSent++
+                updateDeliveryRate()
+                return { success: true, messageId: info.messageId, attempts: attempt + 1 }
+            }
         } catch (error) {
             lastError = error
             attempt++
 
             if (attempt < maxRetries) {
                 const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 500
-                console.warn(`⚠️ Attempt ${attempt} failed for ${emailType}. Retrying in ${delay}ms...`)
+                console.warn(`⚠️ Attempt ${attempt} failed for ${emailType}. Retrying in ${Math.round(delay)}ms...`)
                 await new Promise(resolve => setTimeout(resolve, delay))
             }
         }
@@ -275,7 +304,7 @@ export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams) {
         const mailOptions: nodemailer.SendMailOptions = {
             from: process.env.FROM_EMAIL! || 'donations@yourchurch.org',
             to: params.to,
-            subject: `Payment ${params.isRecurring ? 'for recurring donation' : ''} failed - Action required`,
+            subject: `Payment ${params.isRecurring ? 'for recurring donation ' : ''}failed - Action required`,
             html
         }
 
@@ -419,6 +448,7 @@ export async function sendAppointmentEmail({
         // Read and render the template with all timezone information
         const template = await fs.readFile(templatePath, 'utf-8')
         const html = ejs.render(template, {
+            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
             fullName,
             preferredDate,
             preferredTime,
@@ -495,6 +525,7 @@ export async function sendMessageNotificationEmail({
         const template = await fs.readFile(templatePath, 'utf-8');
 
         const html = ejs.render(template, {
+            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
             fullName,
             email,
             subject: subject || 'No Subject',
@@ -604,6 +635,7 @@ export async function sendReminderEmail({
         // Read and render the template with all timezone information
         const template = await fs.readFile(templatePath, 'utf-8')
         const html = ejs.render(template, {
+            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
             fullName,
             preferredDate,
             preferredTime,
