@@ -39,7 +39,7 @@ export async function POST(req: Request) {
             .getAll()
 
         const faqIdMap = new Map(
-            existingRecords.map(faq => [faq.faq_id, faq.xata_id])
+            existingRecords.map((faq: { faq_id?: string | null; xata_id: string }) => [faq.faq_id as string, faq.xata_id])
         )
 
         // 2. Build valid updates with xata_id

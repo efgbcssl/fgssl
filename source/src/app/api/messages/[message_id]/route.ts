@@ -86,7 +86,7 @@ export async function PATCH(
         const updatedMessage = await xata.db.messages
             .filter({ message_id })
             .getFirst()
-            .then(record => record?.update(data))
+            .then((record: { update: (d: unknown) => Promise<unknown> } | null) => record?.update(data))
 
         if (!updatedMessage) {
             return NextResponse.json(
@@ -125,7 +125,7 @@ export async function DELETE(
         const deletedMessage = await xata.db.messages
             .filter({ message_id })
             .getFirst()
-            .then(record => record?.delete())
+            .then((record: { delete: () => Promise<unknown> } | null) => record?.delete())
 
         if (!deletedMessage) {
             return NextResponse.json(

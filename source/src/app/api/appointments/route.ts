@@ -83,7 +83,7 @@ async function handleCheckAvailability(date: string, timezone: string) {
             .select(['preferredDate'])
             .getAll()
         // Extract booked time slots in 24h format
-        const bookedSlots = appointments.map(appointment => {
+        const bookedSlots = appointments.map((appointment: { preferredDate?: string | null }) => {
             const appointmentDate = new Date(appointment.preferredDate ?? '')
             return formatInTimeZone(appointmentDate, timezone, 'HH:mm')
         })
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
             .getAll();
 
         if (conflictingAppointments.length > 0) {
-            const conflictDetails = conflictingAppointments.map(a => ({
+            const conflictDetails = conflictingAppointments.map((a: { preferredDate?: string | null; fullName?: string | null }) => ({
                 time: formatInTimeZone(new Date(a.preferredDate ?? ''), TIMEZONE, 'MMM d, h:mm a'),
                 name: a.fullName
             }));

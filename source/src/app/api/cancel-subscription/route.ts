@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import Stripe from 'stripe'
-import { xata } from '@/lib/xata'
+// import { xata } from '@/lib/xata'
 import { sendSubscriptionCancellationEmail } from '@/lib/email'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil'
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 interface TokenPayload {
   sub: string // subscription ID
@@ -144,39 +144,45 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Successfully cancelled subscription: ${subscriptionId}`)
 
-    // Update donor record in database
+    // Update donor record in database (only if Xata is configured)
     try {
-      const donor = await xata.db.donors.filter({ email: customerEmail }).getFirst()
-      if (donor) {
-        await xata.db.donors.update(donor.xata_id, {
-          hasActiveSubscription: false,
-          subscriptionStatus: 'cancelled',
-          subscriptionCancelledAt: cancelledAt,
-          activeSubscriptionId: null,
-          donationFrequency: 'one-time',
-          lastUpdated: new Date()
-        })
-        console.log('✅ Updated donor record for cancellation')
+      if (process.env.XATA_API_KEY) {
+        const { xata } = await import('@/lib/xata')
+        const donor = await xata.db.donors.filter({ email: customerEmail }).getFirst()
+        if (donor) {
+          await xata.db.donors.update(donor.xata_id, {
+            hasActiveSubscription: false,
+            subscriptionStatus: 'cancelled',
+            subscriptionCancelledAt: cancelledAt,
+            activeSubscriptionId: null,
+            donationFrequency: 'one-time',
+            lastUpdated: new Date()
+          })
+          console.log('✅ Updated donor record for cancellation')
+        }
       }
     } catch (error) {
       console.error('❌ Failed to update donor record:', error)
     }
 
-    // Log cancellation in database
+    // Log cancellation in database (only if Xata is configured)
     try {
-      await xata.db.subscriptionCancellation.create({
-        subscriptionId,
-        customerEmail,
-        customerName,
-        amount,
-        currency,
-        frequency,
-        cancelledAt,
-        cancellationReason: 'user_requested',
-        totalDonationsBeforeCancellation: 0, // You might want to calculate this
-        voluntaryCancellation: true
-      })
-      console.log('📝 Logged subscription cancellation')
+      if (process.env.XATA_API_KEY) {
+        const { xata } = await import('@/lib/xata')
+        await xata.db.subscriptionCancellation.create({
+          subscriptionId,
+          customerEmail,
+          customerName,
+          amount,
+          currency,
+          frequency,
+          cancelledAt,
+          cancellationReason: 'user_requested',
+          totalDonationsBeforeCancellation: 0, // You might want to calculate this
+          voluntaryCancellation: true
+        })
+        console.log('📝 Logged subscription cancellation')
+      }
     } catch (error) {
       console.warn('⚠️ Could not log cancellation to database:', error)
     }

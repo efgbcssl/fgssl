@@ -15,9 +15,9 @@ import { randomUUID } from 'crypto'
 import { generateUnsubscribeLink } from '@/lib/helper'
 import { createExpiringToken } from '@/lib/utils';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil'
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
   console.log('🔵 [WEBHOOK] Body last 100 chars:', body.substring(body.length - 100))
 
   //let event: Stripe.Event
-  const event = JSON.parse(body) as Stripe.Event
+  // const event = JSON.parse(body) as Stripe.Event
 
   /* try {
      //event = stripe.webhooks.constructEvent(
@@ -135,8 +135,24 @@ export async function POST(req: Request) {
      //return NextResponse.json(
        //{ error: 'Invalid signature' },
        //{ status: 400 }
-     )
-   }*/
+     //)
+   //}*/
+
+  let event: Stripe.Event
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      endpointSecret
+    ) as Stripe.Event
+    console.log(`🟢 Webhook verified - Type: ${event.type}, ID: ${event.id}`)
+  } catch (err) {
+    console.error('🔴 Webhook verification failed:', err)
+    return NextResponse.json(
+      { error: 'Invalid signature' },
+      { status: 400 }
+    )
+  }
 
   try {
     switch (event.type) {
@@ -876,4 +892,5 @@ export const config = {
   api: {
     bodyParser: false,
   },
+  runtime: 'nodejs',
 }

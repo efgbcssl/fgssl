@@ -1,81 +1,61 @@
-import { XataClient } from '@/xata'; // Xata-generated client
+// Minimal lazy Xata wrapper that avoids constructing a client until a table method is actually called
+import { XataClient } from '@/xata'
 
 // Retry wrapper function
-async function withRetry<T>(
-    fn: () => Promise<T>,
-    retries = 5,
-    delayMs = 1000
-): Promise<T> {
-    for (let i = 0; i < retries; i++) {
-        try {
-            return await fn()
-        } catch (error: unknown) {
-            const isAbortError =
-                typeof error === 'object' &&
-                error !== null &&
-                (
-                    (error as { name?: string }).name === 'AbortError' ||
-                    (error as { code?: number }).code === 20 ||
-                    (error as { message?: string }).message?.includes?.('aborted')
-                );
+async function withRetry<T>(fn: () => Promise<T>, retries = 5, delayMs = 1000): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn()
+    } catch (error: unknown) {
+      const isAbortError =
+        typeof error === 'object' &&
+        error !== null &&
+        (((error as { name?: string }).name === 'AbortError') ||
+          ((error as { code?: number }).code === 20) ||
+          (error as { message?: string }).message?.includes?.('aborted'))
 
-            if (i < retries - 1 && isAbortError) {
-                console.warn(`Retrying Xata request (attempt ${i + 1}) due to AbortError...`)
-                await new Promise((r) => setTimeout(r, delayMs * (i + 1)))
-            } else {
-                throw error
-            }
-        }
+      if (i < retries - 1 && isAbortError) {
+        await new Promise((r) => setTimeout(r, delayMs * (i + 1)))
+      } else {
+        throw error
+      }
     }
-
-    throw new Error('Failed after retries')
+  }
+  throw new Error('Failed after retries')
 }
 
-// Create Xata client with timeout support
-const baseClient = new XataClient({
-    apiKey: process.env.XATA_API_KEY,
-    branch: process.env.XATA_BRANCH || 'main',
+let client: XataClient | null = null
+function getClient(): XataClient {
+  if (client) return client
+  const apiKey = process.env.XATA_API_KEY
+  const branch = process.env.XATA_BRANCH || 'main'
+  if (!apiKey) {
+    throw new Error('XATA_API_KEY is required to access the database')
+  }
+  client = new XataClient({
+    apiKey,
+    branch,
     fetch: (url: RequestInfo, options?: RequestInit) => {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 10000)
-        return fetch(url, {
-            ...options,
-            signal: controller.signal
-        }).finally(() => clearTimeout(timeoutId))
-    }
-})
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+      return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeoutId))
+    },
+  })
+  return client
+}
 
-// Proxy to wrap `.db` calls with retry
-export const xata = new Proxy(baseClient, {
-    get(target, prop, receiver) {
-        const value = Reflect.get(target, prop, receiver)
+export const xata = {
+  db: new Proxy({}, {
+    get(_target, tableProp, _receiver) {
+      const cli = getClient() as any
+      const db = cli.db as any
+      const value = db[tableProp as string]
+      if (typeof value === 'function') {
+        return (...args: unknown[]) => withRetry(() => (value as Function).apply(db, args))
+      }
+      return value
+    },
+  }) as any,
+}
 
-        // Only wrap db operations
-        if (prop === 'db') {
-            const db = value
-
-            // Wrap each table access
-            return new Proxy(db, {
-                get(tableTarget, tableProp, tableReceiver) {
-                    const tableFn = Reflect.get(tableTarget, tableProp, tableReceiver)
-
-                    if (typeof tableFn === 'function') {
-                        // Wrap method with retry
-                        return (...args: unknown[]) => withRetry(() => tableFn.apply(tableTarget, args))
-                    }
-
-                    return tableFn
-                }
-            })
-        }
-
-        return value
-    }
-})
-
-// Helper type for API responses
-export type ApiResponse<T> = {
-    data?: T;
-    error?: string;
-    status: number;
-};
+export type ApiResponse<T> = { data?: T; error?: string; status: number }

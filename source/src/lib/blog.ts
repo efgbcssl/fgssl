@@ -40,7 +40,7 @@ export const getBlogPosts = async (
             .getPaginated({ pagination: { size: 100 } });
 
         // Transform records to BlogPost format
-        const posts = records.map((post) => ({
+        const posts = records.map((post: any) => ({
             post_id: post.post_id,
             id: post.post_id,
             title: post.title || "Untitled Post",
