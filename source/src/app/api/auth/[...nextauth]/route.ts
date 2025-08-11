@@ -34,8 +34,8 @@ const authConfig: NextAuthConfig = {
         }),
     ],
     pages: {
-        signIn: "/auth/login",
-        error: "/auth/login",
+        signIn: "login",
+        error: "/login",
     },
     callbacks: {
         async signIn({ user, account, profile }) {
@@ -192,7 +192,9 @@ const authConfig: NextAuthConfig = {
     },
         secret: process.env.NEXTAUTH_SECRET,
         debug: process.env.NODE_ENV === "development",
+        trustHost: true,
     };
 
-    export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-    export const { GET, POST } = handlers;
+const handler = NextAuth(authConfig)
+
+export { handler as GET, handler as POST }
