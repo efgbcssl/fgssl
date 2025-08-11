@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+
 import NextAuth from "next-auth";
 import GoogleProvider, { type GoogleProfile } from "next-auth/providers/google";
 import AppleProvider, { type AppleProfile } from "next-auth/providers/apple";
 import { xata } from "@/lib/xata";
 import type { NextAuthConfig } from "next-auth";
 import { randomUUID } from "crypto";
+
 
 // Define the auth configuration
 const authConfig: NextAuthConfig = {
@@ -200,4 +203,4 @@ const authConfig: NextAuthConfig = {
 export const { GET, POST } = NextAuth(authConfig).handlers;
 
 // Optional: Specify Edge runtime for better performance (if your providers support it)
-export const runtime = "edge";
+export const runtime = "node";
