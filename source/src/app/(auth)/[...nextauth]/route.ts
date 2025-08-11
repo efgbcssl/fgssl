@@ -168,9 +168,9 @@ const authConfig: NextAuthConfig = {
                 sameSite: "none",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
-                domain: process.env.NODE_ENV === "production"
+                /*domain: process.env.NODE_ENV === "production"
                     ? `.${process.env.NEXT_PUBLIC_DOMAIN}`
-                    : undefined,
+                    : undefined,*/
             },
         },
         callbackUrl: {
@@ -179,9 +179,9 @@ const authConfig: NextAuthConfig = {
                 sameSite: "lax",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
-                domain: process.env.NODE_ENV === "production"
+                /*domain: process.env.NODE_ENV === "production"
                     ? `.${process.env.NEXT_PUBLIC_DOMAIN}`
-                    : undefined,
+                    : undefined,*/
             },
         },
 
