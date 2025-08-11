@@ -26,7 +26,9 @@ const SignInPage = () => {
             });
 
             if (result?.error) {
-                setError(result.error);
+                setError(result.error.includes('AccessDenied')
+            ? 'This account is not authorized to access this resource.'
+            : 'Sign-In failed');
             } else if (result?.ok) {
                 router.push('/dashboard');
             }
