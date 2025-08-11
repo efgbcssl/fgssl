@@ -32,7 +32,7 @@ const SignInPage = () => {
             if (result?.error) {
                 setError(result.error.includes('AccessDenied')
                     ? 'This account is not authorized to access this resource.'
-                    : 'Sign-In failed');
+                    : `Sign-In failed: ${result.error}`);
             } else if (result?.ok) {
                 window.location.href = callbackUrl
             }
