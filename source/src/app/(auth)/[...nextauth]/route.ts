@@ -63,11 +63,12 @@ const authConfig: NextAuthConfig = {
                     emailVerified: new Date(),
                     updatedAt: new Date(),
                 };
+                console.log("User Data to Save:", userData);
 
                 const existingUser = await xata.db.users
                     .filter({ email: user.email })
                     .getFirst();
-
+console.log("Existing User:", existingUser);
                 const dbUser = existingUser
                     ? await xata.db.users.update(existingUser.xata_id, userData)
                     : await xata.db.users.create({
