@@ -62,7 +62,7 @@ export default function Navbar() {
                             Donate
                         </Button>
                     </Link>
-                    <Link href="/login">
+                    <Link href="/auth/login" as="/login">
                         <Button className=''>
                             Become A Family
                         </Button>

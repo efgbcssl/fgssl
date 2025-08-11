@@ -1,36 +1,40 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const SignInPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const bibleVerse = {
         text: "For where two or three gather in my name, there am I with them.",
         reference: "Matthew 18:20"
     };
 
+    const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+
     const handleSignIn = async (provider: 'google' | 'apple') => {
         setLoading(true);
         setError(null);
-        
+
         try {
-            const result = await signIn(provider, { 
+            const result = await signIn(provider, {
                 redirect: false,
-                callbackUrl: '/dashboard' 
+                callbackUrl: '/dashboard'
             });
 
             if (result?.error) {
                 setError(result.error.includes('AccessDenied')
-            ? 'This account is not authorized to access this resource.'
-            : 'Sign-In failed');
+                    ? 'This account is not authorized to access this resource.'
+                    : 'Sign-In failed');
             } else if (result?.ok) {
-                router.push('/dashboard');
+                window.location.href = callbackUrl
             }
         } catch (err) {
             setError('An unexpected error occurred');

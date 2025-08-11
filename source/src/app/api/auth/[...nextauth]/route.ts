@@ -34,8 +34,8 @@ const authConfig: NextAuthConfig = {
         }),
     ],
     pages: {
-        signIn: "/login",
-        error: "/login",
+        signIn: "/auth/login",
+        error: "/auth/login",
     },
     callbacks: {
         async signIn({ user, account, profile }) {
@@ -169,10 +169,30 @@ const authConfig: NextAuthConfig = {
                     : undefined,
             },
         },
+        callbackUrl: {
+            name: `__Secure-next-auth.callback-url`,
+            options: {
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NODE_ENV === "production"
+                    ? `.${process.env.NEXT_PUBLIC_DOMAIN}`
+                    : undefined,
+            },
+        },
+        csrfToken: {
+            name: `__Host-next-auth.csrf-token`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+            },
+        },
     },
-    secret: process.env.NEXTAUTH_SECRET,
-    debug: process.env.NODE_ENV === "development",
-};
+        secret: process.env.NEXTAUTH_SECRET,
+        debug: process.env.NODE_ENV === "development",
+    };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-export const { GET, POST } = handlers;
+    export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+    export const { GET, POST } = handlers;
