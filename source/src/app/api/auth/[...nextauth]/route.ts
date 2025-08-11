@@ -4,8 +4,9 @@ import GoogleProvider, { type GoogleProfile } from "next-auth/providers/google";
 import AppleProvider, { type AppleProfile } from "next-auth/providers/apple";
 import { xata } from "@/lib/xata";
 import type { NextAuthConfig } from "next-auth";
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
 
+// Define the auth configuration
 const authConfig: NextAuthConfig = {
     providers: [
         GoogleProvider({
@@ -17,8 +18,8 @@ const authConfig: NextAuthConfig = {
                     name: profile.name,
                     email: profile.email,
                     image: profile.picture,
-                }
-            }
+                };
+            },
         }),
         AppleProvider({
             clientId: process.env.APPLE_CLIENT_ID as string,
@@ -29,12 +30,12 @@ const authConfig: NextAuthConfig = {
                     name: profile.name,
                     email: profile.email,
                     image: null, // Apple doesn't provide profile picture
-                }
-            }
+                };
+            },
         }),
     ],
     pages: {
-        signIn: "login",
+        signIn: "/login",
         error: "/login",
     },
     callbacks: {
@@ -149,7 +150,7 @@ const authConfig: NextAuthConfig = {
             // Allows callback URLs on the same origin
             else if (new URL(url).origin === baseUrl) return url;
             return baseUrl;
-        }
+        },
     },
     session: {
         strategy: "jwt",
@@ -190,11 +191,13 @@ const authConfig: NextAuthConfig = {
             },
         },
     },
-        secret: process.env.NEXTAUTH_SECRET,
-        debug: process.env.NODE_ENV === "development",
-        trustHost: true,
-    };
+    secret: process.env.NEXTAUTH_SECRET,
+    debug: process.env.NODE_ENV === "development",
+    trustHost: true,
+};
 
-const handler = NextAuth(authConfig)
+// Export the handlers directly
+export const { GET, POST } = NextAuth(authConfig).handlers;
 
-export { handler as GET, handler as POST }
+// Optional: Specify Edge runtime for better performance (if your providers support it)
+export const runtime = "edge";
