@@ -1,22 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
-
 import NextAuth from "next-auth";
 import GoogleProvider, { type GoogleProfile } from "next-auth/providers/google";
 import AppleProvider, { type AppleProfile } from "next-auth/providers/apple";
-import { xata } from "@/lib/xata";
 import type { NextAuthConfig } from "next-auth";
 import { randomUUID } from "crypto";
+import { connectMongoDB } from "@/lib/mongodb";
+import { UserModel } from "@/models/User";
+import { AccountModel } from "@/models/Account";
 
-
-// Define the auth configuration
 const authConfig: NextAuthConfig = {
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID as string,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
             profile(profile: GoogleProfile) {
-                console.log("Google profile received:", profile);
                 return {
                     id: profile.sub,
                     name: profile.name,
@@ -33,7 +30,7 @@ const authConfig: NextAuthConfig = {
                     id: profile.sub,
                     name: profile.name,
                     email: profile.email,
-                    image: null, // Apple doesn't provide profile picture
+                    image: null,
                 };
             },
         }),
@@ -44,49 +41,34 @@ const authConfig: NextAuthConfig = {
     },
     callbacks: {
         async signIn({ user, account, profile }) {
-            console.log("🔍 [signIn] START", { user, account, profile });
-
-            // Block sign in if no email
-            if (!user.email) {
-                console.error("No email provided");
-                return false;
-            }
+            if (!user.email) return false;
 
             try {
-                // Upsert user in database
+                await connectMongoDB();
+
                 const userId = randomUUID();
                 const userData = {
+                    id: userId,
                     email: user.email,
                     name: user.name || profile?.name || "New User",
                     image: user.image || (profile as GoogleProfile)?.picture || null,
                     role: "member",
                     phone: null,
                     emailVerified: new Date(),
-                    updatedAt: new Date(),
                 };
-                console.log("💾 Attempting DB upsert:", userData);
-                const existingUser = await xata.db.users
-                    .filter({ email: user.email })
-                    .getFirst();
-                console.log("📦 Existing user from DB:", existingUser);
-                const dbUser = existingUser
-                    ? await xata.db.users.update(existingUser.xata_id, userData)
-                    : await xata.db.users.create({
-                        ...userData,
-                        id: userId,
-                        createdAt: new Date(),
-                    });
 
-                if (!dbUser) {
-                    console.error("Failed to create/update user");
-                    return false;
+                let dbUser = await UserModel.findOne({ email: user.email });
+
+                if (dbUser) {
+                    Object.assign(dbUser, userData);
+                    await dbUser.save();
+                } else {
+                    dbUser = await UserModel.create(userData);
                 }
-                console.log("✅ DB user after save:", dbUser);
-                // Handle account linking if OAuth provider
+
                 if (account) {
-                    console.log("🔗 Linking account:", account);
                     const accountData = {
-                        userId: dbUser.xata_id,
+                        userId: dbUser._id,
                         provider: account.provider,
                         providerAccountId: account.providerAccountId,
                         type: account.type,
@@ -95,53 +77,44 @@ const authConfig: NextAuthConfig = {
                         token_type: account.token_type || null,
                         scope: account.scope || null,
                         id_token: account.id_token || null,
-                        updatedAt: new Date(),
                     };
 
-                    const existingAccount = await xata.db.accounts
-                        .filter({
-                            provider: account.provider,
-                            providerAccountId: account.providerAccountId,
-                        })
-                        .getFirst();
+                    const existingAccount = await AccountModel.findOne({
+                        provider: account.provider,
+                        providerAccountId: account.providerAccountId,
+                    });
 
                     if (!existingAccount) {
-                        await xata.db.accounts.create({
-                            ...accountData,
-                            createdAt: new Date(),
-                        });
+                        await AccountModel.create(accountData);
                     } else {
-                        await xata.db.accounts.update(existingAccount.xata_id, accountData);
+                        Object.assign(existingAccount, accountData);
+                        await existingAccount.save();
                     }
                 }
-                console.log("✅ [signIn] SUCCESS");
+
                 return true;
             } catch (error) {
                 console.error("SignIn Error:", error);
                 return false;
             }
         },
-        async jwt({ token, user, account, profile }) {
-            console.log("🔑 [jwt] before update:", { token, user, account, profile });
-            // Initial sign in
-            if (account && user?.email) {
-                const dbUser = await xata.db.users
-                    .filter({ email: user.email })
-                    .getFirst();
-                console.log("📋 [jwt] DB user:", dbUser);
+
+        async jwt({ token, user }) {
+            if (user?.email) {
+                await connectMongoDB();
+                const dbUser = await UserModel.findOne({ email: user.email });
                 if (dbUser) {
-                    token.id = dbUser.xata_id;
+                    token.id = dbUser.id;
                     token.role = dbUser.role;
                     token.email = dbUser.email;
                     token.name = dbUser.name;
                     token.picture = dbUser.image;
                 }
             }
-            console.log("🔑 [jwt] after update:", token);
             return token;
         },
+
         async session({ session, token }) {
-            console.log("🗂 [session] before update:", { session, token });
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.role = token.role as string;
@@ -149,61 +122,52 @@ const authConfig: NextAuthConfig = {
                 session.user.email = token.email as string;
                 session.user.image = token.picture as string | null;
             }
-            console.log("🗂 [session] after update:", session);
             return session;
         },
+
         async redirect({ url, baseUrl }) {
-            console.log("↩️ [redirect]", { url, baseUrl });
-            // Allows relative callback URLs
             if (url.startsWith("/")) return `${baseUrl}${url}`;
-            // Allows callback URLs on the same origin
             else if (new URL(url).origin === baseUrl) return url;
             return baseUrl;
         },
     },
     session: {
         strategy: "jwt",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        updateAge: 24 * 60 * 60, // 24 hours
+        maxAge: 30 * 24 * 60 * 60,
+        updateAge: 24 * 60 * 60,
     },
     cookies: {
         sessionToken: {
-            name: process.env.NODE_ENV === "production"
-                ? "__Secure-next-auth.session-token"
-                : "next-auth.session-token",
+            name:
+                process.env.NODE_ENV === "production"
+                    ? "__Secure-next-auth.session-token"
+                    : "next-auth.session-token",
             options: {
                 httpOnly: true,
                 sameSite: "none",
                 path: "/",
-                secure: process.env.NODE_ENV === "production"
-                ? true
-                : false,
-                domain: process.env.NODE_ENV === "production"
-                    ? `fgssl.vercel.app`
-                    : undefined,
+                secure: process.env.NODE_ENV === "production",
+                domain:
+                    process.env.NODE_ENV === "production" ? `fgssl.vercel.app` : undefined,
             },
         },
         callbackUrl: {
-            name: process.env.NODE_ENV === "production"
-                ? "__Secure-next-auth.session-token"
-                : "next-auth.session-token",
+            name:
+                process.env.NODE_ENV === "production"
+                    ? "__Secure-next-auth.callback-url"
+                    : "next-auth.callback-url",
             options: {
                 sameSite: "none",
                 path: "/",
-                secure: process.env.NODE_ENV === "production"
-                ? true
-                : false,
-                domain: process.env.NODE_ENV === "production"
-                    ? `fgssl.vercel.app`
-                    : undefined,
+                secure: process.env.NODE_ENV === "production",
+                domain:
+                    process.env.NODE_ENV === "production" ? `fgssl.vercel.app` : undefined,
             },
         },
-
     },
     secret: process.env.NEXTAUTH_SECRET,
     debug: process.env.NODE_ENV === "development",
     trustHost: true,
 };
 
-// Export the handlers directly
 export const { GET, POST } = NextAuth(authConfig).handlers;

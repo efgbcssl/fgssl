@@ -1,66 +1,75 @@
-import { NextResponse } from 'next/server'
-import { xata } from '@/lib/xata'
-import { z } from 'zod'
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { connectMongoDB } from "@/lib/mongodb";
+import { FaqModel } from "@/models/Faq";
 
 const ReorderSchema = z.object({
     reorderedFAQs: z.array(
         z.object({
             faq_id: z.string().min(1),
-            order: z.number().nonnegative()
+            order: z.number().nonnegative(),
         })
-    )
-})
+    ),
+});
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json()
-        const parseResult = ReorderSchema.safeParse(body)
+        await connectMongoDB();
+
+        const body = await req.json();
+        const parseResult = ReorderSchema.safeParse(body);
 
         if (!parseResult.success) {
             return NextResponse.json(
-                { error: 'Invalid request format', details: parseResult.error.flatten() },
+                {
+                    error: "Invalid request format",
+                    details: parseResult.error.flatten(),
+                },
                 { status: 400 }
-            )
+            );
         }
 
-        const updates = parseResult.data.reorderedFAQs
+        const updates = parseResult.data.reorderedFAQs;
 
         if (updates.length === 0) {
             return NextResponse.json(
-                { error: 'No FAQs to reorder' },
+                { error: "No FAQs to reorder" },
                 { status: 400 }
-            )
+            );
         }
 
-        // 1. Fetch current records to get their faq_id
-        const faqIds = updates.map(f => f.faq_id)
-        const existingRecords = await xata.db.faqs
-            .filter({ faq_id: { $any: faqIds } })
-            .getAll()
+        // 1. Get existing FAQ IDs
+        const faqIds = updates.map((f) => f.faq_id);
+        const existingRecords = await FaqModel.find(
+            { faq_id: { $in: faqIds } },
+            { faq_id: 1 }
+        ).lean();
 
-        const faqIdMap = new Map(
-            existingRecords.map((faq: { faq_id?: string | null; xata_id: string }) => [faq.faq_id as string, faq.xata_id])
-        )
+        const existingFaqIds = new Set(existingRecords.map((f) => f.faq_id));
 
-        // 2. Build valid updates with xata_id
-        const finalUpdates = updates.map(f => {
-            const xata_id = faqIdMap.get(f.faq_id)
-            if (!xata_id) throw new Error(`FAQ ID ${f.faq_id} not found in DB`)
-            return {
-                xata_id,
-                order: f.order,
+        // 2. Verify all IDs exist
+        for (const f of updates) {
+            if (!existingFaqIds.has(f.faq_id)) {
+                throw new Error(`FAQ ID ${f.faq_id} not found in DB`);
             }
-        })
+        }
 
-        // 3. Batch update
-        await xata.db.faqs.update(finalUpdates)
+        // 3. Batch update using bulkWrite for efficiency
+        const bulkOps = updates.map((f) => ({
+            updateOne: {
+                filter: { faq_id: f.faq_id },
+                update: { $set: { order: f.order } },
+            },
+        }));
 
-        return NextResponse.json({ message: 'FAQs reordered successfully' })
+        await FaqModel.bulkWrite(bulkOps);
+
+        return NextResponse.json({ message: "FAQs reordered successfully" });
     } catch (error) {
-        console.error('FAQ reorder error:', error)
+        console.error("FAQ reorder error:", error);
         return NextResponse.json(
-            { error: 'Failed to reorder FAQs' },
+            { error: "Failed to reorder FAQs" },
             { status: 500 }
-        )
+        );
     }
 }
