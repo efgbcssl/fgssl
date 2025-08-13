@@ -15,7 +15,7 @@ const FaqSchema = new Schema<IFaq>(
         faq_id: { type: String, required: true, unique: true },
         question: { type: String, required: true, unique: true, trim: true },
         answer: { type: String, required: true },
-        order: { type: Number, required: true, index: true },
+        order: { type: Number, required: true },
     },
     {
         timestamps: true, // creates createdAt/updatedAt
