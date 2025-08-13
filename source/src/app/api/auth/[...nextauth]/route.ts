@@ -114,7 +114,7 @@ const authConfig: NextAuthConfig = {
             return token;
         },
 
-        async session({ session, token }) {
+        async session({ session, token, user }) {
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.role = token.role as string;
@@ -173,3 +173,4 @@ const authConfig: NextAuthConfig = {
 export const { GET, POST } = NextAuth(authConfig).handlers;
 export const { auth } = NextAuth(authConfig);
 export const runtime = 'nodejs';
+export { authConfig };
