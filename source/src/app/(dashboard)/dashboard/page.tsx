@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 
-import { useSession, signOut } from 'next-auth/react'
-import getServerSession  from "next-auth";
+ 
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,7 +20,7 @@ import {
   Activity
 } from 'lucide-react'
 import Link from 'next/link'
-import  {authConfig}  from '@/app/api/auth/[...nextauth]/route';
+import { auth } from '@/auth';
 
 interface DashboardCard {
   title: string
@@ -104,7 +103,7 @@ function getRolePermissions(role: string): string[] {
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authConfig)
+  const session = await auth()
 
   /* (status === 'loading') {
     return (
@@ -123,9 +122,7 @@ export default async function DashboardPage() {
     card.roles.includes(userRole)
   )
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' })
-  }
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -147,11 +144,13 @@ export default async function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleSignOut}
+                asChild
                 className="text-red-600 hover:text-red-700"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                <Link href="/api/auth/signout?callbackUrl=/login">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Link>
               </Button>
             </div>
           </div>

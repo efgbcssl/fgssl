@@ -24,18 +24,7 @@ const SignInPage = () => {
         setError(null);
 
         try {
-            const result = await signIn(provider, {
-                redirect: false,
-                callbackUrl, 
-            });
-
-            if (result?.error) {
-                setError(result.error.includes('AccessDenied')
-                    ? 'This account is not authorized to access this resource.'
-                    : `Sign-In failed: ${result.error}`);
-            } else if (result?.ok) {
-                window.location.href = callbackUrl
-            }
+            await signIn(provider, { callbackUrl });
         } catch (err) {
             setError('An unexpected error occurred');
             console.error(err);
