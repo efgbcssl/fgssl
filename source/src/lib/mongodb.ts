@@ -43,3 +43,4 @@ export async function connectMongoDB(): Promise<typeof mongoose> {
     cached.conn = await cached.promise;
     return cached.conn;
 }
+export const runtime = "nodejs";

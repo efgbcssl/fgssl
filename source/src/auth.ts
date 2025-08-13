@@ -192,3 +192,4 @@ export const authConfig: NextAuthConfig = {
 export const { auth, handlers } = NextAuth(authConfig);
 export const { GET, POST } = handlers;
 
+export const runtime = "nodejs";

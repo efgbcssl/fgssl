@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { connectMongoDB } from "@/lib/mongodb";
 
 export interface IAccount extends Document {
     userId: mongoose.Types.ObjectId; // Reference to User
@@ -33,3 +34,21 @@ AccountSchema.index({ provider: 1, providerAccountId: 1 }, { unique: true });
 
 export const AccountModel: Model<IAccount> =
     (mongoose.models && mongoose.models.Account) || mongoose.model<IAccount>("Account", AccountSchema);
+
+// Utility function to find account by provider and providerAccountId
+export async function getAccountByProvider(provider: string, providerAccountId: string) {
+    await connectMongoDB();
+    const account = await AccountModel.findOne({ provider, providerAccountId }).exec();
+    return account ? account.toObject() : null;
+}
+
+// Utility function to create or update an account
+export async function upsertAccount(data: Partial<IAccount>) {
+    await connectMongoDB();
+    const account = await AccountModel.findOneAndUpdate(
+        { provider: data.provider, providerAccountId: data.providerAccountId },
+        { $set: data },
+        { upsert: true, new: true }
+    ).exec();
+    return account ? account.toObject() : null;
+}
