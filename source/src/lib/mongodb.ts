@@ -1,31 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/lib/mongodb.ts
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+const MONGODB_URI = process.env.MONGODB_URI || "default";
 
 if (!MONGODB_URI) {
     throw new Error("Please define the MONGODB_URI environment variable in .env");
 }
 
-/**
- * Global is used here to maintain a cached connection across hot reloads in dev.
- * This prevents connections growing exponentially during API route development.
- */
-let cached = (global as any).mongoose;
-
-if (!cached) {
-    cached = (global as any).mongoose = { conn: null, promise: null };
+interface MongooseCache {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
 }
 
-export async function connectMongoDB() {
-    if (cached.conn) return cached.conn;
+// Use globalThis for better TypeScript compatibility and to avoid `any`
+let cached: MongooseCache = (globalThis as any).mongoose || { conn: null, promise: null };
+
+if (!cached) {
+    cached = (globalThis as any).mongoose = { conn: null, promise: null };
+}
+
+export async function connectMongoDB(): Promise<typeof mongoose> {
+    if (cached.conn) {
+        return cached.conn;
+    }
 
     if (!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
+        cached.promise = mongoose
+            .connect(MONGODB_URI, {
+                // Optional: Add connection options if needed
+                bufferCommands: false,
+            })
+            .then((mongooseInstance) => {
+                console.log("MongoDB connected successfully");
+                return mongooseInstance;
+            })
+            .catch((error) => {
+                console.error("MongoDB connection error:", error);
+                throw error;
+            });
     }
 
     cached.conn = await cached.promise;
-    console.log("MongoDB connected successfully");
     return cached.conn;
 }
