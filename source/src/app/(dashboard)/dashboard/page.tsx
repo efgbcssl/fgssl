@@ -1,131 +1,62 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-'use client'
-
-import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { 
-  User, 
-  Settings, 
-  BarChart3, 
-  Users, 
-  DollarSign, 
-  FileText,
-  LogOut,
-  Shield,
-  Calendar,
-  Activity
-} from 'lucide-react'
-import Link from 'next/link'
+// src/app/dashboard/page.tsx
+import getServerSession  from "next-auth";
+import { redirect } from "next/navigation";
+import { auth } from "@/app/api/auth/[...nextauth]/route"; // your [...nextauth] config export
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  User, Settings, BarChart3, Users, DollarSign, FileText, LogOut, Shield, Calendar, Activity
+} from "lucide-react";
+import Link from "next/link";
+import SignOutButton from "@/components/dashboard/sign-out-button"; // small client comp to call signOut()
 
 interface DashboardCard {
-  title: string
-  description: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  roles: string[]
-  count?: number
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: string[];
+  count?: number;
 }
 
 const dashboardCards: DashboardCard[] = [
-  {
-    title: 'Users Management',
-    description: 'Manage user accounts and permissions',
-    href: '/dashboard/users',
-    icon: Users,
-    roles: ['admin'],
-  },
-  {
-    title: 'Donations Overview',
-    description: 'View and manage donations',
-    href: '/dashboard/donations',
-    icon: DollarSign,
-    roles: ['admin', 'manager'],
-  },
-  {
-    title: 'Analytics & Reports',
-    description: 'View detailed analytics and generate reports',
-    href: '/dashboard/analytics',
-    icon: BarChart3,
-    roles: ['admin', 'manager'],
-  },
-  {
-    title: 'Settings',
-    description: 'Configure application settings',
-    href: '/dashboard/settings',
-    icon: Settings,
-    roles: ['admin', 'manager'],
-  },
-  {
-    title: 'My Profile',
-    description: 'View and edit your profile',
-    href: '/dashboard/profile',
-    icon: User,
-    roles: ['admin', 'manager', 'member'],
-  },
-  {
-    title: 'Activity Log',
-    description: 'View your recent activity',
-    href: '/dashboard/activity',
-    icon: Activity,
-    roles: ['admin', 'manager', 'member'],
-  },
-]
+  { title: "Users Management", description: "Manage user accounts and permissions", href: "/dashboard/users", icon: Users, roles: ["admin"] },
+  { title: "Donations Overview", description: "View and manage donations", href: "/dashboard/donations", icon: DollarSign, roles: ["admin", "manager"] },
+  { title: "Analytics & Reports", description: "View detailed analytics and generate reports", href: "/dashboard/analytics", icon: BarChart3, roles: ["admin", "manager"] },
+  { title: "Settings", description: "Configure application settings", href: "/dashboard/settings", icon: Settings, roles: ["admin", "manager"] },
+  { title: "My Profile", description: "View and edit your profile", href: "/dashboard/profile", icon: User, roles: ["admin", "manager", "member"] },
+  { title: "Activity Log", description: "View your recent activity", href: "/dashboard/activity", icon: Activity, roles: ["admin", "manager", "member"] },
+];
 
-function getRoleColor(role: string): string {
+function getRoleColor(role: string) {
   switch (role) {
-    case 'admin':
-      return 'bg-red-100 text-red-800'
-    case 'manager':
-      return 'bg-blue-100 text-blue-800'
-    case 'member':
-      return 'bg-green-100 text-green-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
+    case "admin": return "bg-red-100 text-red-800";
+    case "manager": return "bg-blue-100 text-blue-800";
+    case "member": return "bg-green-100 text-green-800";
+    default: return "bg-gray-100 text-gray-800";
   }
 }
 
-function getRolePermissions(role: string): string[] {
+function getRolePermissions(role: string) {
   switch (role) {
-    case 'admin':
-      return ['Full system access', 'User management', 'All donations', 'System settings']
-    case 'manager':
-      return ['Donation management', 'Analytics access', 'Report generation', 'Settings']
-    case 'member':
-      return ['Profile access', 'View activity', 'Basic dashboard']
-    default:
-      return ['Limited access']
+    case "admin": return ["Full system access", "User management", "All donations", "System settings"];
+    case "manager": return ["Donation management", "Analytics access", "Report generation", "Settings"];
+    case "member": return ["Profile access", "View activity", "Basic dashboard"];
+    default: return ["Limited access"];
   }
 }
 
-export default function DashboardPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600" />
-      </div>
-    )
-  }
+export default async function DashboardPage() {
+  const session = await getServerSession(auth);
 
   if (!session) {
-    router.push('/auth/login')
-    return null
+    redirect("/login");
   }
 
-  const userRole = session.user?.role || 'member'
-  const accessibleCards = dashboardCards.filter(card => 
-    card.roles.includes(userRole)
-  )
-
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/auth/login' })
-  }
+  const userRole = (session.user as any)?.role || "member";
+  const accessibleCards = dashboardCards.filter(card => card.roles.includes(userRole));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -139,20 +70,12 @@ export default function DashboardPage() {
                 {userRole.toUpperCase()}
               </Badge>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-600">
                 Welcome, {session.user?.name}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="text-red-600 hover:text-red-700"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
+              <SignOutButton />
             </div>
           </div>
         </div>
@@ -169,7 +92,7 @@ export default function DashboardPage() {
                 <span>Welcome to Your Dashboard</span>
               </CardTitle>
               <CardDescription>
-                You are signed in as <strong>{session.user?.name}</strong> with{' '}
+                You are signed in as <strong>{session.user?.name}</strong> with{" "}
                 <Badge className={getRoleColor(userRole)}>{userRole}</Badge> permissions.
               </CardDescription>
             </CardHeader>
@@ -180,7 +103,7 @@ export default function DashboardPage() {
                   <div className="space-y-1 text-sm text-gray-600">
                     <p><strong>Email:</strong> {session.user?.email}</p>
                     <p><strong>Role:</strong> {userRole}</p>
-                    <p><strong>User ID:</strong> {session.user?.id}</p>
+                    <p><strong>User ID:</strong> {(session.user as any)?.id}</p>
                   </div>
                 </div>
                 <div>
@@ -219,7 +142,7 @@ export default function DashboardPage() {
                     <CardContent>
                       <div className="flex justify-between items-center">
                         <Badge variant="outline">
-                          {card.roles.join(', ')}
+                          {card.roles.join(", ")}
                         </Badge>
                         {card.count && (
                           <span className="text-sm font-semibold text-gray-600">
@@ -246,8 +169,8 @@ export default function DashboardPage() {
                   Edit Profile
                 </Link>
               </Button>
-              
-              {(userRole === 'admin' || userRole === 'manager') && (
+
+              {(userRole === "admin" || userRole === "manager") && (
                 <Button variant="outline" className="h-16" asChild>
                   <Link href="/dashboard/donations">
                     <DollarSign className="h-5 w-5 mr-2" />
@@ -255,7 +178,7 @@ export default function DashboardPage() {
                   </Link>
                 </Button>
               )}
-              
+
               <Button variant="outline" className="h-16" asChild>
                 <Link href="/">
                   <Calendar className="h-5 w-5 mr-2" />
@@ -267,5 +190,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

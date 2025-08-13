@@ -32,4 +32,4 @@ const AccountSchema = new Schema<IAccount>(
 AccountSchema.index({ provider: 1, providerAccountId: 1 }, { unique: true });
 
 export const AccountModel: Model<IAccount> =
-    mongoose.models.Account || mongoose.model<IAccount>("Account", AccountSchema);
+    (mongoose.models && mongoose.models.Account) || mongoose.model<IAccount>("Account", AccountSchema);

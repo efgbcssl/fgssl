@@ -36,8 +36,8 @@ const authConfig: NextAuthConfig = {
         }),
     ],
     pages: {
-        signIn: "/auth/login",
-        error: "/auth/login",
+        signIn: "/login",
+        error: "/login",
     },
     callbacks: {
         async signIn({ user, account, profile }) {
@@ -144,7 +144,7 @@ const authConfig: NextAuthConfig = {
                     : "next-auth.session-token",
             options: {
                 httpOnly: true,
-                sameSite: "none",
+                sameSite: "lax",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
                 domain:
@@ -157,7 +157,7 @@ const authConfig: NextAuthConfig = {
                     ? "__Secure-next-auth.callback-url"
                     : "next-auth.callback-url",
             options: {
-                sameSite: "none",
+                sameSite: "lax",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
                 domain:
@@ -171,3 +171,4 @@ const authConfig: NextAuthConfig = {
 };
 
 export const { GET, POST } = NextAuth(authConfig).handlers;
+export const { auth } = NextAuth(authConfig);

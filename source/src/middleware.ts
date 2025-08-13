@@ -1,98 +1,74 @@
-// src/middleware.ts
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
+import { auth } from "@/app/api/auth/[...nextauth]/route"
+import { NextResponse } from "next/server";
 
-// Define protected routes and their required roles
-const protectedRoutes = {
-  "/dashboard": ["admin", "manager", "member"],
-  "/dashboard/admin": ["admin"],
-  "/dashboard/manager": ["admin", "manager"],
-  "/dashboard/users": ["admin"],
-  "/dashboard/donations": ["admin", "manager"],
-  "/dashboard/analytics": ["admin", "manager"],
-  "/dashboard/settings": ["admin", "manager"],
-  "/dashboard/reports": ["admin", "manager"],
-  "/api/dashboard": ["admin", "manager", "member"],
-  "/api/admin": ["admin"],
-  "/api/users": ["admin"],
-}
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+  const isLoggedIn = !!req.auth;
 
-export default async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+  // 1. Define public routes (no auth needed)
+  const publicRoutes = [
+    "/",
+    "/about",
+    "/contact",
+    "/login", // Changed from "/auth/login"
+    "/unauthorized" // Changed from "/auth/unauthorized"
+  ];
 
-  // Allow public routes
-  if (
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/auth") ||
-    pathname === "/" ||
-    pathname.startsWith("/about") ||
-    pathname.startsWith("/contact") ||
-    pathname.startsWith("/donate") ||
-    pathname.startsWith("/unsubscribe") ||
-    pathname.startsWith("/blog") ||
-    pathname.startsWith("/resources") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon") ||
-    pathname.includes(".")
-  ) {
-    return NextResponse.next()
+  // 2. Define protected routes (auth required)
+  const protectedRoutes = [
+    "/dashboard",
+    "/dashboard/(.*)" // All subroutes under dashboard
+  ];
+
+  // 3. Always allow NextAuth API routes
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
   }
 
-  // Check if route requires authentication
-  const isProtectedRoute = Object.keys(protectedRoutes).some(route =>
+  // 4. Check if current route is public
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route)
+  );
+
+  // 5. Check if current route is protected
+  const isProtectedRoute = protectedRoutes.some(route => 
     pathname.startsWith(route)
-  )
+  );
 
-  if (isProtectedRoute) {
-    // Get the token
-    const token = await getToken({ 
-      req, 
-      secret: process.env.NEXTAUTH_SECRET 
-    })
-
-    if (!token) {
-      // Redirect to login if not authenticated
-      const url = new URL("/auth/login", req.url)
-      url.searchParams.set("callbackUrl", pathname)
-      return NextResponse.redirect(url)
-    }
-
-    // Check if the current path requires specific roles
-    const matchedRoute = Object.keys(protectedRoutes).find(route => 
-      pathname.startsWith(route)
-    )
-
-    if (matchedRoute) {
-      const requiredRoles = protectedRoutes[matchedRoute as keyof typeof protectedRoutes]
-      const userRole = token?.role as string
-
-      // Check if user has required role
-      if (!userRole || !requiredRoles.includes(userRole)) {
-        console.log(`Access denied for user role: ${userRole} to path: ${pathname}`)
-        
-        // Redirect to unauthorized page
-        const url = new URL("/auth/unauthorized", req.url)
-        url.searchParams.set("callbackUrl", pathname)
-        return NextResponse.redirect(url)
-      }
-    }
+  // 6. Handle public routes
+  if (isPublicRoute) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next()
-}
+  // 7. Handle protected routes
+  if (isProtectedRoute) {
+    if (!isLoggedIn) {
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Optional: Add role-based checks here if needed
+    // const userRole = req.auth?.user?.role;
+    // if (pathname.startsWith("/dashboard/admin") && userRole !== "admin") {
+    //   return NextResponse.redirect(new URL("/unauthorized", req.url));
+    // }
+  }
+
+  // 8. Default allow other routes (or redirect if you prefer)
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api/auth (NextAuth.js)
+     * Match all request paths except for:
+     * - api/ routes (except auth routes which we handle above)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public assets
+     * - public folder
      */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.).*)",
-    '/profile'
+    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
   ],
-}
+};

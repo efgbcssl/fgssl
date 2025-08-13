@@ -22,7 +22,7 @@ export default function ProfilePage() {
   }
 
   if (!session) {
-    router.push('/auth/login')
+    router.push('/login')
     return null
   }
 

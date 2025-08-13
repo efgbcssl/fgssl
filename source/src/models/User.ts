@@ -31,4 +31,4 @@ const UserSchema = new Schema<IUser>(
 
 // Avoid model overwrite in dev
 export const UserModel: Model<IUser> =
-    mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+    (mongoose.models && mongoose.models.User) || mongoose.model<IUser>("User", UserSchema);
