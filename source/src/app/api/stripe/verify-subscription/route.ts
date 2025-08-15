@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
@@ -7,6 +8,7 @@ import Donor from '@/models/Donor';
 import Donation from '@/models/Donation';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email';
 import { generateUnsubscribeLink } from '@/lib/helper';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +29,17 @@ interface SubscriptionConfirmationEmailData {
     unsubscribeUrl: string;
 }
 
+interface ExpandedInvoice extends Stripe.Invoice {
+    payment_intent?: Stripe.PaymentIntent;
+}
+
+interface ExpandedSubscription extends Omit<Stripe.Subscription, 'customer' | 'latest_invoice'> {
+    latest_invoice?: ExpandedInvoice | string;
+    customer?: Stripe.Customer | Stripe.DeletedCustomer | string;
+    current_period_end: number;
+    id: string
+}
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const subscriptionId = searchParams.get('subscription_id');
@@ -42,19 +55,13 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Connect to MongoDB
         await connectMongoDB();
         console.log('🔗 MongoDB connected successfully');
 
         console.log('🔵 Retrieving subscription from Stripe...');
         const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-            expand: [
-                'latest_invoice',
-                'latest_invoice.payment_intent',
-                'latest_invoice.payment_intent.charges.data',
-                'customer'
-            ]
-        });
+            expand: ['latest_invoice', 'latest_invoice.payment_intent', 'customer']
+        }) as unknown as ExpandedSubscription;
 
         console.log('ℹ️ Subscription status:', subscription.status);
 
@@ -62,7 +69,6 @@ export async function GET(request: Request) {
             console.log('🟢 Subscription is active/trialing');
             const formattedResponse = await formatSubscriptionResponse(subscription);
 
-            // Send confirmation email if this is a new subscription
             if (subscription.status === 'active') {
                 await handleSubscriptionConfirmation(subscription, formattedResponse.donation);
             }
@@ -74,7 +80,6 @@ export async function GET(request: Request) {
             });
         }
 
-        // Handle other statuses
         const errorMap: Record<string, { status: number; message: string }> = {
             past_due: { status: 402, message: 'Subscription payment is past due' },
             canceled: { status: 400, message: 'Subscription was canceled' },
@@ -112,11 +117,14 @@ export async function GET(request: Request) {
     }
 }
 
-async function formatSubscriptionResponse(subscription: Stripe.Subscription) {
+async function formatSubscriptionResponse(subscription: ExpandedSubscription) {
     console.log('🔵 Formatting subscription response...');
 
     try {
-        const invoice = subscription.latest_invoice as Stripe.Invoice | null;
+        const invoice = typeof subscription.latest_invoice === 'string'
+            ? null
+            : subscription.latest_invoice;
+
         const price = subscription.items.data[0].price;
         const amount = price.unit_amount ? price.unit_amount / 100 :
             (invoice?.amount_paid || invoice?.amount_due || 0) / 100;
@@ -129,12 +137,12 @@ async function formatSubscriptionResponse(subscription: Stripe.Subscription) {
         if (typeof subscription.customer === 'string') {
             customer = await stripe.customers.retrieve(subscription.customer);
         } else {
-            customer = subscription.customer as Stripe.Customer | Stripe.DeletedCustomer; 
+            customer = subscription.customer as Stripe.Customer | Stripe.DeletedCustomer;
         }
 
         // Get payment method description
         let paymentMethod = 'card';
-        const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent | undefined;
+        const paymentIntent = invoice?.payment_intent;
         if (paymentIntent?.payment_method && typeof paymentIntent.payment_method === 'string') {
             const method = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
             if (method.card) {
@@ -148,11 +156,11 @@ async function formatSubscriptionResponse(subscription: Stripe.Subscription) {
             'monthly';
 
         const donorEmail = subscription.metadata?.donorEmail ||
-            (customer as Stripe.Customer)?.email ||
+            (customer.deleted ? '' : (customer as Stripe.Customer).email) ||
             '';
 
         const donorName = subscription.metadata?.donorName ||
-            (customer as Stripe.Customer)?.name ||
+            (customer.deleted ? 'Deleted Customer' : (customer as Stripe.Customer).name) ||
             'Recurring Donor';
 
         return {
@@ -161,7 +169,8 @@ async function formatSubscriptionResponse(subscription: Stripe.Subscription) {
             donation: {
                 donorName,
                 donorEmail,
-                donorPhone: subscription.metadata?.donorPhone || (customer as Stripe.Customer)?.phone || '',
+                donorPhone: subscription.metadata?.donorPhone ||
+                    (customer.deleted ? '' : (customer as Stripe.Customer).phone) || '',
                 amount,
                 currency,
                 donationType: subscription.metadata?.donationType || 'Recurring Donation',
@@ -182,19 +191,21 @@ async function formatSubscriptionResponse(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionConfirmation(
-    subscription: Stripe.Subscription,
+    subscription: ExpandedSubscription,
     donationData: {
         donorName: string;
         donorEmail: string;
+        donorPhone: string
         amount: number;
         currency: string;
         frequency: string;
         donationType: string;
         subscriptionId: string;
+        paymentMethod: string;
     }
 ) {
     try {
-        // Check if we've already processed this subscription
+        // First check if we already processed this subscription
         const existingDonation = await Donation.findOne({
             subscriptionId: subscription.id
         });
@@ -204,13 +215,59 @@ async function handleSubscriptionConfirmation(
             return;
         }
 
-        // Generate unsubscribe link
-        const unsubscribeLink = await generateUnsubscribeLink(
+        // 1. Create or update the donor record
+        const donor = await Donor.findOneAndUpdate(
+            { email: donationData.donorEmail },
+            {
+                $set: {
+                    name: donationData.donorName,
+                    phone: donationData.donorPhone || '',
+                    lastDonationDate: new Date(),
+                    donationFrequency: donationData.frequency,
+                    hasActiveSubscription: true,
+                    stripeCustomerId: typeof subscription.customer === 'string'
+                        ? subscription.customer
+                        : (subscription.customer as Stripe.Customer)?.id,
+                    activeSubscriptionId: subscription.id,
+                    subscriptionStatus: 'active',
+                    subscriptionStartDate: new Date(),
+                    lastUpdated: new Date()
+                },
+                $inc: { totalDonations: donationData.amount },
+                $setOnInsert: {
+                    donorsId: crypto.randomUUID(),
+                    createdAt: new Date()
+                }
+            },
+            { upsert: true, new: true }
+        );
+
+        console.log('✅ Donor record processed:', donor.email);
+
+        // 2. Create the donation record
+        const newDonation = await Donation.create({
+            donorsId: donor.donorsId || donor._id.toString(),
+            amount: donationData.amount,
+            currency: donationData.currency,
+            donationType: donationData.donationType,
+            donorName: donationData.donorName,
+            donorEmail: donationData.donorEmail,
+            donorPhone: donationData.donorPhone || '',
+            isRecurring: true, // Since this is a subscription
+            paymentStatus: subscription.status, // Use the subscription status
+            paymentMethod: donationData.paymentMethod, // Pass the payment method
+            subscriptionId: subscription.id, // Include subscription ID
+            frequency: donationData.frequency // Include frequency if needed
+        });
+
+        console.log('✅ Saved new subscription donation:', newDonation._id);
+
+        // 3. Send confirmation email
+        const unsubscribeUrl = await generateUnsubscribeLink(
             subscription.id,
             donationData.donorEmail
         );
 
-        // Prepare email data
         const emailData: SubscriptionConfirmationEmailData = {
             to: donationData.donorEmail,
             donorName: donationData.donorName,
@@ -219,42 +276,15 @@ async function handleSubscriptionConfirmation(
             frequency: donationData.frequency,
             donationType: donationData.donationType,
             subscriptionId: subscription.id,
-            nextBillingDate: new Date((subscription as any).current_period_end * 1000),
+            nextBillingDate: new Date(subscription.current_period_end * 1000),
             manageSubscriptionUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/donations/manage`,
-            unsubscribeUrl: unsubscribeLink
+            unsubscribeUrl
         };
 
-        // Save to database
-        const newDonation = await Donation.create({
-            donorsId: randomUUID(),
-            amount: donationData.amount,
-            currency: donationData.currency,
-            donationType: donationData.donationType,
-            donorName: donationData.donorName,
-            donorEmail: donationData.donorEmail,
-            paymentMethod: 'card', // Will be updated from payment intent
-            paymentStatus: 'succeeded',
-            isRecurring: true,
-            subscriptionId: subscription.id,
-            frequency: donationData.frequency,
-            createdAt: new Date(subscription.created * 1000)
-        });
-
-        console.log('✅ Saved new subscription donation:', newDonation._id);
-
-        // Send confirmation email
         await sendSubscriptionConfirmationEmail(emailData);
         console.log('✉️ Subscription confirmation email sent to:', donationData.donorEmail);
 
     } catch (error) {
         console.error('❌ Failed to process subscription confirmation:', error);
-        // Don't fail the whole request if email fails
     }
-}
-
-function randomUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
 }

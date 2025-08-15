@@ -1,10 +1,19 @@
-import { NextResponse } from 'next/server'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextResponse, NextRequest } from 'next/server'
 import { connectMongoDB } from '@/lib/mongodb'
 import { Event } from '@/models/Event'
 import mongoose from 'mongoose'
 
+interface EventDocument {
+    _id: mongoose.Types.ObjectId
+    date: Date
+    expiresAt: Date
+
+}
+
+type LeanEvent = EventDocument & {__v?: number}
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
@@ -50,7 +59,7 @@ export async function PUT(
         }
 
         // Clean up the response
-        const { _id, __v, ...responseData } = updatedEvent
+        const { _id, ...responseData } = updatedEvent
         return NextResponse.json({ id: _id, ...responseData })
 
     } catch (error) {
