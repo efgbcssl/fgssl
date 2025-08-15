@@ -91,11 +91,11 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
     async function createPayment(values: z.infer<typeof FormSchema>) {
         setIsSubmitting(true)
         try {
-            const parsedAmount = Math.round(Number(values.amount) * 100)
-            if (isNaN(parsedAmount) || parsedAmount < 50) {
+            const parsedAmount = Math.round(Number(values.amount))
+            if (isNaN(parsedAmount) || parsedAmount < 0.10) {
                 toast({
                     title: "Invalid amount",
-                    description: "Amount must be at least $0.50",
+                    description: "Amount must be at least $0.10",
                     variant: "destructive"
                 })
                 return
