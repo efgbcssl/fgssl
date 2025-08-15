@@ -11,6 +11,10 @@ interface EventDocument {
 
 }
 
+interface Params {
+    id: string
+}
+
 type LeanEvent = EventDocument & {__v?: number}
 export async function PUT(
     request: NextRequest,
