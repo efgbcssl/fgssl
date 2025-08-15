@@ -8,7 +8,7 @@ import { Archive, ArrowLeft, Mail, Clock, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 
 type Message = {
-    message_id: string
+    _id: string
     name: string
     email: string
     subject: string
@@ -18,9 +18,10 @@ type Message = {
 }
 
 export default function MessageDetailPage() {
-    const { message_id } = useParams()
+    const { messageId } = useParams<{ messageId: string }>()
     const [message, setMessage] = useState<Message | null>(null)
     const [loading, setLoading] = useState(true)
+    const [archiving, setArchiving] = useState(false)
     const { toast } = useToast()
     const router = useRouter()
 
@@ -28,7 +29,7 @@ export default function MessageDetailPage() {
         const fetchMessage = async () => {
             try {
                 setLoading(true)
-                const response = await fetch(`/api/messages/${message_id}`)
+                const response = await fetch(`/api/messages/${messageId}`)
 
                 if (!response.ok) {
                     throw new Error(response.status === 404
@@ -46,7 +47,7 @@ export default function MessageDetailPage() {
 
                 // Mark as read if unread
                 if (data.status === 'unread') {
-                    await fetch(`/api/messages/${message_id}`, {
+                    await fetch(`/api/messages/${messageId}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'read' })
@@ -67,8 +68,40 @@ export default function MessageDetailPage() {
             }
         }
 
-        fetchMessage()
-    }, [message_id, router, toast])
+        if (messageId) {
+            fetchMessage()
+        }
+    }, [messageId, router, toast])
+
+    const handleArchive = async () => {
+        try {
+            setArchiving(true)
+            const response = await fetch(`/api/messages/${messageId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'archived' })
+            })
+
+            if (!response.ok) throw new Error('Failed to archive message')
+
+            router.push('/dashboard/messages')
+            toast({
+                title: "Message Archived",
+                description: "The message has been archived",
+            })
+        } catch (error) {
+            console.error('Error archiving message:', error)
+            toast({
+                title: "Error",
+                description: error instanceof Error
+                    ? error.message
+                    : "Failed to archive message",
+                variant: "destructive"
+            })
+        } finally {
+            setArchiving(false)
+        }
+    }
 
     if (loading) {
         return (
@@ -110,30 +143,15 @@ export default function MessageDetailPage() {
                 <div className="flex gap-2">
                     <Button
                         variant="secondary"
-                        onClick={async () => {
-                            try {
-                                await fetch(`/api/messages/${message_id}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ status: 'archived' })
-                                })
-                                router.push('/dashboard/messages')
-                                toast({
-                                    title: "Message Archived",
-                                    description: "The message has been archived",
-                                })
-                            } catch (error) {
-                                console.log('Error archiving message:', error)
-                                toast({
-                                    title: "Error",
-                                    description: "Failed to archive message",
-                                    variant: "destructive"
-                                })
-                            }
-                        }}
+                        onClick={handleArchive}
+                        disabled={archiving}
                     >
-                        <Archive className="mr-2 h-4 w-4" />
-                        Archive
+                        {archiving ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Archive className="mr-2 h-4 w-4" />
+                        )}
+                        {archiving ? "Archiving..." : "Archive"}
                     </Button>
                 </div>
             </div>
@@ -149,8 +167,8 @@ export default function MessageDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${message.status === 'unread' ? 'bg-red-100 text-red-800' :
-                            message.status === 'read' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
+                                message.status === 'read' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
                             }`}>
                             {message.status}
                         </span>

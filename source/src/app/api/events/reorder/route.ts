@@ -1,19 +1,38 @@
 import { NextResponse } from 'next/server'
-import { xata } from '@/lib/xata'
+import { connectMongoDB } from '@/lib/mongodb'
+import { Event } from '@/models/Event'
 
 export async function PUT(request: Request) {
     try {
+        await connectMongoDB()
         const events = await request.json()
 
-        // Xata doesn't support batch updates directly, so we update one by one
-        for (const event of events) {
-            await xata.db.events.update(event.id, { order: event.order })
+        // Create a bulk write operation for better performance
+        const bulkOps = events.map((event: { id: string; order: number }) => ({
+            updateOne: {
+                filter: { _id: event.id },
+                update: { $set: { order: event.order } }
+            }
+        }))
+
+        // Execute all updates in a single operation
+        const result = await Event.bulkWrite(bulkOps)
+
+        if (!result.modifiedCount) {
+            throw new Error('No events were updated')
         }
 
-        return NextResponse.json({ success: true })
-    } catch {
+        return NextResponse.json({
+            success: true,
+            updatedCount: result.modifiedCount
+        })
+    } catch (error) {
+        console.error('Error reordering events:', error)
         return NextResponse.json(
-            { error: 'Failed to reorder events' },
+            {
+                error: 'Failed to reorder events',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500 }
         )
     }

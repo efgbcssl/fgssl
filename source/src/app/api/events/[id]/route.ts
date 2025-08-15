@@ -1,33 +1,107 @@
 import { NextResponse } from 'next/server'
-import { xata } from '@/lib/xata'
+import { connectMongoDB } from '@/lib/mongodb'
+import { Event } from '@/models/Event'
+import mongoose from 'mongoose'
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
     try {
+        await connectMongoDB()
+        const { id } = params
+
+        // Validate the ID format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return NextResponse.json(
+                { error: 'Invalid event ID format' },
+                { status: 400 }
+            )
+        }
+
         const data = await request.json()
         const eventDate = new Date(data.date)
         const expiresAt = new Date(eventDate.getTime() + 15 * 24 * 60 * 60 * 1000)
 
-        const updatedEvent = await xata.db.events.update((await params).id, {
+        // Prepare update data
+        const updateData = {
             ...data,
-            expiresAt: expiresAt.toISOString()
+            expiresAt
+        }
+
+        // Clean up undefined values
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] === undefined) {
+                delete updateData[key]
+            }
         })
 
-        return NextResponse.json(updatedEvent)
-    } catch {
+        const updatedEvent = await Event.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        ).lean()
+
+        if (!updatedEvent) {
+            return NextResponse.json(
+                { error: 'Event not found' },
+                { status: 404 }
+            )
+        }
+
+        // Clean up the response
+        const { _id, __v, ...responseData } = updatedEvent
+        return NextResponse.json({ id: _id, ...responseData })
+
+    } catch (error) {
+        console.error('Error updating event:', error)
         return NextResponse.json(
-            { error: 'Failed to update event' },
+            {
+                error: 'Failed to update event',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500 }
         )
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
     try {
-        await xata.db.events.delete((await params).id)
-        return NextResponse.json({ success: true })
-    } catch {
+        await connectMongoDB()
+        const { id } = params
+
+        // Validate the ID format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return NextResponse.json(
+                { error: 'Invalid event ID format' },
+                { status: 400 }
+            )
+        }
+
+        const deletedEvent = await Event.findByIdAndDelete(id)
+
+        if (!deletedEvent) {
+            return NextResponse.json(
+                { error: 'Event not found' },
+                { status: 404 }
+            )
+        }
+
+        return NextResponse.json({
+            success: true,
+            deletedId: id
+        })
+
+    } catch (error) {
+        console.error('Error deleting event:', error)
         return NextResponse.json(
-            { error: 'Failed to delete event' },
+            {
+                error: 'Failed to delete event',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
             { status: 500 }
         )
     }

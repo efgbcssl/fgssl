@@ -1,32 +1,26 @@
-import { xata } from '@/lib/xata'
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
+import { connectMongoDB } from '@/lib/mongodb'
+import { Message } from '@/models/Message'
+import mongoose from 'mongoose'
 
 export async function GET(
-    request: Request,
-    context: { params: Promise<{ message_id: string }> }
+    request: NextRequest,
+    { params }: { params: Promise<{ messageId: string }> }
 ) {
     try {
-        const { message_id } = await context.params
+        await connectMongoDB()
+        const { messageId } = await params
 
-        if (!message_id) {
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
             return NextResponse.json(
-                { error: 'message_id parameter is required' },
+                { error: 'Invalid message ID format' },
                 { status: 400 }
             )
         }
 
-        const message = await xata.db.messages
-            .filter({ message_id })
-            .select([
-                'message_id',
-                'name',
-                'email',
-                'subject',
-                'message',
-                'status',
-                'createdAt'
-            ])
-            .getFirst()
+        const message = await Message.findById(messageId)
+            .select('name email subject message status createdAt')
+            .lean()
 
         if (!message) {
             return NextResponse.json(
@@ -49,16 +43,17 @@ export async function GET(
 }
 
 export async function PATCH(
-    request: Request,
-    context: { params: Promise<{ message_id: string }> }
+    request: NextRequest,
+    { params }: { params: Promise<{ messageId: string }> }
 ) {
     try {
-        const { message_id } = await context.params
+        await connectMongoDB()
+        const { messageId } = await params
         const data = await request.json()
 
-        if (!message_id) {
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
             return NextResponse.json(
-                { error: 'message_id parameter is required' },
+                { error: 'Invalid message ID format' },
                 { status: 400 }
             )
         }
@@ -83,10 +78,11 @@ export async function PATCH(
             )
         }
 
-        const updatedMessage = await xata.db.messages
-            .filter({ message_id })
-            .getFirst()
-            .then((record: { update: (d: unknown) => Promise<unknown> } | null) => record?.update(data))
+        const updatedMessage = await Message.findByIdAndUpdate(
+            messageId,
+            data,
+            { new: true, runValidators: true }
+        ).select('name email subject message status createdAt')
 
         if (!updatedMessage) {
             return NextResponse.json(
@@ -110,22 +106,20 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    context: { params: Promise<{ message_id: string }> }
+    { params }: { params: Promise<{ messageId: string }> }
 ) {
     try {
-        const { message_id } = await context.params
+        await connectMongoDB()
+        const { messageId } = await params
 
-        if (!message_id) {
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
             return NextResponse.json(
-                { error: 'message_id parameter is required' },
+                { error: 'Invalid message ID format' },
                 { status: 400 }
             )
         }
 
-        const deletedMessage = await xata.db.messages
-            .filter({ message_id })
-            .getFirst()
-            .then((record: { delete: () => Promise<unknown> } | null) => record?.delete())
+        const deletedMessage = await Message.findByIdAndDelete(messageId)
 
         if (!deletedMessage) {
             return NextResponse.json(
@@ -137,7 +131,7 @@ export async function DELETE(
         return NextResponse.json({
             success: true,
             message: 'Message deleted successfully',
-            deleted_id: message_id
+            deleted_id: messageId
         })
     } catch (error) {
         console.error('Error deleting message:', error)

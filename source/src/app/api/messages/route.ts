@@ -1,14 +1,16 @@
-import { xata } from '@/lib/xata'
 import { NextResponse } from 'next/server'
-import { v4 as uuidv4 } from 'uuid'
+import { connectMongoDB } from '@/lib/mongodb'
+import { Message } from '@/models/Message'
 import { sendMessageNotificationEmail } from '@/lib/email'
 
 export async function GET() {
     try {
-        const messages = await xata.db.messages
-            .select(['message_id', 'name', 'email', 'subject', 'message', 'status', 'createdAt'])
-            .sort('createdAt', 'desc')
-            .getAll()
+        await connectMongoDB()
+
+        const messages = await Message.find()
+            .select('name email subject message status createdAt')
+            .sort({ createdAt: -1 })
+            .lean()
 
         return NextResponse.json(messages)
     } catch (error) {
@@ -25,6 +27,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        await connectMongoDB()
         const data = await request.json()
 
         // Enhanced validation
@@ -40,26 +43,13 @@ export async function POST(request: Request) {
             )
         }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(data.email)) {
-            return NextResponse.json(
-                { error: 'Invalid email format' },
-                { status: 400 }
-            )
-        }
-
-        const message_id = uuidv4()
-
-        // Save to database
-        const newMessage = await xata.db.messages.create({
-            message_id,
+        // Create new message
+        const newMessage = await Message.create({
             name: data.name.trim(),
             email: data.email.trim(),
             subject: data.subject?.trim() || 'No Subject',
             message: data.message.trim(),
-            status: 'unread',
-            createdAt: new Date().toISOString()
+            status: 'unread'
         })
 
         // Send notification email (non-blocking)
@@ -80,7 +70,7 @@ export async function POST(request: Request) {
                 success: true,
                 message: 'Message submitted successfully',
                 data: {
-                    id: newMessage.message_id,
+                    id: newMessage._id,
                     createdAt: newMessage.createdAt
                 }
             },

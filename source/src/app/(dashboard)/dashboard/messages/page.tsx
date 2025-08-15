@@ -17,7 +17,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 type Message = {
-    message_id: string
+    _id: string
     name: string
     email: string
     subject: string
@@ -54,9 +54,9 @@ export default function MessagesDashboard() {
         }
     }
 
-    const updateMessageStatus = async (message_id: string, status: 'read' | 'archived') => {
+    const updateMessageStatus = async (messageId: string, status: 'read' | 'archived') => {
         try {
-            const response = await fetch(`/api/messages/${message_id}`, {
+            const response = await fetch(`/api/messages/${messageId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
@@ -66,7 +66,7 @@ export default function MessagesDashboard() {
 
             // Optimistically update the local state
             setMessages(prev => prev.map(msg =>
-                msg.message_id === message_id ? { ...msg, status } : msg
+                msg._id === messageId ? { ...msg, status } : msg
             ))
 
             toast({
@@ -76,7 +76,7 @@ export default function MessagesDashboard() {
 
             // If marking as read and opening, navigate after state update
             if (status === 'read') {
-                router.push(`/dashboard/messages/${message_id}`)
+                router.push(`/dashboard/messages/${messageId}`)
             }
         } catch (error) {
             toast({
@@ -84,6 +84,8 @@ export default function MessagesDashboard() {
                 description: error instanceof Error ? error.message : "Update failed",
                 variant: "destructive"
             })
+            // Re-fetch messages to ensure consistency
+            fetchMessages()
         }
     }
 
@@ -142,9 +144,9 @@ export default function MessagesDashboard() {
                         ) : (
                             messages.map((message) => (
                                 <TableRow
-                                    key={message.message_id}
+                                    key={message._id}
                                     className="hover:bg-gray-50 cursor-pointer"
-                                    onClick={() => handleRowClick(message.message_id, message.status)}
+                                    onClick={() => handleRowClick(message._id, message.status)}
                                 >
                                     <TableCell>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[message.status]}`}>
@@ -166,7 +168,7 @@ export default function MessagesDashboard() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => updateMessageStatus(message.message_id, 'read')}
+                                                onClick={() => updateMessageStatus(message._id, 'read')}
                                                 disabled={message.status === 'read'}
                                             >
                                                 <MailOpen className="h-4 w-4" />
@@ -174,7 +176,7 @@ export default function MessagesDashboard() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => updateMessageStatus(message.message_id, 'archived')}
+                                                onClick={() => updateMessageStatus(message._id, 'archived')}
                                                 disabled={message.status === 'archived'}
                                             >
                                                 <Archive className="h-4 w-4" />
