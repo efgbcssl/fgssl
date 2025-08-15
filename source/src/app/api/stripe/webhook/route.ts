@@ -10,6 +10,8 @@ import Donor from '@/models/Donor';
 import Donation from '@/models/Donation';
 import FailedPayment from '@/models/FailedPayment';
 import SubscriptionCancellation from '@/models/SubscriptionCancellation';
+import FailedAttachment from '@/models/FailedAttachment';
+
 
 import {
   sendDonationEmail,
@@ -49,6 +51,7 @@ interface DonorRecord {
 }
 
 interface DonationRecord {
+  _id?: any
   donorsId?: string | null
   amount: number
   currency: string
@@ -65,10 +68,14 @@ interface DonationRecord {
   stripeSubscriptionId?: string | null
   stripeInvoiceId?: string | null
   receiptUrl?: string | null
+  receiptPdfUrl?: string | null
+  receiptSent?: boolean
+  receiptSentAt?: Date | null
+  createdAt?: Date
 }
 
 interface FailedPaymentRecord {
-  xata_id?: string
+  _id?: any
   customerEmail: string
   customerName: string
   amount: number
@@ -84,7 +91,7 @@ interface FailedPaymentRecord {
 }
 
 interface SubscriptionCancellationRecord {
-  xata_id?: string
+  _id?: any
   subscriptionId: string
   customerEmail: string
   customerName: string
@@ -97,11 +104,20 @@ interface SubscriptionCancellationRecord {
   voluntaryCancellation?: boolean
 }
 
+interface FailedAttachmentRecord {
+  _id?: any;
+  invoiceId: string;
+  error: string;
+  retryCount: number;
+  createdAt: Date;
+}
+
 type PaymentMethodType = 'card' | 'bank' | 'other';
 
 // ---- Entry ------------------------------------------------------------------
 export async function POST(req: Request) {
   console.log('🔵 [WEBHOOK] Received webhook request');
+
 
   const signature = (await headers()).get('stripe-signature') as string | null;
   if (!signature) {
@@ -154,13 +170,30 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     console.error('🔥 Webhook processing error:', error);
-    // Always 200 on unhandled but expected errors can cause Stripe to re-send;
-    // since we guard idempotency in DB, we can safely 500 here for true failures:
     return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 });
   }
 }
 
 // ---- Helpers ----------------------------------------------------------------
+async function getStripeInvoicePDF(invoiceId: string): Promise<Buffer> {
+  try {
+    const response = await stripe.invoices.retrieve(invoiceId);
+    if (!response.invoice_pdf) {
+      throw new Error('No PDF available for this invoice');
+    }
+
+    const res = await fetch(response.invoice_pdf);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch PDF: ${res.statusText}`);
+    }
+
+    return Buffer.from(await res.arrayBuffer());
+  } catch (error) {
+    console.error('❌ Failed to get invoice PDF:', error);
+    throw error;
+  }
+}
+
 function getPaymentMethodDetails(charge: Stripe.Charge | null): {
   type: PaymentMethodType
   description: string
@@ -194,13 +227,21 @@ async function saveDonationRecord(data: {
   stripeSubscriptionId?: string
   stripeInvoiceId?: string
   receiptUrl?: string
+  receiptPdfUrl?: string | null
   created: Date
 }): Promise<{ donor: DonorRecord; donation: DonationRecord }> {
   console.log('💾 Starting saveDonationRecord for:', data.email);
 
   // Check for existing donation to prevent duplicates (idempotency)
+  const existingQuery: any = {};
   if (data.stripeInvoiceId) {
-    const existing = await Donation.findOne({ stripeInvoiceId: data.stripeInvoiceId }).lean();
+    existingQuery.stripeInvoiceId = data.stripeInvoiceId;
+  } else if (data.stripePaymentIntentId && !data.isRecurring) {
+    existingQuery.stripePaymentIntentId = data.stripePaymentIntentId;
+  }
+
+  if (Object.keys(existingQuery).length > 0) {
+    const existing = await Donation.findOne({ existingQuery }).lean();
     if (existing) {
       console.log('🟨 Donation already exists for invoice:', data.stripeInvoiceId);
       const donor = await Donor.findOne({ email: data.email }).lean();
@@ -211,17 +252,6 @@ async function saveDonationRecord(data: {
     }
   }
 
-  if (data.stripePaymentIntentId && !data.isRecurring) {
-    const existing = await Donation.findOne({ stripePaymentIntentId: data.stripePaymentIntentId }).lean();
-    if (existing) {
-      console.log('🟨 Donation already exists for PaymentIntent:', data.stripePaymentIntentId);
-      const donor = await Donor.findOne({ email: data.email }).lean();
-      return {
-        donor: donor as unknown as DonorRecord,
-        donation: existing as unknown as DonationRecord,
-      }
-    }
-  }
 
   console.log('💾 Saving new donation record:', {
     donorsId: data.donorsId,
@@ -232,14 +262,10 @@ async function saveDonationRecord(data: {
   });
 
   const lastDonationDate = data.created;
+  const donorsId = data.donorsId || randomUUID();
 
   // Find existing donor or prepare to create new one
   let donorDoc = await Donor.findOne({ email: data.email });
-  let donorsId = data.donorsId;
-
-  if (!donorsId) {
-    donorsId = donorDoc?.donorsId || randomUUID();
-  }
 
   const baseUpdate: Partial<DonorRecord> = {
     donorsId,
@@ -277,7 +303,7 @@ async function saveDonationRecord(data: {
   }
 
   // Create donation record (amount in dollars, not cents — consistent with your code)
-  const donationDoc = await Donation.create({
+  const donationData = await Donation.create({
     donorsId: donorDoc.donorsId ?? donorsId,
     amount: data.amount,
     currency: data.currency,
@@ -294,9 +320,14 @@ async function saveDonationRecord(data: {
     stripeSubscriptionId: data.isRecurring ? data.stripeSubscriptionId : undefined,
     stripeInvoiceId: data.stripeInvoiceId ?? undefined,
     receiptUrl: data.receiptUrl ?? null,
+    receiptPdfUrl: data.receiptPdfUrl ?? null,
     createdAt: data.created,
   });
+  if (data.isRecurring && data.stripeSubscriptionId) {
+    donationData.stripeSubscriptionId = data.stripeSubscriptionId;
+  }
 
+  const donationDoc = await Donation.create(donationData);
   console.log('✅ Created donation record:', donationDoc._id);
 
   return {
@@ -352,7 +383,7 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
       phone: (metadata.donorPhone as string) || (metadata.phone as string) || charge?.billing_details?.phone || undefined,
       amount: paymentIntent.amount / 100,
       currency: paymentIntent.currency.toUpperCase(),
-      donationType: (metadata.donationType as string) || 'General Donation',
+      donationType: (metadata.donationType as string) || 'Offerings',
       frequency: 'one-time',
       paymentMethod: paymentMethod.description,
       isRecurring: false,
@@ -381,6 +412,10 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event) {
         isRecurring: false
       });
       console.log('✉️ One-time donation email sent:', donorData.email);
+      await Donation.updateOne(
+        { _id: donation?._id },
+        { $set: { receiptSent: true, receiptSentAt: new Date() } }
+      );
     } catch (emailError) {
       console.error('❌ Failed to send one-time donation email:', emailError);
     }
@@ -411,9 +446,10 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
     }
 
     // Retrieve subscription and customer details
-    const [subscription, customer] = await Promise.all([
+    const [subscription, customer, pdfBuffer] = await Promise.all([
       stripe.subscriptions.retrieve(subscriptionId as string),
-      stripe.customers.retrieve(invoice.customer as string)
+      stripe.customers.retrieve(invoice.customer as string),
+      getStripeInvoicePDF((invoice as any).id).catch(() => null)
     ]);
 
     if (typeof customer === 'string' || (customer as any).deleted) {
@@ -479,6 +515,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
       stripeChargeId: (invoice as any).charge as string | undefined,
       stripeInvoiceId: invoice.id,
       receiptUrl: invoice.hosted_invoice_url || '',
+      receiptPdfUrl: invoice.invoice_pdf || null,
       created: new Date(invoice.created * 1000)
     };
 
@@ -494,7 +531,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
 
     // Email
     try {
-      await sendDonationEmail({
+      const emailData = {
         to: customerEmail,
         donorName: customerName,
         amount: donationData.amount,
@@ -505,8 +542,43 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event) {
         paymentMethod: donationData.paymentMethod,
         receiptUrl: donationData.receiptUrl,
         isRecurring: true
-      });
-      console.log('✉️ Recurring donation email sent:', customerEmail);
+      };
+
+      if (pdfBuffer) {
+        await sendDonationEmail({
+          ...emailData,
+          attachments: [{
+            filename: `receipt_${invoice.number || invoice.id}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }]
+        })
+        console.log('✉️ Recurring donation email with PDF sent:', customerEmail);
+      } else {
+        await sendDonationEmail(emailData)
+        console.log('✉️ Recurring donation email sent (no PDF):', customerEmail);
+
+        await FailedAttachment.create({
+          invoiceId: invoice.id,
+          error: 'PDF not available',
+          retryCount: 0,
+          createdAt: new Date()
+        });
+      }
+
+      const {donation} = await saveDonationRecord(donationData)
+      if (donation?._id) {
+        await Donation.updateOne(
+          { _id: donation?._id },
+          {
+            $set: {
+              receiptSent: true,
+              receiptSentAt: new Date(),
+              receiptPdfUrl: invoice.invoice_pdf || null
+            }
+          }
+        );
+      }
     } catch (emailError) {
       console.error('❌ Failed to send recurring donation email:', emailError);
     }

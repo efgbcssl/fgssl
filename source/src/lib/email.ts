@@ -33,6 +33,11 @@ interface DonationEmailParams {
     frequency?: string
     isRecurring: boolean
     unsubscribeLink?: string
+    attachments?: Array<{
+        filename: string;
+        content: Buffer;
+        contentType: string;
+    }>;
 }
 
 interface PaymentFailedEmailParams {
