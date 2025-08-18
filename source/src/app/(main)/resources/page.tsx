@@ -1,54 +1,33 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger
-} from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import {
-    Download,
-    FileText,
-    Video,
-    Music,
-    Clock,
-    Calendar,
-    Play,
-    ExternalLink,
-    Search,
-    Filter,
-    Grid,
-    List,
-    Star,
-    SortAsc,
-    SortDesc,
-    Eye
+    Download, FileText, Video, Music, Search,
+    Grid, List, Star, SortAsc, SortDesc
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationPrevious,
-    PaginationNext
+    Pagination, PaginationContent, PaginationItem,
+    PaginationPrevious, PaginationNext
 } from '@/components/ui/pagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import ResourceCard from '@/components/resources/ResourceCard'
-import VideoPlayer from '@/components/resources/VideoPlayer'
-import type { Resource, ResourceFilter, VideoResource } from '@/types/resources'
+import type { Resource, ResourceFilter, VideoResource } from '@/types/resource'
+
+// dynamically import heavy viewers
+const VideoPlayer = dynamic(() => import('@/components/resources/VideoPlayer'))
+const PDFViewer = dynamic(() => import('@/components/resources/PDFViewer'))
+const AudioPlayer = dynamic(() => import('@/components/resources/AudioPlayer'))
 
 const RESOURCE_TYPES = ['all', 'video', 'audio', 'pdf'] as const
 const CATEGORIES = ['all', 'sermons', 'studies', 'events', 'music', 'other'] as const
@@ -71,45 +50,48 @@ export default function EnhancedResourcesPage() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
     const [showFeaturedOnly, setShowFeaturedOnly] = useState(false)
     const [showDownloadableOnly, setShowDownloadableOnly] = useState(false)
+
+    // media state
     const [selectedVideo, setSelectedVideo] = useState<VideoResource | null>(null)
-    const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false)
+    const [selectedPDF, setSelectedPDF] = useState<Resource | null>(null)
+    const [selectedAudio, setSelectedAudio] = useState<Resource | null>(null)
 
     useEffect(() => {
         const fetchResources = async () => {
             try {
+                setLoading(true)
                 const res = await fetch('/api/resources')
                 const data = await res.json()
-                
-                // Transform the data to match our Resource interface
-                const transformedResources: Resource[] = data.map((item: any) => ({
-                    id: item.id,
+
+                const transformed: Resource[] = data.map((item: Resource) => ({
+                    id: item._id,
                     title: item.title,
                     description: item.description || '',
                     thumbnail: item.thumbnail,
                     date: item.date,
                     type: item.type,
-                    downloadable: item.canDownload || item.downloadable || false,
-                    featured: Math.random() > 0.8, // Randomly mark some as featured for demo
-                    category: 'sermons', // Default category
+                    downloadable: item.downloadable || false,
+                    featured: item.featured || false,
+                    category: item.category || 'other',
                     tags: item.tags || [],
                     duration: item.duration,
-                    // Type-specific fields
-                    ...(item.type === 'video' ? {
-                        videoUrl: item.previewUrl,
+                    ...(item.type === 'video' && {
+                        videoUrl: item.videoUrl,
                         youtubeId: item.youtubeId,
-                        youtubeUrl: item.previewUrl,
-                        embedUrl: item.previewUrl
-                    } : {}),
-                    ...(item.type === 'audio' || item.type === 'pdf' ? {
-                        fileUrl: item.previewUrl,
-                        downloadUrl: item.downloadUrl,
-                        fileSize: item.size || 0
-                    } : {})
+                        embedUrl: item.embedUrl || `https://www.youtube.com/embed/${item.youtubeId}`
+                    }),
+                    ...(item.type === 'audio' && {
+                        fileUrl: item.fileUrl,
+                        downloadUrl: item.downloadUrl
+                    }),
+                    ...(item.type === 'pdf' && {
+                        fileUrl: item.fileUrl,
+                        downloadUrl: item.downloadUrl
+                    })
                 }))
-                
-                setResources(transformedResources)
+                setResources(transformed)
             } catch (e) {
-                console.error(e)
+                console.error('Failed to fetch resources', e)
             } finally {
                 setLoading(false)
             }
@@ -117,45 +99,41 @@ export default function EnhancedResourcesPage() {
         fetchResources()
     }, [])
 
+    // filtering + sorting
     const filteredAndSortedResources = useMemo(() => {
-        let filtered = resources.filter((resource) => {
-            const matchesSearch = !searchTerm || 
-                resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                resource.description?.toLowerCase().includes(searchTerm.toLowerCase())
-            
-            const matchesType = filter.type === 'all' || resource.type === filter.type
-            const matchesCategory = filter.category === 'all' || resource.category === filter.category
-            const matchesDownloadable = !showDownloadableOnly || resource.downloadable
-            const matchesFeatured = !showFeaturedOnly || resource.featured
-            
+        const filtered = resources.filter(r => {
+            const matchesSearch =
+                !searchTerm ||
+                r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                r.description?.toLowerCase().includes(searchTerm.toLowerCase())
+
+            const matchesType = filter.type === 'all' || r.type === filter.type
+            const matchesCategory = filter.category === 'all' || r.category === filter.category
+            const matchesDownloadable = !showDownloadableOnly || r.downloadable
+            const matchesFeatured = !showFeaturedOnly || r.featured
+
             return matchesSearch && matchesType && matchesCategory && matchesDownloadable && matchesFeatured
         })
 
-        // Sort resources
         filtered.sort((a, b) => {
-            let aValue: string | number, bValue: string | number
-            
+            let aVal: any, bVal: any
             switch (sortBy) {
                 case 'title':
-                    aValue = a.title.toLowerCase()
-                    bValue = b.title.toLowerCase()
+                    aVal = a.title.toLowerCase()
+                    bVal = b.title.toLowerCase()
                     break
                 case 'type':
-                    aValue = a.type
-                    bValue = b.type
+                    aVal = a.type
+                    bVal = b.type
                     break
-                case 'date':
                 default:
-                    aValue = new Date(a.date).getTime()
-                    bValue = new Date(b.date).getTime()
+                    aVal = new Date(a.date).getTime()
+                    bVal = new Date(b.date).getTime()
                     break
             }
-            
-            if (sortOrder === 'asc') {
-                return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
-            } else {
-                return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
-            }
+            return sortOrder === 'asc'
+                ? aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+                : aVal > bVal ? -1 : aVal < bVal ? 1 : 0
         })
 
         return filtered
@@ -163,39 +141,31 @@ export default function EnhancedResourcesPage() {
 
     const totalPages = Math.ceil(filteredAndSortedResources.length / ITEMS_PER_PAGE)
     const paginatedResources = filteredAndSortedResources.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE, 
+        (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
     )
 
+    // interactions
     const handleResourcePlay = (resource: Resource) => {
-        if (resource.type === 'video') {
-            setSelectedVideo(resource as VideoResource)
-            setIsVideoPlayerOpen(true)
-        } else if (resource.type === 'pdf') {
-            window.open(resource.fileUrl, '_blank')
-        }
+        if (resource.type === 'video') setSelectedVideo(resource as VideoResource)
+        if (resource.type === 'audio') setSelectedAudio(resource)
+        if (resource.type === 'pdf') setSelectedPDF(resource)
     }
 
     const handleResourceDownload = (resource: Resource) => {
         if (resource.downloadable) {
-            const downloadUrl = resource.type === 'video' 
-                ? resource.videoUrl 
-                : resource.downloadUrl || resource.fileUrl
+            const url = resource.downloadUrl || resource.fileUrl || resource.videoUrl
+            if (!url) return
             const link = document.createElement('a')
-            link.href = downloadUrl
+            link.href = url
             link.download = resource.title
             link.click()
         }
     }
 
-    const updateFilter = (key: keyof ResourceFilter, value: any) => {
-        setFilter(prev => ({ ...prev, [key]: value }))
-        setCurrentPage(1)
-    }
-
     return (
         <>
-            {/* Hero Section */}
+            {/* Hero */}
             <section className="relative h-[400px] overflow-hidden">
                 <Image
                     src="https://images.pexels.com/photos/4048755/pexels-photo-4048755.jpeg"
@@ -207,265 +177,125 @@ export default function EnhancedResourcesPage() {
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white text-center px-4">
                     <h1 className="text-5xl md:text-6xl font-bold mb-4">Resources</h1>
                     <p className="text-xl md:text-2xl max-w-3xl mb-6">
-                        Discover our comprehensive library of spiritual content
+                        Explore sermons, studies, music & more
                     </p>
-                    <div className="flex flex-wrap justify-center gap-4 text-sm">
-                        <Badge className="bg-red-500 text-white px-3 py-1">
-                            <Video className="h-4 w-4 mr-1" />
-                            Videos
-                        </Badge>
-                        <Badge className="bg-blue-500 text-white px-3 py-1">
-                            <Music className="h-4 w-4 mr-1" />
-                            Audio
-                        </Badge>
-                        <Badge className="bg-green-500 text-white px-3 py-1">
-                            <FileText className="h-4 w-4 mr-1" />
-                            Documents
-                        </Badge>
+                    <div className="flex flex-wrap gap-4">
+                        <Badge className="bg-red-500"><Video className="h-4 w-4 mr-1" />Videos</Badge>
+                        <Badge className="bg-blue-500"><Music className="h-4 w-4 mr-1" />Audio</Badge>
+                        <Badge className="bg-green-500"><FileText className="h-4 w-4 mr-1" />Documents</Badge>
                     </div>
                 </div>
             </section>
 
-            {/* Main Content */}
+            {/* Main */}
             <section className="py-12">
                 <div className="container-custom">
-                    {/* Filters and Controls */}
-                    <div className="mb-8 space-y-6">
-                        {/* Search and View Controls */}
-                        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                            <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                <Input
-                                    placeholder="Search resources..."
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value)
-                                        setCurrentPage(1)
-                                    }}
-                                    className="pl-10"
-                                />
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant={viewMode === 'grid' ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => setViewMode('grid')}
-                                    >
-                                        <Grid className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant={viewMode === 'list' ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => setViewMode('list')}
-                                    >
-                                        <List className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                
-                                <div className="text-sm text-gray-600">
-                                    {filteredAndSortedResources.length} resources
-                                </div>
-                            </div>
+                    {/* search + controls */}
+                    <div className="flex flex-col lg:flex-row gap-4 mb-6 justify-between">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                            <Input
+                                placeholder="Search resources..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value)
+                                    setCurrentPage(1)
+                                }}
+                                className="pl-10"
+                            />
                         </div>
-
-                        {/* Advanced Filters */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                            <Select
-                                value={filter.type}
-                                onValueChange={(value) => updateFilter('type', value as any)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {RESOURCE_TYPES.map(type => (
-                                        <SelectItem key={type} value={type}>
-                                            {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select
-                                value={filter.category}
-                                onValueChange={(value) => updateFilter('category', value as any)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {CATEGORIES.map(category => (
-                                        <SelectItem key={category} value={category}>
-                                            {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select
-                                value={sortBy}
-                                onValueChange={(value) => setSortBy(value as any)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sort by" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="date">Date</SelectItem>
-                                    <SelectItem value="title">Title</SelectItem>
-                                    <SelectItem value="type">Type</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                                className="justify-start"
-                            >
-                                {sortOrder === 'asc' ? (
-                                    <>
-                                        <SortAsc className="h-4 w-4 mr-2" />
-                                        Ascending
-                                    </>
-                                ) : (
-                                    <>
-                                        <SortDesc className="h-4 w-4 mr-2" />
-                                        Descending
-                                    </>
-                                )}
+                        <div className="flex gap-2 items-center">
+                            <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('grid')}>
+                                <Grid className="h-4 w-4" />
                             </Button>
-
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="featured"
-                                    checked={showFeaturedOnly}
-                                    onCheckedChange={setShowFeaturedOnly}
-                                />
-                                <Label htmlFor="featured" className="text-sm">
-                                    <Star className="h-3 w-3 inline mr-1" />
-                                    Featured
-                                </Label>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="downloadable"
-                                    checked={showDownloadableOnly}
-                                    onCheckedChange={setShowDownloadableOnly}
-                                />
-                                <Label htmlFor="downloadable" className="text-sm">
-                                    <Download className="h-3 w-3 inline mr-1" />
-                                    Downloadable
-                                </Label>
-                            </div>
+                            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('list')}>
+                                <List className="h-4 w-4" />
+                            </Button>
+                            <span className="text-sm text-gray-500">{filteredAndSortedResources.length} results</span>
                         </div>
                     </div>
 
-                    {/* Resources Grid/List */}
+                    {/* filters */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                        <Select value={filter.type} onValueChange={v => setFilter((f: any) => ({ ...f, type: v as any }))}>
+                            <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                            <SelectContent>
+                                {RESOURCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={filter.category} onValueChange={v => setFilter((f: any) => ({ ...f, category: v as any }))}>
+                            <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+                            <SelectContent>
+                                {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={sortBy} onValueChange={v => setSortBy(v as any)}>
+                            <SelectTrigger><SelectValue placeholder="Sort by" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="date">Date</SelectItem>
+                                <SelectItem value="title">Title</SelectItem>
+                                <SelectItem value="type">Type</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button variant="outline" size="sm" onClick={() => setSortOrder(s => s === 'asc' ? 'desc' : 'asc')}>
+                            {sortOrder === 'asc' ? <><SortAsc className="h-4 w-4 mr-1" />Asc</> : <><SortDesc className="h-4 w-4 mr-1" />Desc</>}
+                        </Button>
+                    </div>
+
+                    {/* featured/download toggles */}
+                    <div className="flex gap-6 mb-8">
+                        <div className="flex items-center space-x-2">
+                            <Switch checked={showFeaturedOnly} onCheckedChange={setShowFeaturedOnly} />
+                            <Label className="text-sm"><Star className="h-3 w-3 mr-1 inline" />Featured</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch checked={showDownloadableOnly} onCheckedChange={setShowDownloadableOnly} />
+                            <Label className="text-sm"><Download className="h-3 w-3 mr-1 inline" />Downloadable</Label>
+                        </div>
+                    </div>
+
+                    {/* list/grid */}
                     {loading ? (
-                        <div className={`grid gap-6 ${
-                            viewMode === 'grid' 
-                                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-                                : 'grid-cols-1'
-                        }`}>
-                            {[...Array(8)].map((_, i) => (
-                                <Skeleton key={i} className={`${
-                                    viewMode === 'grid' ? 'h-[400px]' : 'h-[150px]'
-                                } w-full rounded-xl`} />
-                            ))}
+                        <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'}`}>
+                            {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-[200px] w-full rounded-xl" />)}
                         </div>
                     ) : paginatedResources.length === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="text-gray-400 text-6xl mb-4">
-                                <Search className="h-16 w-16 mx-auto" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                                No resources found
-                            </h3>
-                            <p className="text-gray-500 mb-6">
-                                Try adjusting your search criteria or filters
-                            </p>
-                            <Button 
-                                onClick={() => {
-                                    setSearchTerm('')
-                                    setFilter({
-                                        type: 'all',
-                                        category: 'all',
-                                        search: '',
-                                        downloadable: undefined,
-                                        featured: undefined
-                                    })
-                                    setShowFeaturedOnly(false)
-                                    setShowDownloadableOnly(false)
-                                }}
-                            >
-                                Clear All Filters
-                            </Button>
-                        </div>
+                        <div className="text-center py-16 text-gray-500">No resources found</div>
                     ) : (
                         <>
-                            <div className={`grid gap-6 ${
-                                viewMode === 'grid' 
-                                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-                                    : 'grid-cols-1'
-                            }`}>
-                                {paginatedResources.map(resource => (
+                            <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
+                                {paginatedResources.map(r => (
                                     <ResourceCard
-                                        key={resource.id}
-                                        resource={resource}
+                                        key={r.id}
+                                        resource={r}
                                         variant={viewMode}
-                                        showCategory={true}
                                         onPlay={handleResourcePlay}
                                         onDownload={handleResourceDownload}
                                     />
                                 ))}
                             </div>
-
-                            {/* Pagination */}
                             {totalPages > 1 && (
-                                <div className="mt-12">
-                                    <Pagination>
-                                        <PaginationContent>
-                                            <PaginationItem>
-                                                <PaginationPrevious
-                                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                                    className={`cursor-pointer ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                />
-                                            </PaginationItem>
-                                            <PaginationItem>
-                                                <span className="px-4 py-2 text-sm">
-                                                    Page {currentPage} of {totalPages} 
-                                                    ({filteredAndSortedResources.length} total resources)
-                                                </span>
-                                            </PaginationItem>
-                                            <PaginationItem>
-                                                <PaginationNext
-                                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                                    className={`cursor-pointer ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                />
-                                            </PaginationItem>
-                                        </PaginationContent>
-                                    </Pagination>
-                                </div>
+                                <Pagination className="mt-12">
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} />
+                                        </PaginationItem>
+                                        <PaginationItem><span className="px-4">Page {currentPage}/{totalPages}</span></PaginationItem>
+                                        <PaginationItem>
+                                            <PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
                             )}
                         </>
                     )}
                 </div>
             </section>
 
-            {/* Video Player Modal */}
-            {selectedVideo && (
-                <VideoPlayer
-                    video={selectedVideo}
-                    isOpen={isVideoPlayerOpen}
-                    onClose={() => {
-                        setIsVideoPlayerOpen(false)
-                        setSelectedVideo(null)
-                    }}
-                />
-            )}
+            {/* players / viewers */}
+            {selectedVideo && <VideoPlayer video={selectedVideo} isOpen={!!selectedVideo} onClose={() => setSelectedVideo(null)} />}
+            {selectedPDF && <PDFViewer resource={selectedPDF} isOpen={!!selectedPDF} onClose={() => setSelectedPDF(null)} />}
+            {selectedAudio && <AudioPlayer resource={selectedAudio} isOpen={!!selectedAudio} onClose={() => setSelectedAudio(null)} />}
         </>
     )
 }

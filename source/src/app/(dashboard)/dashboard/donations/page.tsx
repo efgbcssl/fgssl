@@ -15,40 +15,43 @@ import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 
 interface Donation {
+    _id: string
     amount: number
     currency: string
     donationType: string
     donorEmail: string
     donorName: string
-    donorPhone: string
+    donorPhone?: string | null
     isRecurring: boolean
-    notes: string
     paymentMethod: string
     paymentStatus: string
-    receiptUrl: string
-    stripeChargedId: string
-    stripePaymentIntentId: string
-    xata_createdat: string
+    receiptUrl?: string | null
+    stripePaymentIntentId?: string
+    stripeChargeId?: string | null
+    createdAt: string   // comes from MongoDB timestamps
+    updatedAt: string
 }
 
 interface Donor {
+    _id: string
+    name?: string
     email: string
-    phone: string
-    totalDonation: number
-    lastDonationDate: string
+    phone?: string | null
+    totalDonations?: number
+    lastDonationDate?: string
+    hasActiveSubscription?: boolean
 }
 
 const donationTypeColors: Record<string, string> = {
-    general: '#4B5563',         // Neutral gray - for general use
-    building: '#9CA3AF',        // Cement-gray tone - for infrastructure/building
-    missions: '#2563EB',        // Deep blue - symbolic of outreach/global efforts
-    offerings: '#F59E0B',       // Golden yellow - giving/offering
-    tithe: '#10B981',           // Green - growth, first fruits
-    special: '#8B5CF6',         // Purple - distinction, uniqueness
-    education: '#3B82F6',       // Sky blue - clarity, learning
-    default: '#D1D5DB'          // Soft neutral gray - fallback
+    general: '#4B5563',
+    building: '#9CA3AF',
+    missions: '#2563EB',
+    offerings: '#F59E0B',
+    tithe: '#10B981',
+    special: '#8B5CF6',
+    education: '#3B82F6',
+    default: '#D1D5DB'
 }
-
 
 export default function DonationsDashboard() {
     const [donations, setDonations] = useState<Donation[]>([])
@@ -82,8 +85,9 @@ export default function DonationsDashboard() {
 
             const matchesType = selectedType ? d.donationType === selectedType : true
 
-            const matchesDate = (!dateRange.from || isAfter(new Date(d.xata_createdat), new Date(dateRange.from))) &&
-                (!dateRange.to || isBefore(new Date(d.xata_createdat), new Date(dateRange.to)))
+            const matchesDate =
+                (!dateRange.from || isAfter(new Date(d.createdAt), new Date(dateRange.from))) &&
+                (!dateRange.to || isBefore(new Date(d.createdAt), new Date(dateRange.to)))
 
             return matchesSearch && matchesType && matchesDate
         })
@@ -109,13 +113,13 @@ export default function DonationsDashboard() {
     }))
 
     const donationLineData = filteredDonations.map(d => ({
-        date: format(new Date(d.xata_createdat), 'yyyy-MM-dd'),
+        date: format(new Date(d.createdAt), 'yyyy-MM-dd'),
         amount: d.amount
     }))
 
     const donationBarData = Object.values(
         filteredDonations.reduce((acc: { [date: string]: { date: string; total: number } }, d) => {
-            const date = format(new Date(d.xata_createdat), 'yyyy-MM-dd')
+            const date = format(new Date(d.createdAt), 'yyyy-MM-dd')
             acc[date] = acc[date] || { date, total: 0 }
             acc[date].total += d.amount
             return acc
@@ -134,10 +138,10 @@ export default function DonationsDashboard() {
         autoTable(doc, {
             head: [['Date', 'Name', 'Email', 'Phone', 'Amount', 'Type', 'Status']],
             body: filteredDonations.map(d => [
-                format(new Date(d.xata_createdat), 'yyyy-MM-dd'),
+                format(new Date(d.createdAt), 'yyyy-MM-dd'),
                 d.donorName,
                 d.donorEmail,
-                d.donorPhone,
+                d.donorPhone || '',
                 `$${d.amount}`,
                 d.donationType,
                 d.paymentStatus
@@ -152,10 +156,38 @@ export default function DonationsDashboard() {
         <div className="p-8 space-y-6">
             <h1 className="text-2xl font-bold">Donations Dashboard</h1>
 
+            {/* Filters + Export */}
             <div className="flex flex-wrap gap-2 items-center">
                 <Input placeholder="Filter by donor name or email" value={filter} onChange={(e) => setFilter(e.target.value)} />
-                <Input type="date" value={dateRange.from} onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))} />
-                <Input type="date" value={dateRange.to} onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))} />
+                <div className="flex flex-col">
+                    <label className="text-xs text-gray-600">Start Date</label>
+                    <Input
+                        type="date"
+                        value={dateRange.from}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                    />
+                </div>                
+                <div className="flex flex-col">
+                    <label className="text-xs text-gray-600">End Date</label>
+                    <Input
+                        type="date"
+                        value={dateRange.to}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                    />
+                </div>
+                {/* Reset Filters Button → only visible if active */}
+                {(filter || dateRange.from || dateRange.to || selectedType) && (
+                    <button
+                        onClick={() => {
+                            setFilter("")
+                            setDateRange({ from: "", to: "" })
+                            setSelectedType(null)
+                        }}
+                        className="bg-gray-500 text-white px-3 py-1 rounded"
+                    >
+                        Reset Filters
+                    </button>
+                )}
                 {hasMounted && (
                     <>
                         <CSVLink
@@ -167,7 +199,7 @@ export default function DonationsDashboard() {
                                 { label: 'Amount', key: 'amount' },
                                 { label: 'Type', key: 'donationType' },
                                 { label: 'Status', key: 'paymentStatus' },
-                                { label: 'Date', key: 'xata_createdat' }
+                                { label: 'Date', key: 'createdAt' }
                             ]}
                             filename="donations_report.csv"
                             className="bg-gray-700 text-white px-3 py-1 rounded"
@@ -260,7 +292,7 @@ export default function DonationsDashboard() {
                         <tbody>
                             {paginatedDonations.map((d, i) => (
                                 <tr key={i} className="border-t">
-                                    <td>{format(new Date(d.xata_createdat), 'yyyy-MM-dd')}</td>
+                                    <td>{format(new Date(d.createdAt), 'yyyy-MM-dd')}</td>
                                     <td>{d.donorName}</td>
                                     <td>{d.donorEmail}</td>
                                     <td>{d.donorPhone}</td>

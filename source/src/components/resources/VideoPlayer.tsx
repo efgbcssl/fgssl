@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -24,7 +25,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import type { VideoResource } from '@/types/resources'
+import type { VideoResource } from '@/types/resource'
 
 interface VideoPlayerProps {
   video: VideoResource
@@ -197,7 +198,7 @@ export default function VideoPlayer({
             )}
             <div className="flex gap-2">
               <Button
-                onClick={() => window.open(video.youtubeUrl || `https://youtu.be/${video.youtubeId}`, '_blank')}
+                onClick={() => window.open(video.videoUrl || `https://youtu.be/${video.youtubeId}`, '_blank')}
                 className="flex items-center gap-2"
               >
                 <ExternalLink className="h-4 w-4" />
@@ -230,7 +231,7 @@ export default function VideoPlayer({
           <video
             ref={videoRef}
             src={video.videoUrl}
-            poster={video.thumbnail}
+            poster={video.thumbnailUrl}
             className="w-full h-full object-contain"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}

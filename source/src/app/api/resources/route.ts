@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ✅ Updated API: src/app/api/resources/route.ts
 import { NextResponse } from 'next/server'
 
