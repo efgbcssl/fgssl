@@ -27,7 +27,7 @@ export async function GET() {
 
         // Clean the data before returning
         const cleanedEvents = events.map((event) => ({
-            id: event._id.toString(),
+            id: (event._id as { toString: () => string }).toString(),
             title: event.title,
             description: event.description,
             date: event.date,
