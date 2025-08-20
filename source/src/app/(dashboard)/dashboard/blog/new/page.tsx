@@ -1,6 +1,6 @@
 // app/dashboard/blog/new/page.tsx
 
-import { BlogEditor } from '@/components/blog/BlogEditor'
+import  BlogEditor  from '@/components/blog/BlogEditor'
 import { createBlogPost } from '@/lib/blog'
 import { redirect } from 'next/navigation'
 
