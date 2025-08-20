@@ -5,11 +5,10 @@ import { generateICS } from '@/utils/ics';
 
 export async function GET(
     req: Request,
-    context: { params: Promise<{ params: { id: string } }> }
+    context: { params: { params: { id: string } } }
 ) {
     await connectMongoDB();
-    const {params} = await context.params;
-    const {id} = params;
+    const {id} = context.params.params;
     const appointment = await Appointment.findById(id).lean();
     if (!appointment) {
         return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
