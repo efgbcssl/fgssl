@@ -6,18 +6,17 @@ import Appointment from "@/models/Appointment";
 import { generateICS } from "@/utils/ics";
 
 export async function GET(
-    req: NextRequest,
+    _req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
         // 1. Connect to MongoDB
         await connectMongoDB();
 
-        // 2. Extract appointment ID from URL params
-        const { id } = params;
+
 
         // 3. Fetch appointment from MongoDB
-        const appointment = await Appointment.findById(id).lean() as {
+        const appointment = await Appointment.findById(params.id).lean() as {
             title: string;
             startUtcISO: string;
             fullName: string;
@@ -78,7 +77,7 @@ export async function GET(
         return new NextResponse(icsContent, {
             headers: {
                 "Content-Type": "text/calendar; charset=utf-8",
-                "Content-Disposition": `attachment; filename="appointment-${_id?.toString?.() ?? id}.ics"`,
+                "Content-Disposition": `attachment; filename="appointment-${_id?.toString?.() ?? params.id}.ics"`,
             },
         });
     } catch (error: any) {
