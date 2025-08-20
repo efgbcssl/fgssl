@@ -126,10 +126,11 @@ export async function PATCH(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         await connectMongoDB();
+        const params = await context.params;
         const id = params.id;
         if (!Types.ObjectId.isValid(id))
             return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
