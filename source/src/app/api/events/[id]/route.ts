@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse, NextRequest } from 'next/server'
 import { connectMongoDB } from '@/lib/mongodb'
@@ -15,13 +16,14 @@ interface Params {
     id: string
 }
 
-type LeanEvent = EventDocument & {__v?: number}
+type LeanEvent = EventDocument & { __v?: number }
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }  // Fixed signature
 ) {
     try {
         await connectMongoDB()
+        const params = await context.params;  // Await the params
         const { id } = params
 
         // Validate the ID format
@@ -53,18 +55,24 @@ export async function PUT(
             id,
             updateData,
             { new: true, runValidators: true }
-        ).lean()
+        ).lean();
 
-        if (!updatedEvent) {
+        if (!updatedEvent || Array.isArray(updatedEvent)) {
             return NextResponse.json(
                 { error: 'Event not found' },
                 { status: 404 }
-            )
+            );
         }
 
-        // Clean up the response
-        const { _id, ...responseData } = updatedEvent
-        return NextResponse.json({ id: _id, ...responseData })
+        // Clean up the response - handle the lean() return type properly
+        const responseData = {
+            id: (updatedEvent as { _id: mongoose.Types.ObjectId })._id.toString(),
+            ...updatedEvent
+        };
+        delete (responseData as any)._id;  // Remove the _id property
+        delete (responseData as any).__v;   // Remove the __v property
+
+        return NextResponse.json(responseData);
 
     } catch (error) {
         console.error('Error updating event:', error)
@@ -80,12 +88,11 @@ export async function PUT(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
-) {
+    context: { params: Promise<{ id: string }> }) {
     try {
         await connectMongoDB()
+        const params = await context.params;  // Await the params
         const { id } = params
-
         // Validate the ID format
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return NextResponse.json(
