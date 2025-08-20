@@ -63,31 +63,62 @@ export default function EnhancedResourcesPage() {
                 const res = await fetch('/api/resources')
                 const data = await res.json()
 
-                const transformed: Resource[] = data.map((item: Resource) => ({
-                    id: item.id,
-                    title: item.title,
-                    description: item.description || '',
-                    thumbnail: item.thumbnailUrl,
-                    date: item.createdAt,
-                    type: item.type,
-                    downloadable: item.downloadable || false,
-                    featured: item.featured || false,
-                    category: item.category || 'other',
-                    tags: item.tags || [],
-                    ...(item.type === 'video' && {
-                        videoUrl: item.videoUrl,
-                        youtubeId: item.youtubeId,
-                        embedUrl: item.embedUrl || `https://www.youtube.com/embed/${item.youtubeId}`
-                    }),
-                    ...(item.type === 'audio' && {
-                        fileUrl: item.audioUrl,
-                        downloadUrl: item.downloadUrl
-                    }),
-                    ...(item.type === 'pdf' && {
-                        fileUrl: item.fileUrl,
-                        downloadUrl: item.downloadUrl
-                    })
-                }))
+                const transformed: Resource[] = data.map((item: any) => {
+                    const baseResource = {
+                        id: item.id,
+                        title: item.title,
+                        description: item.description || '',
+                        thumbnail: item.thumbnail, // API returns 'thumbnail'
+                        thumbnailUrl: item.thumbnail, // alias for compatibility
+                        date: item.date, // API returns 'date'
+                        createdAt: item.date, // alias for compatibility
+                        type: item.type,
+                        downloadable: item.canDownload || false, // API returns 'canDownload'
+                        featured: item.featured || false,
+                        category: item.category || 'other',
+                        tags: item.tags || [],
+                    };
+
+                    // Add type-specific properties
+                    switch (item.type) {
+                        case 'video':
+                            return {
+                                ...baseResource,
+                                videoUrl: item.previewUrl, // API returns 'previewUrl'
+                                duration: item.duration,
+                                youtubeId: item.id, // Use the video ID as youtubeId
+                                embedUrl: item.embedUrl || `https://www.youtube.com/embed/${item.id}`,
+                            };
+                        case 'audio':
+                            return {
+                                ...baseResource,
+                                audioUrl: item.previewUrl, // API returns 'previewUrl'
+                                fileUrl: item.previewUrl, // alias
+                                downloadUrl: item.downloadUrl,
+                                duration: item.duration,
+                            };
+                        case 'pdf':
+                            return {
+                                ...baseResource,
+                                fileUrl: item.previewUrl, // API returns 'previewUrl'
+                                downloadUrl: item.downloadUrl,
+                            };
+                        case 'image':
+                            return {
+                                ...baseResource,
+                                imageUrl: item.previewUrl, // API returns 'previewUrl'
+                                downloadUrl: item.downloadUrl,
+                            };
+                        case 'link':
+                            return {
+                                ...baseResource,
+                                url: item.previewUrl, // API returns 'previewUrl'
+                            };
+                        default:
+                            return baseResource;
+                    }
+                });
+
                 setResources(transformed)
             } catch (e) {
                 console.error('Failed to fetch resources', e)
