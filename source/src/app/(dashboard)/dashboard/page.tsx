@@ -1,37 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
-
-
-import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { 
-  User, 
-  Settings, 
-  BarChart3, 
-  Users, 
-  DollarSign, 
-  FileText,
-  LogOut,
-  Shield,
-  Calendar,
-  Activity
-} from 'lucide-react'
-import Link from 'next/link'
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { auth } from '@/auth';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { User, Users, DollarSign, BarChart3, Settings, Shield, Activity, LogOut, Calendar } from 'lucide-react';
 
 interface DashboardCard {
-  title: string
-  description: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  roles: string[]
-  count?: number
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: string[];
+  count?: number;
 }
 
-const dashboardCards: DashboardCard[] = [
+const adminCards: DashboardCard[] = [
   {
     title: 'Users Management',
     description: 'Manage user accounts and permissions',
@@ -60,69 +47,37 @@ const dashboardCards: DashboardCard[] = [
     icon: Settings,
     roles: ['admin', 'manager'],
   },
-  {
-    title: 'My Profile',
-    description: 'View and edit your profile',
-    href: '/dashboard/profile',
-    icon: User,
-    roles: ['admin', 'manager', 'member'],
-  },
-  {
-    title: 'Activity Log',
-    description: 'View your recent activity',
-    href: '/dashboard/activity',
-    icon: Activity,
-    roles: ['admin', 'manager', 'member'],
-  },
-]
+];
 
-function getRoleColor(role: string): string {
+function getRoleColor(role: string) {
   switch (role) {
-    case 'admin':
-      return 'bg-red-100 text-red-800'
-    case 'manager':
-      return 'bg-blue-100 text-blue-800'
-    case 'member':
-      return 'bg-green-100 text-green-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
+    case 'admin': return 'bg-red-100 text-red-800';
+    case 'manager': return 'bg-blue-100 text-blue-800';
+    case 'member': return 'bg-green-100 text-green-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
 }
 
-function getRolePermissions(role: string): string[] {
+function getRolePermissions(role: string) {
   switch (role) {
-    case 'admin':
-      return ['Full system access', 'User management', 'All donations', 'System settings']
-    case 'manager':
-      return ['Donation management', 'Analytics access', 'Report generation', 'Settings']
-    case 'member':
-      return ['Profile access', 'View activity', 'Basic dashboard']
-    default:
-      return ['Limited access']
+    case 'admin': return ['Full system access', 'User management', 'All donations', 'System settings'];
+    case 'manager': return ['Donation management', 'Analytics access', 'Report generation', 'Settings'];
+    case 'member': return ['Profile access', 'View activity', 'Basic dashboard'];
+    default: return ['Limited access'];
   }
 }
 
 export default async function DashboardPage() {
-  const session = await auth()
+  const session = await auth();
+  if (!session) redirect('/login');
 
-  /* (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600" />
-      </div>
-    )
-  }*/
+  const userRole = session.user?.role || 'member';
 
-  if (!session) {
-    redirect('/login')
-  }
+  // Admin/Manager cards
+  const accessibleCards = adminCards.filter(card => card.roles.includes(userRole));
 
-  const userRole = session.user?.role || 'member'
-  const accessibleCards = dashboardCards.filter(card => 
-    card.roles.includes(userRole)
-  )
-
-  
+  // Dummy member donations, replace with real DB call
+  const totalDonated = userRole === 'member' ? 125.5 : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -136,20 +91,22 @@ export default async function DashboardPage() {
                 {userRole.toUpperCase()}
               </Badge>
             </div>
-            
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Welcome, {session.user?.name}
+              <div className="text-sm text-gray-600 flex items-center gap-2">
+                {userRole === 'member' && session.user?.image && (
+                  <Image
+                    src={session.user.image}
+                    alt="avatar"
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-full"
+                  />
+                )}
+                <span>Welcome, {session.user?.name}</span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="text-red-600 hover:text-red-700"
-              >
+              <Button variant="outline" size="sm" asChild className="text-red-600 hover:text-red-700">
                 <Link href="/api/auth/signout?callbackUrl=/login">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
+                  <LogOut className="h-4 w-4 mr-2" /> Sign Out
                 </Link>
               </Button>
             </div>
@@ -158,113 +115,93 @@ export default async function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid gap-6">
-          {/* Welcome Card */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Role-specific welcome card */}
+        {userRole === 'member' ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-green-600" />
+                <span>Your Member Dashboard</span>
+              </CardTitle>
+              <CardDescription>
+                You have donated a total of <strong>${totalDonated.toFixed(2)}</strong>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="space-y-1 text-gray-700">
+                <p><strong>User ID:</strong> {session.user?.id}</p>
+                <p><strong>Role:</strong> {userRole}</p>
+                <p><strong>Email:</strong> {session.user?.email}</p>
+              </div>
+              {session.user?.image && (
+                <div>
+                  <Image
+                    src={session.user.image}
+                    alt="avatar"
+                    width={80}
+                    height={80}
+                    className="h-20 w-20 rounded-full border border-gray-300"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="h-5 w-5 text-blue-600" />
-                <span>Welcome to Your Dashboard</span>
+                <span>Admin / Manager Dashboard</span>
               </CardTitle>
               <CardDescription>
-                You are signed in as <strong>{session.user?.name}</strong> with{' '}
-                <Badge className={getRoleColor(userRole)}>{userRole}</Badge> permissions.
+                You have <strong>{userRole}</strong> privileges
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Account Information</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p><strong>Email:</strong> {session.user?.email}</p>
-                    <p><strong>Role:</strong> {userRole}</p>
-                    <p><strong>User ID:</strong> {session.user?.id}</p>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Your Permissions</h4>
-                  <ul className="space-y-1 text-sm text-gray-600">
-                    {getRolePermissions(userRole).map((permission, index) => (
-                      <li key={index} className="flex items-center space-x-2">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                        <span>{permission}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* Dashboard Cards */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Available Features
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {accessibleCards.map((card) => (
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              {accessibleCards.map(card => (
                 <Link key={card.href} href={card.href}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
                     <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
+                      <CardTitle className="flex items-center gap-2">
                         <card.icon className="h-5 w-5 text-blue-600" />
-                        <span>{card.title}</span>
+                        {card.title}
                       </CardTitle>
                       <CardDescription>{card.description}</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <Badge variant="outline">
-                          {card.roles.join(', ')}
-                        </Badge>
-                        {card.count && (
-                          <span className="text-sm font-semibold text-gray-600">
-                            {card.count}
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
                   </Card>
                 </Link>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Quick Actions */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Separator />
+
+        {/* Quick Actions - same for all roles */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-16" asChild>
+              <Link href="/dashboard/profile">
+                <User className="h-5 w-5 mr-2" /> Edit Profile
+              </Link>
+            </Button>
+            {(userRole === 'admin' || userRole === 'manager') && (
               <Button variant="outline" className="h-16" asChild>
-                <Link href="/dashboard/profile">
-                  <User className="h-5 w-5 mr-2" />
-                  Edit Profile
+                <Link href="/dashboard/donations">
+                  <DollarSign className="h-5 w-5 mr-2" /> View Donations
                 </Link>
               </Button>
-              
-              {(userRole === 'admin' || userRole === 'manager') && (
-                <Button variant="outline" className="h-16" asChild>
-                  <Link href="/dashboard/donations">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    View Donations
-                  </Link>
-                </Button>
-              )}
-              
-              <Button variant="outline" className="h-16" asChild>
-                <Link href="/">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Back to Site
-                </Link>
-              </Button>
-            </div>
+            )}
+            <Button variant="outline" className="h-16" asChild>
+              <Link href="/">
+                <Calendar className="h-5 w-5 mr-2" /> Back to Site
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

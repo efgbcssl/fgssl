@@ -4,11 +4,13 @@ import Appointment from '@/models/Appointment';
 import { generateICS } from '@/utils/ics';
 
 export async function GET(
-    _req: Request,
-    { params }: { params: { id: string } }
+    req: Request,
+    context: { params: Promise<{ params: { id: string } }> }
 ) {
     await connectMongoDB();
-    const appointment = await Appointment.findById(params.id).lean();
+    const {params} = await context.params;
+    const {id} = params;
+    const appointment = await Appointment.findById(id).lean();
     if (!appointment) {
         return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     }
