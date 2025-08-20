@@ -5,11 +5,11 @@ import { generateICS } from '@/utils/ics';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params : { id: string } }
 ) {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = context.params;
     const appointment = await Appointment.findById(id).lean();
 
     if (!appointment) {
