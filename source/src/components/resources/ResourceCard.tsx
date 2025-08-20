@@ -26,6 +26,8 @@ interface ResourceCardProps {
   onPreview?: (resource: Resource) => void
   onDownload?: (resource: Resource) => void
   showStats?: boolean
+  variant: "grid" | "list"
+  onPlay: (resource: Resource) => void
 }
 
 export default function ResourceCard({
@@ -81,7 +83,7 @@ export default function ResourceCard({
 
     let downloadUrl = ""
     if (resource.type === "pdf" || resource.type === "audio" || resource.type === "video") {
-      downloadUrl = resource.downloadUrl || ""
+      downloadUrl = resource.thumbnailUrl || ""
     }
     if (resource.type === "video" && resource.youtubeId) {
       downloadUrl = `https://youtu.be/${resource.youtubeId}`

@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import ResourceCard from '@/components/resources/ResourceCard'
-import type { Resource, ResourceFilter, VideoResource } from '@/types/resource'
+import { AudioResource, ImageResource, LinkResource, PDFResource, Resource, ResourceFilter, VideoResource, isAudioResource, isPDFResource, isVideoResource } from '@/types/resource'
 
 // dynamically import heavy viewers
 const VideoPlayer = dynamic(() => import('@/components/resources/VideoPlayer'))
@@ -53,8 +53,8 @@ export default function EnhancedResourcesPage() {
 
     // media state
     const [selectedVideo, setSelectedVideo] = useState<VideoResource | null>(null)
-    const [selectedPDF, setSelectedPDF] = useState<Resource | null>(null)
-    const [selectedAudio, setSelectedAudio] = useState<Resource | null>(null)
+    const [selectedPDF, setSelectedPDF] = useState<PDFResource | null>(null)
+    const [selectedAudio, setSelectedAudio] = useState<AudioResource | null>(null)
 
     useEffect(() => {
         const fetchResources = async () => {
@@ -64,24 +64,23 @@ export default function EnhancedResourcesPage() {
                 const data = await res.json()
 
                 const transformed: Resource[] = data.map((item: Resource) => ({
-                    id: item._id,
+                    id: item.id,
                     title: item.title,
                     description: item.description || '',
-                    thumbnail: item.thumbnail,
-                    date: item.date,
+                    thumbnail: item.thumbnailUrl,
+                    date: item.createdAt,
                     type: item.type,
                     downloadable: item.downloadable || false,
                     featured: item.featured || false,
                     category: item.category || 'other',
                     tags: item.tags || [],
-                    duration: item.duration,
                     ...(item.type === 'video' && {
                         videoUrl: item.videoUrl,
                         youtubeId: item.youtubeId,
                         embedUrl: item.embedUrl || `https://www.youtube.com/embed/${item.youtubeId}`
                     }),
                     ...(item.type === 'audio' && {
-                        fileUrl: item.fileUrl,
+                        fileUrl: item.audioUrl,
                         downloadUrl: item.downloadUrl
                     }),
                     ...(item.type === 'pdf' && {
@@ -127,8 +126,16 @@ export default function EnhancedResourcesPage() {
                     bVal = b.type
                     break
                 default:
-                    aVal = new Date(a.date).getTime()
-                    bVal = new Date(b.date).getTime()
+                    const getDateValue = (resource: Resource): number => {
+                        const dateStr = resource.date || resource.createdAt;
+                        if (!dateStr) return 0;
+
+                        const date = new Date(dateStr);
+                        return isNaN(date.getTime()) ? 0 : date.getTime();
+                    }
+
+                    aVal = getDateValue(a);
+                    bVal = getDateValue(b);
                     break
             }
             return sortOrder === 'asc'
@@ -147,19 +154,48 @@ export default function EnhancedResourcesPage() {
 
     // interactions
     const handleResourcePlay = (resource: Resource) => {
-        if (resource.type === 'video') setSelectedVideo(resource as VideoResource)
-        if (resource.type === 'audio') setSelectedAudio(resource)
-        if (resource.type === 'pdf') setSelectedPDF(resource)
+        if (isVideoResource(resource)) {
+            setSelectedVideo(resource)
+        } else if (isAudioResource(resource)) {
+            setSelectedAudio(resource as AudioResource)
+        } else if (isPDFResource(resource)) {
+            setSelectedPDF(resource as PDFResource)
+        }
     }
 
     const handleResourceDownload = (resource: Resource) => {
         if (resource.downloadable) {
-            const url = resource.downloadUrl || resource.fileUrl || resource.videoUrl
-            if (!url) return
-            const link = document.createElement('a')
-            link.href = url
-            link.download = resource.title
-            link.click()
+            // Get the appropriate download URL based on resource type
+            let url: string | undefined;
+
+            switch (resource.type) {
+                case 'pdf':
+                    url = (resource as PDFResource).downloadUrl || (resource as PDFResource).fileUrl;
+                    break;
+                case 'video':
+                    url = (resource as VideoResource).videoUrl;
+                    break;
+                case 'audio':
+                    url = (resource as AudioResource).downloadUrl || (resource as AudioResource).audioUrl || (resource as AudioResource).fileUrl;
+                    break;
+                case 'image':
+                    url = (resource as ImageResource).downloadUrl || (resource as ImageResource).imageUrl;
+                    break;
+                case 'link':
+                    url = (resource as LinkResource).url;
+                    break;
+            }
+
+            if (!url) return;
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = resource.title;
+            link.target = '_blank'; // Open in new tab for better UX
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     }
 
@@ -293,9 +329,16 @@ export default function EnhancedResourcesPage() {
             </section>
 
             {/* players / viewers */}
-            {selectedVideo && <VideoPlayer video={selectedVideo} isOpen={!!selectedVideo} onClose={() => setSelectedVideo(null)} />}
-            {selectedPDF && <PDFViewer resource={selectedPDF} isOpen={!!selectedPDF} onClose={() => setSelectedPDF(null)} />}
-            {selectedAudio && <AudioPlayer resource={selectedAudio} isOpen={!!selectedAudio} onClose={() => setSelectedAudio(null)} />}
+            {selectedVideo && (
+                <VideoPlayer video={selectedVideo} isOpen={!!selectedVideo} onClose={() => setSelectedVideo(null)} />
+            )}
+            {selectedPDF && (
+                <PDFViewer resource={selectedPDF} isOpen={!!selectedPDF} onClose={() => setSelectedPDF(null)} />
+            )}
+            {selectedAudio && (
+                <AudioPlayer resource={selectedAudio} isOpen={!!selectedAudio} onClose={() => setSelectedAudio(null)} />
+            )}
         </>
     )
 }
+
