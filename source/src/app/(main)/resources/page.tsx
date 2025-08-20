@@ -33,6 +33,15 @@ const RESOURCE_TYPES = ['all', 'video', 'audio', 'pdf'] as const
 const CATEGORIES = ['all', 'sermons', 'studies', 'events', 'music', 'other'] as const
 const ITEMS_PER_PAGE = 12
 
+const DEFAULT_THUMBNAILS = {
+    video: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTUgMTBsNS4yOTIgNGEuMjY1LjI2NSAwIDAgMSAuMjA4LjQ2M2wtNS4yOTItNGEuMjY1LjI2NSAwIDAgMSAwLS40NjNsNS4yOTItNGEuMjY1LjI2NSAwIDAgMS0uMjA4LjQ2M0wxNSAxMHoiIGZpbGw9IiM2YjcyODAiLz48L3N2Zz4=",
+    audio: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNOSAxOHYtNi4zNGE0IDQgMCAxIDEgNCAwVjE4TTkgMThIN200IDBoLTJNOSAxNHY0bTQgMHYtNCIgZmlsbD0iIzM2NzBmYSIgc3Ryb2tlPSIjMzY3MGZhIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=",
+    pdf: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTQgMnY0YTIgMiAwIDAgMCAyIDJoNE0xNCAydjRhMiAyIDAgMCAxLTIgMkg4YTQgNCAwIDAgMC00IDR2OGE0IDQgMCAwIDAgNCA0aDhhNCA0IDAgMCAwIDQtNFY4YTQgNCAwIDAgMC00LTRoLTRWN3oiIGZpbGw9IiNlMTFlMWUiLz48cGF0aCBkPSJNOSAxMmg2TTkgMTZoNk05IDIwaDQiIGZpbGw9IiNmZjNhNTAiLz48L3N2Zz4=",
+    image: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAxOWExIDEgMCAwIDEtMS0xVjZhMSAxIDAgMCAxIDEtMWgxNGExIDEgMCAwIDEgMSAxdjEyYTEgMSAwIDAgMS0xIDFINXoiIGZpbGw9IiNmMWY1ZjkiLz48Y2lyY2xlIGN4PSI4LjUiIGN5PSI4LjUiIHI9IjEuNSIgZmlsbD0iIzljYTdmZiIvPjxwYXRoIGQ9Im0yMSAxNS01LTUtNSA1IiBzdHJva2U9IiM2NzcyODAiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==",
+    link: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJtMTAgMTQgNC00TTguMDMgMTEuOTNjLTEuMDYgMS4wNi0xLjA2IDIuNzggMCAzLjg0LjUzLjUzIDEuMjIuODIgMS45MS44Mi43IDAgMS4zOS0uMjkgMS45Mi0uODJNMTAuOTUgNi41OGMyLjEyLTIuMTIgNS41Ni0yLjEyIDcuNjggMGMyLjEyIDIuMTIgMi4xMiA1LjU2IDAgNy42OC0uNTMuNTMtMS4yMi44Mi0xLjkxLjgyLS43IDAtMS4zOS0uMjktMS45Mi0uODJaIiBmaWxsPSIjOTBhNmZmIi8+PC9zdmc+",
+    default: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTAgMTBoNGEyIDIgMCAwIDEgMiAydjhhMiAyIDAgMCAxLTIgMkg2YTIgMiAwIDAgMS0yLTJ2LTRhMiAyIDAgMCAxIDItMnoiIGZpbGw9IiNmMWY1ZjkiLz48cGF0aCBkPSJNMTQgMTBoNGEyIDIgMCAwIDEgMiAydjRhMiAyIDAgMCAxLTIgMmgtNGEyIDIgMCAwIDEtMi0ydi00YTIgMiAwIDAgMSAyLTJ6IiBmaWxsPSIjZjFmNWY5Ii8+PHBhdGggZD0iTTYgMTBoNGEyIDIgMCAwIDEgMiAydjRhMiAyIDAgMCAxLTIgMkg2YTIgMiAwIDAgMS0yLTJ2LTRhMiAyIDAgMCAxIDItMnoiIGZpbGw9IiNmMWY1ZjkiLz48L3N2Zz4="
+};
+
 export default function EnhancedResourcesPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filter, setFilter] = useState<ResourceFilter>({
@@ -64,14 +73,15 @@ export default function EnhancedResourcesPage() {
                 const data = await res.json()
 
                 const transformed: Resource[] = data.map((item: any) => {
+                    const thumbnail = item.thumbnail || DEFAULT_THUMBNAILS[item.type as keyof typeof DEFAULT_THUMBNAILS] || DEFAULT_THUMBNAILS.default;
                     const baseResource = {
                         id: item.id,
                         title: item.title,
                         description: item.description || '',
-                        thumbnail: item.thumbnail, // API returns 'thumbnail'
-                        thumbnailUrl: item.thumbnail, // alias for compatibility
-                        date: item.date, // API returns 'date'
-                        createdAt: item.date, // alias for compatibility
+                        thumbnail: thumbnail,
+                        thumbnailUrl: thumbnail,
+                        date: item.date,
+                        createdAt: item.date,
                         type: item.type,
                         downloadable: item.canDownload || false, // API returns 'canDownload'
                         featured: item.featured || false,
