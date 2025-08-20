@@ -125,7 +125,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-    _req: Request,
+    req: Request,
     { params }: { params: { id: string } }
 ) {
     try {
