@@ -7,6 +7,7 @@ import fs from 'fs/promises'
 import { generateDonationReceiptPDF } from './pdf'
 import { format, formatInTimeZone } from 'date-fns-tz'
 import { resend } from './resend'
+import { generateICS } from "@/utils/ics"
 
 // Types
 interface EmailMetrics {
@@ -435,7 +436,9 @@ export async function sendAppointmentEmail({
     medium,
     newYorkDate,
     newYorkTime,
-    timeDifference
+    timeDifference,
+    appointmentId,
+    meetingLink
 }: {
     to: string
     fullName: string
@@ -445,37 +448,64 @@ export async function sendAppointmentEmail({
     newYorkDate: string
     newYorkTime: string
     timeDifference: string
+    appointmentId: string
+    meetingLink?: string
 }) {
     try {
-        const templatePath = path.join(process.cwd(), 'src/emails/appointment-confirmation.ejs')
-        console.log('🟡 Reading email template from:', templatePath)
+        const templatePath = path.join(
+            process.cwd(),
+            "src/emails/appointment-confirmation.ejs"
+        )
+        console.log("🟡 Reading email template from:", templatePath)
 
-        // Read and render the template with all timezone information
-        const template = await fs.readFile(templatePath, 'utf-8')
+        // Read and render template
+        const template = await fs.readFile(templatePath, "utf-8")
         const html = ejs.render(template, {
-            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || '',
+            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
             fullName,
             preferredDate,
             preferredTime,
             medium,
             newYorkDate,
             newYorkTime,
-            timeDifference
+            timeDifference,
+            meetingLink
         })
 
-        console.log('📤 Sending email to:', to)
+        // 🗓️ Generate ICS file for the appointment
+        const icsContent = generateICS({
+            id: appointmentId,
+            fullName,
+            email: to,
+            preferredDate,
+            preferredTime,
+            medium,
+            meetingLink
+        })
+
+        const attachments = [
+            {
+                filename: "appointment.ics",
+                content: icsContent,
+                contentType: "text/calendar; charset=utf-8; method=REQUEST"
+            }
+        ]
+
+        console.log("📤 Sending appointment email to:", to)
+
         const mailOptions = {
-            from: process.env.FROM_EMAIL! || 'no-reply@efgbcssl.org',
+            from: process.env.FROM_EMAIL! || "no-reply@efgbcssl.org",
             to,
             subject: `Your Appointment Confirmation - ${preferredDate} at ${preferredTime}`,
-            html
+            html,
+            attachments
         }
 
-        const result = await sendWithRetry(mailOptions, 'appointment-confirmation')
-        console.log('✅ Appointment email sent after', result.attempts, 'attempt(s)')
+        const result = await sendWithRetry(mailOptions, "appointment-confirmation")
+        console.log("✅ Appointment email sent after", result.attempts, "attempt(s)")
         return result
     } catch (error) {
-        console.error('Failed to send appointment confirmation email:', error)
+        console.error("❌ Failed to send appointment confirmation email:", error)
         throw error
     }
 }

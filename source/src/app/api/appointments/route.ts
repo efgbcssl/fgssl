@@ -1,233 +1,156 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// src/app/api/appointments/route.ts
-import { NextResponse } from 'next/server'
-import { xata } from '@/lib/xata'
-import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz'
-import { sendAppointmentEmail } from '@/lib/email'
-import { isBefore, isToday } from 'date-fns'
+import { NextRequest } from "next/server";
+import { connectMongoDB } from "@/lib/mongodb";
+import Appointment from "@/models/Appointment";
+import { buildICS } from "@/utils/ics";
+import { sendMail } from "@/lib/";
 
-const TIMEZONE = 'America/New_York'
-const APPOINTMENT_BUFFER_MINUTES = 30 // Buffer between appointments
-const WORKING_HOURS = { start: 0, end: 24 } // 9am to 5pm
-
-// Helper for consistent error responses
-const createErrorResponse = (message: string, status: number, details?: any) => {
-    console.error(`[${status}] ${message}`, details)
-    return NextResponse.json(
-        {
-            error: message,
-            ...(details && { details: details instanceof Error ? details.message : details })
-        },
-        { status }
-    )
-}
-
-export async function GET(request: Request) {
+/**
+ * GET /api/appointments
+ * Query params:
+ *  - page (default 1)
+ *  - pageSize (default 20, max 100)
+ *  - status (optional)
+ *  - q (search by name/email/phone)
+ */
+export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url)
-        const date = searchParams.get('date')
-        const timezone = searchParams.get('timezone') || TIMEZONE
+        await connectMongoDB();
+        const { searchParams } = new URL(req.url);
 
-        if (date) {
-            // Handle check availability request
-            return handleCheckAvailability(date, timezone)
+        const page = Math.max(1, Number(searchParams.get("page") || 1));
+        const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") || 20)));
+        const status = searchParams.get("status");
+        const q = searchParams.get("q");
+
+        const where: Record<string, unknown> = {};
+        if (status) where["status"] = status;
+        if (q) {
+            where["$or"] = [
+                { fullName: { $regex: q, $options: "i" } },
+                { email: { $regex: q, $options: "i" } },
+                { phoneNumber: { $regex: q, $options: "i" } },
+            ];
         }
 
-        // Default GET behavior - fetch all appointments
-        const appointments = await xata.db.appointments
-            .sort('preferredDate', 'desc')
-            .getAll()
+        const total = await Appointment.countDocuments(where);
+        const items = await Appointment.find(where)
+            .sort({ preferredDate: 1 })
+            .skip((page - 1) * pageSize)
+            .limit(pageSize)
+            .lean();
 
-        return NextResponse.json(appointments)
-    } catch (error) {
-        return createErrorResponse('Failed to fetch appointments', 500, error)
+        return Response.json({ items, total, page, pageSize }, { status: 200 });
+    } catch (err) {
+        console.error("[GET] /api/appointments ->", err);
+        return Response.json({ message: "Internal server error" }, { status: 500 });
     }
 }
 
-async function handleCheckAvailability(date: string, timezone: string) {
+/**
+ * POST /api/appointments
+ * Body JSON (required):
+ *  - fullName: string
+ *  - phoneNumber: string
+ *  - email: string
+ *  - preferredDate: string (UTC ISO for the slot start; server expects exact 30-min slot instants)
+ *  - medium: 'in-person' | 'online'
+ *  - status?: 'pending' | 'confirmed' | 'completed' | 'cancelled' (default 'pending')
+ *  - remark?: string
+ *  - userTimeZone?: string (IANA tz of the requester, optional)
+ */
+export async function POST(req: NextRequest) {
     try {
-        // Validate date format
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            return createErrorResponse('Invalid date format. Use YYYY-MM-DD', 400)
-        }
+        await connectMongoDB();
+        const body = await req.json();
 
-        // Parse date in specified timezone
-        const selectedDate = fromZonedTime(new Date(`${date}T00:00:00`), timezone)
-        const nowInTz = toZonedTime(new Date(), timezone)
-
-        // Check if date is in the past (excluding today)
-        if (isBefore(selectedDate, nowInTz) && !isToday(selectedDate)) {
-            return NextResponse.json({
-                available: false,
-                message: 'Cannot check availability for past dates',
-                bookedSlots: []
-            })
-        }
-
-        // Get all appointments for the selected date
-        const startOfDay = new Date(selectedDate)
-        startOfDay.setHours(0, 0, 0, 0)
-
-        const endOfDay = new Date(selectedDate)
-        endOfDay.setHours(23, 59, 59, 999)
-
-        const appointments = await xata.db.appointments
-            .filter({
-                $not: { status: 'cancelled' },
-                $all: [
-                    { preferredDate: { $ge: startOfDay.toISOString() } },
-                    { preferredDate: { $le: endOfDay.toISOString() } }
-                ]
-            })
-            .select(['preferredDate'])
-            .getAll()
-        // Extract booked time slots in 24h format
-        const bookedSlots = appointments.map((appointment: { preferredDate?: string | null }) => {
-            const appointmentDate = new Date(appointment.preferredDate ?? '')
-            return formatInTimeZone(appointmentDate, timezone, 'HH:mm')
-        })
-
-        return NextResponse.json({
-            available: true,
-            bookedSlots,
-            timezone
-        })
-
-    } catch (error) {
-        return createErrorResponse('Failed to check availability', 500, error)
-    }
-}
-
-export async function POST(request: Request) {
-    try {
-        const data = await request.json();
-        const { preferredDate, fullName, email, phoneNumber, medium } = data;
-
-        // Validate required fields
-        const missingFields = [
-            !preferredDate && 'preferredDate',
-            !fullName && 'fullName',
-            !email && 'email',
-            !phoneNumber && 'phoneNumber',
-            !medium && 'medium'
-        ].filter(Boolean) as string[];
-
-        if (missingFields.length > 0) {
-            return createErrorResponse(
-                `Missing required fields: ${missingFields.join(', ')}`,
-                400,
-                { code: 'MISSING_FIELDS' }
-            );
-        }
-
-        // Parse and validate the date
-        const utcDate = new Date(preferredDate);
-        if (isNaN(utcDate.getTime())) {
-            return createErrorResponse('Invalid date format', 400, { code: 'INVALID_DATE' });
-        }
-
-        // Convert to New York time for validation
-        const nyDate = toZonedTime(utcDate, TIMEZONE);
-        const nowInNy = toZonedTime(new Date(), TIMEZONE);
-        const nyHour = nyDate.getHours();
-
-        // Check if date is in the past
-        if (isBefore(nyDate, nowInNy)) {
-            return createErrorResponse('Cannot book appointments in the past', 400, { code: 'PAST_DATE' });
-        }
-
-        // Validate working hours (9AM-5PM NY time)
-        const appointmentHour = nyDate.getHours();
-        if (nyHour < WORKING_HOURS.start || nyHour >= WORKING_HOURS.end) {
-            return createErrorResponse(
-                `Appointments must be between ${WORKING_HOURS.start}AM and ${WORKING_HOURS.end}PM New York time`,
-                400,
-                {
-                    code: 'OUTSIDE_WORKING_HOURS',
-                    newYorkTime: formatInTimeZone(nyDate, TIMEZONE, 'h:mm a')
-                }
-            );
-        }
-
-        // Check for conflicts
-        const bufferMs = APPOINTMENT_BUFFER_MINUTES * 60 * 1000;
-        const startTime = new Date(utcDate.getTime() - bufferMs);
-        const endTime = new Date(utcDate.getTime() + bufferMs);
-
-        const conflictingAppointments = await xata.db.appointments
-            .filter({
-                $not: { status: 'cancelled' },
-                $all: [
-                    { preferredDate: { $ge: startTime.toISOString() } },
-                    { preferredDate: { $le: endTime.toISOString() } }
-                ]
-            })
-            .select(['preferredDate', 'fullName'])
-            .getAll();
-
-        if (conflictingAppointments.length > 0) {
-            const conflictDetails = conflictingAppointments.map((a: { preferredDate?: string | null; fullName?: string | null }) => ({
-                time: formatInTimeZone(new Date(a.preferredDate ?? ''), TIMEZONE, 'MMM d, h:mm a'),
-                name: a.fullName
-            }));
-
-            return createErrorResponse(
-                'Time slot unavailable due to conflicting appointment',
-                409,
-                { conflicts: conflictDetails, code: "TIME_CONFLICT" }
-            );
-        }
-
-        // Create new appointment (storing as UTC)
-        const newAppointment = await xata.db.appointments.create({
+        const {
             fullName,
-            email,
             phoneNumber,
-            preferredDate: utcDate.toISOString(),
+            email,
+            preferredDate, // UTC ISO (slot start)
             medium,
-            status: 'pending',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            status = "pending",
+            remark,
+            userTimeZone,
+            meetingLink, // optional, useful for online
+        } = body || {};
+
+        if (!fullName || !phoneNumber || !email || !preferredDate || !medium) {
+            return Response.json({ message: "Missing required fields." }, { status: 400 });
+        }
+
+        // Validate date
+        const slotStart = new Date(preferredDate);
+        if (isNaN(slotStart.getTime())) {
+            return Response.json({ message: "Invalid preferredDate (must be ISO UTC)." }, { status: 400 });
+        }
+
+        // Normalize to exact ISO string (millisecond precision removed if needed)
+        const slotIso = slotStart.toISOString();
+
+        // Conflict: exact slot (30 min) occupied & not cancelled
+        const existing = await Appointment.findOne({
+            status: { $ne: "cancelled" },
+            preferredDate: slotIso,
+        }).lean();
+
+        if (existing) {
+            return Response.json({ message: "Selected slot is already booked." }, { status: 409 });
+        }
+
+        const nowIso = new Date().toISOString();
+
+        const created = await Appointment.create({
+            fullName,
+            phoneNumber,
+            email,
+            preferredDate: slotIso,
+            medium,
+            status,
+            remark,
+            timezone: userTimeZone,
+            meetingLink,
+            createdAt: nowIso,
+            updatedAt: nowIso,
         });
 
-        // Prepare timezone-aware information for email
-        const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const userLocalTime = formatInTimeZone(utcDate, userTimeZone, 'EEEE, MMMM do, yyyy h:mm a');
-        const newYorkTime = formatInTimeZone(utcDate, TIMEZONE, 'EEEE, MMMM do, yyyy h:mm a');
+        // Optional email notifications (ICS makes the time appear correctly for both parties)
+        try {
+            const ics = buildICS({
+                title: `Appointment with Pastor`,
+                description: remark || "",
+                location: medium === "in-person" ? "Silver Spring, MD" : meetingLink || "Online",
+                startUtcISO: created.preferredDate,
+                organizerEmail: process.env.MAIL_FROM,
+                attendeeEmail: email,
+            });
 
-        // Send confirmation email (fire-and-forget)
-        sendAppointmentEmail({
-            to: email,
-            fullName,
-            preferredDate: userLocalTime,
-            preferredTime: formatInTimeZone(utcDate, userTimeZone, 'h:mm a'),
-            newYorkTime,
-            newYorkDate: formatInTimeZone(utcDate, TIMEZONE, 'h:mm a'),
-            timeDifference: '',
-            medium
-        }).catch(error => console.error('Email sending failed:', error));
+            // Send to requester
+            await sendMail({
+                to: email,
+                subject: `Your appointment request`,
+                html: `<p>Hi ${fullName},</p><p>Thanks for your request. We'll confirm soon.</p>`,
+                icalEvent: { filename: "appointment.ics", content: ics },
+            });
 
-        return NextResponse.json(
-            {
-                success: true,
-                appointment: {
-                    id: newAppointment.xata_id,
-                    userLocalTime,
-                    newYorkTime,
-                    medium
-                },
-                confirmationSent: !!email
-            },
-            { status: 201 }
-        );
+            // Send to admin/pastor
+            const adminTo = process.env.MAIL_FROM;
+            if (adminTo) {
+                await sendMail({
+                    to: adminTo,
+                    subject: `New appointment request from ${fullName}`,
+                    html: `<p>New request for <strong>${new Date(created.preferredDate).toUTCString()}</strong> (UTC).</p>`,
+                    icalEvent: { filename: "appointment.ics", content: ics },
+                });
+            }
+        } catch (mailErr) {
+            // Don’t fail the booking if email fails
+            console.warn("[POST] /api/appointments mail warning ->", mailErr);
+        }
 
-    } catch (error) {
-        console.error('Appointment creation failed:', error);
-        return createErrorResponse(
-            'Failed to create appointment',
-            500,
-            error instanceof Error ? { message: error.message } : undefined
-        );
+        return Response.json({ item: created }, { status: 201 });
+    } catch (err) {
+        console.error("[POST] /api/appointments ->", err);
+        return Response.json({ message: "Internal server error" }, { status: 500 });
     }
 }

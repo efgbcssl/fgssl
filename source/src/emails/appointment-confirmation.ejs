@@ -1,191 +1,72 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Appointment Confirmation</title>
-    <style type="text/css">
-        /* Base styles */
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            color: #333333;
-            background-color: #f7f7f7;
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-
-        /* Container */
-        .container {
-            background: #ffffff;
-            max-width: 600px;
-            margin: 20px auto;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Header */
-        .header {
-            background-color: #4a6fa5;
-            color: white;
-            padding: 25px 30px;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        /* Content */
-        .content {
-            padding: 30px;
-        }
-
-        .greeting {
-            font-size: 18px;
-            margin-bottom: 20px;
-        }
-
-        .info-box {
-            background-color: #f8f9fa;
-            border-left: 4px solid #4a6fa5;
-            padding: 15px 20px;
-            margin: 25px 0;
-            border-radius: 0 4px 4px 0;
-        }
-
-        .info-item {
-            margin-bottom: 12px;
-        }
-
-        .info-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .info-label {
-            font-weight: bold;
-            color: #2c3e50;
-            display: inline-block;
-            min-width: 100px;
-        }
-
-        .timezone-note {
-            font-size: 14px;
-            color: #666;
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f0f4f8;
-            border-radius: 4px;
-        }
-
-        /* Footer */
-        .footer {
-            background-color: #2c3e50;
-            color: #ecf0f1;
-            padding: 25px 30px;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .church-info {
-            margin-bottom: 15px;
-            line-height: 1.8;
-        }
-
-        .church-name {
-            font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .signature {
-            margin-top: 25px;
-            font-style: italic;
-            color: #95a5a6;
-        }
-
-        /* Responsive */
-        @media only screen and (max-width: 600px) {
-            .container {
-                margin: 0;
-                border-radius: 0;
-            }
-
-            .header,
-            .content,
-            .footer {
-                padding: 20px;
-            }
-
-            .header {
-                font-size: 20px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appointment Confirmation</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f7f7f7; margin:0; padding:0; }
+    .container { background:#fff; max-width:600px; margin:20px auto; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    .header { background:#4a6fa5; color:#fff; padding:25px 30px; font-size:22px; font-weight:bold; text-align:center; }
+    .content { padding:30px; }
+    .greeting { font-size:18px; margin-bottom:20px; }
+    .info-box { background:#f8f9fa; border-left:4px solid #4a6fa5; padding:15px 20px; margin:25px 0; border-radius:0 4px 4px 0;}
+    .info-item { margin-bottom:12px; }
+    .info-label { font-weight:bold; color:#2c3e50; display:inline-block; min-width:120px;}
+    .timezone-note { font-size:14px; color:#666; margin-top:10px; padding:10px; background:#f0f4f8; border-radius:4px;}
+    .footer { background:#2c3e50; color:#ecf0f1; padding:25px 30px; text-align:center; font-size:14px; }
+    .church-info { margin-bottom:15px; line-height:1.8; }
+    .church-name { font-weight:bold; font-size:16px; margin-bottom:5px; }
+    .signature { margin-top:25px; font-style:italic; color:#95a5a6; }
+    a.btn { display:inline-block; margin-top:15px; padding:10px 18px; background:#4a6fa5; color:#fff; text-decoration:none; border-radius:6px; }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="header">
-            <img src="../../public/logo.png" alt="Church Logo"
-                style="width: 100%; max-width: 150px; display: block; margin: 20px auto;">
-            Your Appointment is Confirmed
-        </div>
-
-        <div class="content">
-            <p class="greeting">Dear <strong>
-                    <%= fullName %>
-                </strong>,</p>
-
-            <p>Thank you for booking with us. Your appointment has been successfully scheduled. Below are the details:
-            </p>
-
-            <div class="info-box">
-                <div class="info-item">
-                    <span class="info-label">Your Local Time:</span>
-                    <span>
-                        <%= preferredDate %> at <%= preferredTime %>
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Church Time:</span>
-                    <span>
-                        <%= newYorkDate %> at <%= newYorkTime %> (New York Time)
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Meeting Type:</span>
-                    <span>
-                        <%= medium %>
-                    </span>
-                </div>
-            </div>
-
-            <div class="timezone-note">
-                <strong>Note:</strong> New York time is currently <strong>
-                    <%= timeDifference %>
-                </strong> your local time.
-                Please double-check the time difference to ensure you don't miss your appointment.
-            </div>
-
-            <p>We're looking forward to connecting with you. If you need to make any changes to your appointment or have
-                any questions, please don't hesitate to contact us.</p>
-
-            <p class="signature">Blessings,<br>The Pastoral Team</p>
-        </div>
-
-        <div class="footer">
-            <div class="church-info">
-                <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
-                <div>914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA</div>
-                <div>office@efgbcssl.org | (240) 821 0361</div>
-            </div>
-            <div>
-                &copy; <%= new Date().getFullYear() %> Ethiopian Full Gospel Believers Church (Silver Spring Local). All
-                    rights reserved.
-            </div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <img src="<%= siteUrl %>/logo.png" alt="Church Logo" style="width:120px; display:block; margin:0 auto 15px;">
+      <% if (typeof isUpdate !== 'undefined' && isUpdate) { %>
+        Your Appointment Has Been Updated
+      <% } else { %>
+        Your Appointment is Confirmed
+      <% } %>
     </div>
-</body>
 
+    <div class="content">
+      <p class="greeting">Dear <strong><%= fullName %></strong>,</p>
+      <p>
+        <% if (typeof isUpdate !== 'undefined' && isUpdate) { %>
+          Your appointment details have been updated. Please review the latest information below:
+        <% } else { %>
+          Thank you for booking with us. Your appointment has been successfully scheduled. Below are the details:
+        <% } %>
+      </p>
+
+      <div class="info-box">
+        <div class="info-item"><span class="info-label">Your Local Time:</span><span><%= preferredDate %> at <%= preferredTime %></span></div>
+        <div class="info-item"><span class="info-label">Church Time:</span><span><%= newYorkDate %> at <%= newYorkTime %> (New York)</span></div>
+        <div class="info-item"><span class="info-label">Meeting Type:</span><span><%= medium %></span></div>
+        <% if (medium === 'online' && meetingLink) { %>
+          <div class="info-item"><span class="info-label">Join Link:</span><a href="<%= meetingLink %>"><%= meetingLink %></a></div>
+        <% } %>
+      </div>
+
+      <div class="timezone-note">
+        <strong>Note:</strong> New York time is currently <strong><%= timeDifference %></strong> your local time.  
+        Please double-check the difference to avoid missing your appointment.
+      </div>
+
+      <p class="signature">Blessings,<br>The Pastoral Team</p>
+    </div>
+
+    <div class="footer">
+      <div class="church-info">
+        <div class="church-name">Ethiopian Full Gospel Believers Church (Silver Spring Local)</div>
+        <div>914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA</div>
+        <div>office@efgbcssl.org | (240) 821 0361</div>
+      </div>
+      <div>&copy; <%= new Date().getFullYear() %> Ethiopian Full Gospel Believers Church (Silver Spring Local). All rights reserved.</div>
+    </div>
+  </div>
+</body>
 </html>
