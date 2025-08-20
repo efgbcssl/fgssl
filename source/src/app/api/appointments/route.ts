@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest } from "next/server";
 import { connectMongoDB } from "@/lib/mongodb";
 import Appointment from "@/models/Appointment";
 import { buildICS } from "@/utils/ics";
-import { sendMail } from "@/lib/";
+import { sendAppointmentEmail } from "@/lib/email";
 
 /**
  * GET /api/appointments
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
         });
 
         // Optional email notifications (ICS makes the time appear correctly for both parties)
+        // Inside your POST function, update the email sending part:
         try {
             const ics = buildICS({
                 title: `Appointment with Pastor`,
@@ -125,26 +127,97 @@ export async function POST(req: NextRequest) {
                 attendeeEmail: email,
             });
 
+            // Parse the preferredDate for email template
+            const appointmentDate = new Date(created.preferredDate);
+
+            // Convert to user's local time (if timezone is provided)
+            let userFormattedDate = '';
+            let userFormattedTime = '';
+
+            if (userTimeZone) {
+                userFormattedDate = appointmentDate.toLocaleDateString('en-US', {
+                    timeZone: userTimeZone,
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                userFormattedTime = appointmentDate.toLocaleTimeString('en-US', {
+                    timeZone: userTimeZone,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
+            }
+
+            // Convert to New York time (EST/EDT)
+            const nyDate = appointmentDate.toLocaleDateString('en-US', {
+                timeZone: 'America/New_York',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const nyTime = appointmentDate.toLocaleTimeString('en-US', {
+                timeZone: 'America/New_York',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short'
+            });
+            function calculateTimeDifference(userTimeZone: string): string {
+                try {
+                    const now = new Date();
+                    const userTime = now.toLocaleString('en-US', { timeZone: userTimeZone });
+                    const nyTime = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+
+                    const userOffset = now.getTimezoneOffset(); // in minutes
+                    const nyDate = new Date(nyTime);
+                    const nyOffset = nyDate.getTimezoneOffset();
+
+                    const diffHours = (nyOffset - userOffset) / 60;
+
+                    if (diffHours === 0) return 'the same as';
+                    if (diffHours > 0) return `${Math.abs(diffHours)} hours behind`;
+                    return `${Math.abs(diffHours)} hours ahead`;
+                } catch (error) {
+                    console.warn('Could not calculate time difference:', error);
+                    return '';
+                }
+            }
+            // Calculate time difference (simplified)
+            const timeDiff = userTimeZone ? calculateTimeDifference(userTimeZone) : '';
+
             // Send to requester
-            await sendMail({
+            await sendAppointmentEmail({
                 to: email,
-                subject: `Your appointment request`,
-                html: `<p>Hi ${fullName},</p><p>Thanks for your request. We'll confirm soon.</p>`,
                 icalEvent: { filename: "appointment.ics", content: ics },
+                fullName,
+                preferredDate: userFormattedDate,
+                preferredTime: userFormattedTime,
+                medium,
+                newYorkDate: nyDate,
+                newYorkTime: nyTime,
+                timeDifference: timeDiff,
+                meetingLink
             });
 
             // Send to admin/pastor
-            const adminTo = process.env.MAIL_FROM;
+            const adminTo = process.env.ADMIN_EMAIL;
             if (adminTo) {
-                await sendMail({
+                await sendAppointmentEmail({
                     to: adminTo,
-                    subject: `New appointment request from ${fullName}`,
-                    html: `<p>New request for <strong>${new Date(created.preferredDate).toUTCString()}</strong> (UTC).</p>`,
                     icalEvent: { filename: "appointment.ics", content: ics },
+                    fullName,
+                    preferredDate: userFormattedDate,
+                    preferredTime: userFormattedTime,
+                    medium,
+                    newYorkDate: nyDate,
+                    newYorkTime: nyTime,
+                    timeDifference: timeDiff,
+                    meetingLink
                 });
             }
         } catch (mailErr) {
-            // Don’t fail the booking if email fails
             console.warn("[POST] /api/appointments mail warning ->", mailErr);
         }
 

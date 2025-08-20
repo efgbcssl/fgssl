@@ -109,4 +109,3 @@ export function icsResponse(
 export function generateICS(args: IcsArgs): string {
   return buildICS(args);
 }
-s

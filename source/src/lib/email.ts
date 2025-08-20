@@ -7,7 +7,6 @@ import fs from 'fs/promises'
 import { generateDonationReceiptPDF } from './pdf'
 import { format, formatInTimeZone } from 'date-fns-tz'
 import { resend } from './resend'
-import { generateICS } from "@/utils/ics"
 
 // Types
 interface EmailMetrics {
@@ -430,6 +429,7 @@ export async function sendSubscriptionCancellationEmail(data: SubscriptionCancel
 // Existing functions preserved
 export async function sendAppointmentEmail({
     to,
+    icalEvent,
     fullName,
     preferredDate,
     preferredTime,
@@ -437,18 +437,20 @@ export async function sendAppointmentEmail({
     newYorkDate,
     newYorkTime,
     timeDifference,
-    appointmentId,
     meetingLink
 }: {
     to: string
-    fullName: string
-    preferredDate: string
-    preferredTime: string
-    medium: string
-    newYorkDate: string
-    newYorkTime: string
-    timeDifference: string
-    appointmentId: string
+    icalEvent: {
+        filename: string
+        content: string
+    }
+    fullName?: string
+    preferredDate?: string
+    preferredTime?: string
+    medium?: string
+    newYorkDate?: string
+    newYorkTime?: string
+    timeDifference?: string
     meetingLink?: string
 }) {
     try {
@@ -462,31 +464,20 @@ export async function sendAppointmentEmail({
         const template = await fs.readFile(templatePath, "utf-8")
         const html = ejs.render(template, {
             siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "",
-            fullName,
-            preferredDate,
-            preferredTime,
-            medium,
-            newYorkDate,
-            newYorkTime,
-            timeDifference,
-            meetingLink
-        })
-
-        // 🗓️ Generate ICS file for the appointment
-        const icsContent = generateICS({
-            id: appointmentId,
-            fullName,
-            email: to,
-            preferredDate,
-            preferredTime,
-            medium,
-            meetingLink
+            fullName: fullName || "there",
+            preferredDate: preferredDate || "",
+            preferredTime: preferredTime || "",
+            medium: medium || "",
+            newYorkDate: newYorkDate || "",
+            newYorkTime: newYorkTime || "",
+            timeDifference: timeDifference || "",
+            meetingLink: meetingLink || ""
         })
 
         const attachments = [
             {
-                filename: "appointment.ics",
-                content: icsContent,
+                filename: icalEvent.filename,
+                content: icalEvent.content,
                 contentType: "text/calendar; charset=utf-8; method=REQUEST"
             }
         ]
@@ -494,9 +485,9 @@ export async function sendAppointmentEmail({
         console.log("📤 Sending appointment email to:", to)
 
         const mailOptions = {
-            from: process.env.FROM_EMAIL! || "no-reply@efgbcssl.org",
+            from: process.env.FROM_EMAIL! || process.env.MAIL_FROM! || "no-reply@efgbcssl.org",
             to,
-            subject: `Your Appointment Confirmation - ${preferredDate} at ${preferredTime}`,
+            subject: `Your Appointment Confirmation - ${preferredDate || "Scheduled Appointment"}`,
             html,
             attachments
         }

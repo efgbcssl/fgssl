@@ -24,7 +24,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <img src="<%= siteUrl %>/logo.png" alt="Church Logo" style="width:120px; display:block; margin:0 auto 15px;">
+    <img src="<%= siteUrl && siteUrl !== 'NOT_SET' ? siteUrl + '/logo.png' : '/logo.png' %>" alt="Church Logo" style="width:120px; display:block; margin:0 auto 15px;">
       <% if (typeof isUpdate !== 'undefined' && isUpdate) { %>
         Your Appointment Has Been Updated
       <% } else { %>
@@ -43,18 +43,29 @@
       </p>
 
       <div class="info-box">
-        <div class="info-item"><span class="info-label">Your Local Time:</span><span><%= preferredDate %> at <%= preferredTime %></span></div>
-        <div class="info-item"><span class="info-label">Church Time:</span><span><%= newYorkDate %> at <%= newYorkTime %> (New York)</span></div>
-        <div class="info-item"><span class="info-label">Meeting Type:</span><span><%= medium %></span></div>
+        <% if (preferredDate && preferredTime) { %>
+          <div class="info-item"><span class="info-label">Your Local Time:</span><span><%= preferredDate %> at <%= preferredTime %></span></div>
+        <% } %>
+        
+        <% if (newYorkDate && newYorkTime) { %>
+          <div class="info-item"><span class="info-label">Church Time:</span><span><%= newYorkDate %> at <%= newYorkTime %> (New York)</span></div>
+        <% } %>
+        
+        <% if (medium) { %>
+          <div class="info-item"><span class="info-label">Meeting Type:</span><span><%= medium %></span></div>
+        <% } %>
+        
         <% if (medium === 'online' && meetingLink) { %>
           <div class="info-item"><span class="info-label">Join Link:</span><a href="<%= meetingLink %>"><%= meetingLink %></a></div>
         <% } %>
       </div>
 
-      <div class="timezone-note">
-        <strong>Note:</strong> New York time is currently <strong><%= timeDifference %></strong> your local time.  
-        Please double-check the difference to avoid missing your appointment.
-      </div>
+      <% if (timeDifference) { %>
+        <div class="timezone-note">
+          <strong>Note:</strong> New York time is currently <strong><%= timeDifference %></strong> your local time.  
+          Please double-check the difference to avoid missing your appointment.
+        </div>
+      <% } %>
 
       <p class="signature">Blessings,<br>The Pastoral Team</p>
     </div>
