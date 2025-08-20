@@ -1,18 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 import { generateICS } from '@/utils/ics';
 
-// Context type for this dynamic route
-type RouteContext = {
-    params: { id: string };
-};
-
 export async function GET(
     req: NextRequest,
-    { params }: RouteContext
+    { params }: { params: { id: string } }
 ) {
     await connectMongoDB();
 
@@ -26,7 +19,6 @@ export async function GET(
         );
     }
 
-    // Define a type for the expected appointment fields
     interface AppointmentFields {
         title: string;
         startUtcISO: string;
@@ -40,7 +32,6 @@ export async function GET(
         _id?: string;
     }
 
-    // Extract only the required fields
     const {
         title,
         startUtcISO,
@@ -53,7 +44,6 @@ export async function GET(
         _id,
     } = appointment as Record<string, unknown>;
 
-    // Validate types
     if (
         typeof title !== 'string' ||
         typeof startUtcISO !== 'string' ||
