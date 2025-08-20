@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/appointments/[id]/ics/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongodb";
@@ -16,7 +17,18 @@ export async function GET(
         const { id } = params;
 
         // 3. Fetch appointment from MongoDB
-        const appointment = await Appointment.findById(id).lean();
+        const appointment = await Appointment.findById(id).lean() as {
+            title: string;
+            startUtcISO: string;
+            fullName: string;
+            email: string;
+            preferredDate: string;
+            preferredTime: string;
+            medium: string;
+            meetingLink: string;
+            _id: any;
+            [key: string]: any;
+        } | null;
 
         if (!appointment) {
             return NextResponse.json(
@@ -36,17 +48,7 @@ export async function GET(
             medium,
             meetingLink,
             _id,
-        } = appointment as {
-            title: string;
-            startUtcISO: string;
-            fullName: string;
-            email: string;
-            preferredDate: string;
-            preferredTime: string;
-            medium: string;
-            meetingLink: string;
-            _id: string | { toString: () => string };
-        };
+        } = appointment;
 
         // 5. Validate required fields
         if (
@@ -79,7 +81,7 @@ export async function GET(
                 "Content-Disposition": `attachment; filename="appointment-${_id?.toString?.() ?? id}.ics"`,
             },
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("Error generating ICS:", error);
         return NextResponse.json(
             { error: "Internal server error" },
