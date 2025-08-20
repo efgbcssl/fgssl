@@ -1,17 +1,29 @@
-import { NextResponse } from 'next/server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 import { generateICS } from '@/utils/ics';
 
+// Context type for this dynamic route
+type RouteContext = {
+    params: { id: string };
+};
+
 export async function GET(
-    req: Request,
-    context: { params: { id: string } }
+    req: NextRequest,
+    { params }: RouteContext
 ) {
     await connectMongoDB();
-    const {id} = context.params;
+
+    const { id } = params;
     const appointment = await Appointment.findById(id).lean();
+
     if (!appointment) {
-        return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+        return NextResponse.json(
+            { error: 'Appointment not found' },
+            { status: 404 }
+        );
     }
 
     // Define a type for the expected appointment fields
@@ -28,7 +40,7 @@ export async function GET(
         _id?: string;
     }
 
-    // Extract only the required fields and ensure types
+    // Extract only the required fields
     const {
         title,
         startUtcISO,
@@ -38,9 +50,10 @@ export async function GET(
         preferredTime,
         medium,
         meetingLink,
-        _id
+        _id,
     } = appointment as Record<string, unknown>;
 
+    // Validate types
     if (
         typeof title !== 'string' ||
         typeof startUtcISO !== 'string' ||
@@ -51,7 +64,10 @@ export async function GET(
         typeof medium !== 'string' ||
         typeof meetingLink !== 'string'
     ) {
-        return NextResponse.json({ error: 'Invalid appointment data' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Invalid appointment data' },
+            { status: 500 }
+        );
     }
 
     const typedAppointment: AppointmentFields = {
@@ -63,18 +79,20 @@ export async function GET(
         preferredTime,
         medium,
         meetingLink,
-        id: appointment.id ?? undefined,
-        _id: _id?.toString?.() ?? undefined
+        id: (appointment as any).id ?? undefined,
+        _id: (appointment as any)._id?.toString?.() ?? undefined,
     };
 
     const icsContent = generateICS({
         title: typedAppointment.title,
         startUtcISO: typedAppointment.startUtcISO,
     });
+
     return new NextResponse(icsContent, {
         headers: {
             'Content-Type': 'text/calendar; charset=utf-8',
-            'Content-Disposition': `attachment; filename=appointment-${appointment.id}.ics`,
+            'Content-Disposition': `attachment; filename=appointment-${typedAppointment.id ?? typedAppointment._id
+                }.ics`,
         },
     });
 }
