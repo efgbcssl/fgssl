@@ -4,31 +4,26 @@
 import { Icons } from '@/components/dashboard/Icons';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 interface NavbarProps {
     className?: string;
-    onMenuToggle?: () => void; // For mobile sidebar toggle
+    onMenuToggle?: () => void; // for mobile sidebar
 }
 
 export function Navbar({ className, onMenuToggle }: NavbarProps) {
     const { setTheme } = useTheme();
 
     return (
-        <header className={cn(
-            "sticky top-0 z-40 flex items-center h-16 px-4 sm:px-6 border-b border-border bg-card backdrop-blur supports-[backdrop-filter]:bg-card/80",
-            className
-        )}>
+        <header
+            className={cn(
+                'sticky top-0 z-40 flex items-center h-16 px-4 sm:px-6 border-b border-border bg-card backdrop-blur supports-[backdrop-filter]:bg-card/80',
+                className
+            )}
+        >
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-4">
-                    {/* Mobile menu button - only shows on small screens */}
+                    {/* Hamburger button - mobile only */}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -39,12 +34,11 @@ export function Navbar({ className, onMenuToggle }: NavbarProps) {
                         <span className="sr-only">Toggle menu</span>
                     </Button>
 
-                    {/* Logo/Brand - hidden on mobile if you want */}
+                    {/* Logo / Title */}
                     <div className="hidden md:flex items-center">
                         <h1 className="text-lg font-heading font-semibold">Dashboard</h1>
                     </div>
                 </div>
-
             </div>
         </header>
     );
