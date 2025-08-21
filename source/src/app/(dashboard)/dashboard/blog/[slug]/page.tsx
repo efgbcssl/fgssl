@@ -7,10 +7,14 @@ import { handleEditBlogSubmit } from '@/actions/blogActions'
 import React from 'react'
 import { IBlog } from '@/models/Blog'
 
-type Props = { params: { slug: string } }
+// Update the Props type to match Next.js PageProps expectation
+interface Props {
+    params: Promise<{ slug: string }>
+}
 
 export default async function EditBlogPost({ params }: Props) {
-    const { slug } = params
+    // Await the params promise
+    const { slug } = await params
 
     // fetch the post
     const postResp = await getBlogPostBySlug(slug)
@@ -52,9 +56,9 @@ export default async function EditBlogPost({ params }: Props) {
                     tags: blogPost.tags ?? [],
                     categories: blogPost.categories ?? [],
                 }}
-                key={blogPost.post_id} onSubmit={function (formData: FormData): Promise<void> {
-                    throw new Error('Function not implemented.')
-                } }            />
+                key={blogPost.post_id}
+                onSubmit={handleSubmit}
+            />
         </div>
     )
 }
