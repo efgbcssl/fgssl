@@ -6,14 +6,14 @@ import { generateICS } from "@/utils/ics";
 
 export async function GET(
     _req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ id: string }> }
 ) {
     try {
         // 1. Connect to MongoDB
         await connectMongoDB();
 
         // 2. Await the params promise
-        const { id } = await params;
+        const { id } = await props.params;
 
         // 3. Fetch appointment from MongoDB
         const appointment = await Appointment.findById(id).lean() as {
