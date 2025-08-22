@@ -13,7 +13,7 @@ export async function GET(
         await connectMongoDB();
 
         // 2. Await the params promise
-        const { id } = await props.params;
+       /* const { id } = await props.params;
 
         // 3. Fetch appointment from MongoDB
         const appointment = await Appointment.findById(id).lean() as {
@@ -79,7 +79,7 @@ export async function GET(
                 "Content-Type": "text/calendar; charset=utf-8",
                 "Content-Disposition": `attachment; filename="appointment-${_id?.toString?.() ?? id}.ics"`,
             },
-        });
+        });*/
     } catch (error: any) {
         console.error("Error generating ICS:", error);
         return NextResponse.json(
