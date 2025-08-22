@@ -30,12 +30,13 @@ export async function GET(
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     await connectMongoDB();
     const data = await req.json();
+    const { id } = await params;
     const updated = await Appointment.findByIdAndUpdate(
-        params.id,
+        id,
         { ...data, updatedAt: new Date().toISOString() },
         { new: true }
     );
