@@ -30,7 +30,7 @@ type BlogPost = {
 export const dynamicMode = 'force-dynamic'
 
 export default function NewBlogPostPage() {
-    async function handleSubmit(formData: FormData) {
+    /*async function handleSubmit(formData: FormData) {
         'use server'
         console.log("inside NewBlogPostPage")
 
@@ -89,5 +89,5 @@ export default function NewBlogPostPage() {
                 />
             </Suspense>
         </div>
-    )
+    )*/
 }
