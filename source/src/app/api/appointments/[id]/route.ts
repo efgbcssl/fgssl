@@ -4,18 +4,18 @@ import Appointment from '@/models/Appointment';
 
 export async function GET(
     req: Request,
-    context: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         await connectMongoDB();
-        const { id } = context.params;
+
+        // Await the params since they're now a Promise in Next.js 15
+        const { id } = await params;
 
         const appointment = await Appointment.findById(id);
+
         if (!appointment) {
-            return NextResponse.json(
-                { error: 'Appointment not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
         }
 
         return NextResponse.json(appointment);
