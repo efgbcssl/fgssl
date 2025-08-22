@@ -1,5 +1,5 @@
 // app/dashboard/blog/new/page.tsx
-
+'use server'
 import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { createBlogPost } from '@/lib/blog'
