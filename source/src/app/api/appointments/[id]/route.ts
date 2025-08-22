@@ -47,10 +47,11 @@ export async function PATCH(
 
 export async function DELETE(
     _req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     await connectMongoDB();
-    const deleted = await Appointment.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const deleted = await Appointment.findByIdAndDelete(id);
     if (!deleted) {
         return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     }
