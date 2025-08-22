@@ -3,15 +3,29 @@ import { connectMongoDB } from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 
 export async function GET(
-    _req: Request,
-    { params }: { params: { id: string } }
+    req: Request,
+    context: { params: { id: string } }
 ) {
-    await connectMongoDB();
-    const appointment = await Appointment.findById(params.id);
-    if (!appointment) {
-        return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+    try {
+        await connectMongoDB();
+        const { id } = context.params;
+
+        const appointment = await Appointment.findById(id);
+        if (!appointment) {
+            return NextResponse.json(
+                { error: 'Appointment not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(appointment);
+    } catch (error) {
+        console.error('Error fetching appointment:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
-    return NextResponse.json(appointment);
 }
 
 export async function PATCH(
