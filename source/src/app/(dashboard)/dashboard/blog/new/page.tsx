@@ -35,8 +35,14 @@ export default function NewBlogPostPage() {
             metaDescription: (formData.get('metaDescription') as string)?.trim() || ''
         }
 
+        // Convert publishDate to Date object for createBlogPost
+        const blogPostForCreate = {
+            ...blogPost,
+            publishDate: new Date(blogPost.publishDate)
+        };
+
         try {
-            const result = await createBlogPost(blogPost)
+            const result = await createBlogPost(blogPostForCreate)
             if (result?.data?.slug) {
                 redirect(`/dashboard/blog/${result.data.slug}`)
             } else {
@@ -54,6 +60,7 @@ export default function NewBlogPostPage() {
 
             <BlogEditor
                 action={handleSubmit}
+                onSubmit={handleSubmit}
                 defaultValues={{
                     title: '',
                     content: '',
