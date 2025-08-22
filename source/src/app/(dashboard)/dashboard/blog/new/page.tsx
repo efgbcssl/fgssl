@@ -6,13 +6,14 @@ import { createBlogPost } from '@/lib/blog'
 import { redirect } from 'next/navigation'
 
 // Dynamically import BlogEditor to prevent SSR issues with SDK initialization
-const BlogEditor = dynamic(
+/*const BlogEditor = dynamic(
     () => import('@/components/blog/BlogEditor'),
     {
         ssr: false,
         loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg" />
     }
-)
+)*/
+
 
 type BlogPost = {
     title: string
@@ -27,7 +28,7 @@ type BlogPost = {
 }
 
 // Force dynamic rendering for this page
-export const dynamicMode = 'force-dynamic'
+// export const dynamicMode = 'force-dynamic'
 
 export default function NewBlogPostPage() {
     /*async function handleSubmit(formData: FormData) {
