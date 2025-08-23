@@ -274,7 +274,7 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                                                             <Input
                                                                 {...field}
                                                                 type="number"
-                                                                min="1"
+                                                                min="0.50"
                                                                 step="0.01"
                                                                 className="pl-8 h-12"
                                                                 placeholder="Other amount"
