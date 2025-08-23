@@ -59,6 +59,11 @@ interface DonationEmailParams {
     isRecurring: boolean
     unsubscribeLink?: string
     tags?: Array<{ name: string; value: string }>
+    attachments?: Array<{
+        filename: string;
+        content: Buffer;
+        contentType: string;
+    }>;
 }
 
 interface PaymentFailedEmailParams {
