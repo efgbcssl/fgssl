@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // app/api/dashboard/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/auth';
 import { authConfig } from '@/auth';
 import { connectMongoDB } from '@/lib/mongodb';
 import Donation from '@/models/Donation';
@@ -24,7 +24,7 @@ interface DashboardStats {
 export async function GET(request: NextRequest) {
     try {
         // Get the user session
-        const session = await getServerSession(authConfig);
+        const session = await auth();
 
         if (!session || !session.user) {
             return NextResponse.json(
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
 // POST API endpoint for updating dashboard preferences (optional)
 export async function POST(request: NextRequest) {
     try {
-        const session = await session(authConfig);
+        const session = await auth();
 
         if (!session || !session.user) {
             return NextResponse.json(
