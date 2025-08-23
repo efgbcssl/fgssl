@@ -196,6 +196,7 @@ async function renderTemplate(templateName: string, data: Record<string, unknown
 // Enhanced email sending with comprehensive error handling
 async function sendWithResend(
     emailData: {
+        from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
         to: string | string[]
         subject: string
         html: string
@@ -241,7 +242,7 @@ async function sendWithResend(
 
             // Prepare Resend payload with correct types
             const payload = {
-                from: process.env.FROM_EMAIL!,
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to: recipients,
                 subject: emailData.subject,
                 html: emailData.html,
@@ -432,6 +433,7 @@ export async function sendDonationEmail(params: DonationEmailParams): Promise<Em
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to: params.to,
                 subject: params.isRecurring
                     ? `Thank you for your recurring ${params.donationType} donation`
@@ -486,6 +488,7 @@ export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams): 
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to: params.to,
                 subject: `Payment ${params.isRecurring ? 'for recurring donation ' : ''}failed - Action required`,
                 html,
@@ -534,6 +537,7 @@ export async function sendSubscriptionConfirmationEmail(data: SubscriptionConfir
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to: data.to,
                 subject: `Thank you for your ${data.frequency} donation commitment!`,
                 html,
@@ -580,6 +584,7 @@ export async function sendSubscriptionUpdateEmail(data: SubscriptionUpdateEmailD
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to: data.to,
                 subject: 'Your recurring donation has been updated',
                 html,
@@ -625,6 +630,7 @@ export async function sendSubscriptionCancellationEmail(data: SubscriptionCancel
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to: data.to,
                 subject: 'Your recurring donation has been cancelled',
                 html,
@@ -679,7 +685,7 @@ export async function sendAppointmentEmail({
 }): Promise<EmailResult> {
     try {
         const html = await renderTemplate('appointment-confirmation', {
-            fullName: fullName || "there",
+            fullName: fullName || "Brother/Sister",
             preferredDate: preferredDate || "",
             preferredTime: preferredTime || "",
             medium: medium || "",
@@ -692,6 +698,7 @@ export async function sendAppointmentEmail({
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to,
                 subject: `Your Appointment Confirmation - ${preferredDate || "Scheduled Appointment"}`,
                 html,
@@ -768,6 +775,7 @@ export async function sendReminderEmail({
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to,
                 subject: `Reminder: Your Upcoming Appointment - ${preferredDate} at ${preferredTime}`,
                 html,
@@ -820,6 +828,7 @@ export async function sendMessageNotificationEmail({
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to,
                 subject: `New Message: ${subject || 'Contact Form Submission'}`,
                 html,
@@ -881,6 +890,7 @@ export async function sendEventRegistrationEmail({
 
         return await sendWithResend(
             {
+                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
                 to,
                 subject: `Registration Confirmation: ${eventName}`,
                 html,
