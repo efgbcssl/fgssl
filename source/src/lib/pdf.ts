@@ -152,27 +152,25 @@ export async function generateDonationReceiptPDF(params: DonationReceiptPDFParam
         })
 
         // Add bible verse
-        page.drawText('"Each of you should give what you have decided in your heart to give,', {
-            x: margin,
-            y: height - margin - logoDims.height - 350,
-            size: 11,
-            font: helvetica,
-            color: rgb(0.4, 0.4, 0.4),
-        })
-        page.drawText('not reluctantly or under compulsion, for God loves a cheerful giver."', {
-            x: margin,
-            y: height - margin - logoDims.height - 365,
-            size: 11,
-            font: helvetica,
-            color: rgb(0.4, 0.4, 0.4),
-        })
-        page.drawText('- 2 Corinthians 9:7', {
-            x: margin,
-            y: height - margin - logoDims.height - 380,
-            size: 11,
-            font: helvetica,
-            color: rgb(0.4, 0.4, 0.4),
-        })
+        const verseLines = [
+            '"Each of you should give what you have decided in your heart to give,',
+            'not reluctantly or under compulsion, for God loves a cheerful giver."',
+            '- 2 Corinthians 9:7',
+        ];
+
+        const lineHeight = 14; // slightly more than font size (11) for padding
+        const y = height - margin - logoDims.height - 350;
+
+        verseLines.forEach((line, index) => {
+            page.drawText(line, {
+                x: margin,
+                y: y - index * lineHeight,
+                size: 11,
+                font: helvetica,
+                color: rgb(0.4, 0.4, 0.4),
+            });
+        });
+
 
         // Add tax disclaimer
         page.drawText('Tax Deduction Information:', {
