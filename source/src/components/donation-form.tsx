@@ -92,10 +92,10 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
         setIsSubmitting(true)
         try {
             const parsedAmount = Math.round(Number(values.amount))
-            if (isNaN(parsedAmount) || parsedAmount < 0.10) {
+            if (isNaN(parsedAmount) || parsedAmount < 0.50) {
                 toast({
                     title: "Invalid amount",
-                    description: "Amount must be at least $0.10",
+                    description: "Amount must be at least $0.50",
                     variant: "destructive"
                 })
                 return
