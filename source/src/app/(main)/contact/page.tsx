@@ -281,7 +281,7 @@ export default function ContactPage() {
                                             </div>
                                             <div>
                                                 <h3 className="text-lg font-bold mb-1">Email</h3>
-                                                <p className="text-gray-700">General Inquiries: info@gracechurch.org</p>
+                                                <p className="text-gray-700">General Inquiries: info@efgbcssl.org</p>
                                                 <p className="text-gray-700">Prayer Requests: prayer@efgbcssl.org</p>
                                             </div>
                                         </div>
