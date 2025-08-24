@@ -42,7 +42,7 @@ export default function Navbar() {
                             width={40}
                             height={40}
                         />
-                        <span className="font-heading text-xl font-bold text-church-primary">EFGBC</span>
+                        <span className="font-heading text-xl font-bold text-church-primary">EFGBCSSL</span>
                     </Link>
                 </div>
 
