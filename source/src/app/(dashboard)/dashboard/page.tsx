@@ -12,7 +12,7 @@ import { User as UserReact, Users, DollarSign, BarChart3, Settings, Shield, Acti
 import { connectMongoDB } from '@/lib/mongodb';
 import Donation from '@/models/Donation';
 import User from '@/models/User';
-import MenuItem from '@/models/MenuItem';
+import  { MenuItemModel } from '@/models/MenuItem';
 
 interface DashboardCard {
   title: string;
@@ -26,7 +26,7 @@ interface DashboardCard {
 // Function to get menu items based on role
 async function getMenuItems(role: string) {
   await connectMongoDB();
-  return await MenuItem.find({ roles: role, enabled: true }).sort({ order: 1 });
+  return await MenuItemModel.find({ roles: role, enabled: true }).sort({ order: 1 });
 }
 
 // Function to get user donations
