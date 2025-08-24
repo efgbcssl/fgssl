@@ -33,7 +33,7 @@ const Footer = () => {
                                 width={40}
                                 height={40}
                             />
-                            <span className="font-heading text-xl font-bold">EFGBC</span>
+                            <span className="font-heading text-xl font-bold">EFGBCSSL</span>
                         </Link>
                         <p className="text-gray-300 mb-6">
                             Transforming lives through faith, hope, and love. Join our community and be part of something greater.
