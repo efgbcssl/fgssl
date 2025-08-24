@@ -359,7 +359,33 @@ export function DonationForm({ donationTypes }: { donationTypes: DonationType[] 
                                 transition={{ duration: 0.2 }}
                                 key="payment"
                             >
-                                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                                <Elements stripe={stripePromise} options={{
+                                    clientSecret,
+                                    appearance: {
+                                        theme: 'flat', // or 'night' or custom
+                                        variables: {
+                                            fontFamily: 'Arial, sans-serif',
+                                            fontSizeBase: '16px',
+                                        },
+                                        rules: {
+                                            '.Input': {
+                                                fontFamily: 'monospace',
+                                                fontVariantNumeric: 'lining-nums',
+                                            },
+                                            '.Input--cardNumber': {
+                                                // Mask digits visually using bullets instead of numbers
+                                                WebkitTextSecurity: 'disc', // Works in Chrome/Safari
+                                                MozTextSecurity: 'disc', // Experimental in Firefox
+                                                textSecurity: 'disc', // Some browsers
+                                            },
+                                            '.Input--cardCvc': {
+                                                WebkitTextSecurity: 'disc',
+                                                MozTextSecurity: 'disc',
+                                                textSecurity: 'disc',
+                                            },
+                                        },
+                                    },
+                                }}>
                                     <PaymentForm
                                         email={form.getValues('email')}
                                         setIsSubmitting={setIsSubmitting}
