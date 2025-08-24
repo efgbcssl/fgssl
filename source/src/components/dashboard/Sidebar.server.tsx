@@ -47,12 +47,15 @@ export async function SidebarServer() {
         }).sort({ order: 1 }).lean();
 
         // Map menu items to include icon components
-        const navItems = menuItems.map(item => ({
-            _id: item._id.toString(),
-            name: item.title,
-            href: item.path,
-            icon: item.icon ? iconMap[item.icon] || Icons.dashboard : Icons.dashboard
-        }));
+        const navItems = menuItems.map(item => {
+            const IconComponent = item.icon && iconMap[item.icon] ? iconMap[item.icon] : Icons.dashboard;
+            return {
+                _id: item._id.toString(),
+                name: item.title,
+                href: item.path,
+                icon: IconComponent
+            };
+        });
 
         return (
             <SidebarClient
