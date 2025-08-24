@@ -189,7 +189,7 @@ export default function EnhancedResourcesPage() {
                             return {
                                 ...baseResource,
                                 type: 'video' as const,
-                                videoUrl: item.previewUrl ? String(item.previewUrl) : '',
+                                videoUrl: item.previewUrl ? String(item.previewUrl) : undefined,
                                 duration: item.duration,
                                 youtubeId: item.id,
                                 embedUrl: item.embedUrl || `https://www.youtube.com/embed/${item.id}`,
@@ -545,21 +545,21 @@ export default function EnhancedResourcesPage() {
             {/* Players/viewers */}
             {selectedVideo && (
                 <VideoPlayer 
-                    video={selectedVideo} 
+                    video={{ ...selectedVideo, videoUrl: selectedVideo.videoUrl ?? '' }} 
                     isOpen={!!selectedVideo} 
                     onClose={() => setSelectedVideo(null)} 
                 />
             )}
             {selectedPDF && (
                 <PDFViewer 
-                    resource={selectedPDF} 
+                    resource={{ ...selectedPDF, fileUrl: selectedPDF.fileUrl ?? '' }} 
                     isOpen={!!selectedPDF} 
                     onClose={() => setSelectedPDF(null)} 
                 />
             )}
             {selectedAudio && (
                 <AudioPlayer 
-                    resource={selectedAudio} 
+                    resource={{ ...selectedAudio, audioUrl: selectedAudio.audioUrl ?? '' }} 
                     isOpen={!!selectedAudio} 
                     onClose={() => setSelectedAudio(null)} 
                 />
