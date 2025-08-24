@@ -33,7 +33,7 @@ const Footer = () => {
                                 width={40}
                                 height={40}
                             />
-                            <span className="font-heading text-xl font-bold text-bold">EFGBC</span>
+                            <span className="font-heading text-xl font-bold">EFGBC</span>
                         </Link>
                         <p className="text-gray-300 mb-6">
                             Transforming lives through faith, hope, and love. Join our community and be part of something greater.
@@ -87,41 +87,24 @@ const Footer = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/*
-                    
-                    <div>
-                        <h3 className="text-lg font-bold mb-6 font-heading">Subscribe to Our Newsletter</h3>
-                        <p className="text-gray-300 mb-4">Stay updated with our latest sermons and events.</p>
-                        <form className="space-y-3">
-                            <input
-                                type="email"
-                                placeholder="Your email address"
-                                className="w-full px-4 py-2 rounded-md text-gray-900 focus:ring-2 focus:ring-church-secondary focus:outline-none"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                className="w-full bg-church-secondary text-church-dark px-4 py-2 rounded-md hover:bg-church-secondary/90 transition-colors"
-                            >
-                                Subscribe
-                            </button>
-                        </form>
-                    </div>
-                    */}
                 </div>
 
                 <hr className="my-8 border-gray-700" />
 
                 <div className="flex flex-col md:flex-row justify-between items-center">
-                    <p className="text-gray-300 text-sm">
-                        &copy; {new Date().getFullYear()} Ethiopian Full Gospel Believers Church. All rights reserved.
-                    </p>
+                    <div className="text-center md:text-left">
+                        <p className="text-gray-300 text-sm">
+                            &copy; {new Date().getFullYear()} Ethiopian Full Gospel Believers Church. All rights reserved.
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">
+                            Developed by Next Level Media Events and Communications PLC
+                        </p>
+                    </div>
                     <div className="flex space-x-6 mt-4 md:mt-0 text-sm">
-                        <Link href="/privacy-policy" className="text-gray-300 hover:text-church-secondary">
+                        <Link href="/" className="text-gray-300 hover:text-church-secondary">
                             Privacy Policy
                         </Link>
-                        <Link href="/terms-of-service" className="text-gray-300 hover:text-church-secondary">
+                        <Link href="/" className="text-gray-300 hover:text-church-secondary">
                             Terms of Service
                         </Link>
                     </div>
