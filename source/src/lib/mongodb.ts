@@ -3,11 +3,6 @@ console.log("MONGODB_URI at runtime:", process.env.MONGODB_URI);
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-    throw new Error(
-        "Please define the MONGODB_URI environment variable in .env.local", new Error
-    );
-}
 
 interface MongooseCache {
     conn: typeof mongoose | null;
@@ -28,6 +23,12 @@ if (!globalThis.mongoose) {
 }
 
 export async function connectMongoDB(): Promise<typeof mongoose> {
+
+    if (!MONGODB_URI) {
+        throw new Error(
+            "Please define the MONGODB_URI environment variable in .env.local", new Error
+        );
+    }
     if (cached.conn && mongoose.connection.readyState === 1) {
         console.log("✅ Using existing MongoDB connection");
         return cached.conn;
