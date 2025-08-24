@@ -3,11 +3,10 @@
 // app/api/dashboard/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { authConfig } from '@/auth';
 import { connectMongoDB } from '@/lib/mongodb';
 import Donation from '@/models/Donation';
 import User from '@/models/User';
-import MenuItem from '@/models/MenuItem';
+import MenuItemModel from '@/models/MenuItem';
 
 // Define types for our response data
 interface DashboardStats {
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
         const responseData: DashboardStats = {};
 
         // Get menu items based on role
-        const menuItems = await MenuItem.find({
+        const menuItems = await MenuItemModel.find({
             roles: userRole,
             enabled: true
         }).sort({ order: 1 });
