@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Clock, MapPin } from "lucide-react"
+import { Calendar, Clock, MapPin, Phone } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -12,14 +12,26 @@ type MinistryItem = {
   amharicDay?: string
   time: string
   location: string
+  category: string
   description?: string
   amharicDescription?: string
-  category: string
+  phone?: string
 }
 
 const ministryItems: MinistryItem[] = [
   {
     id: 1,
+    title: "Early Morning Teleconference Prayer",
+    amharicTitle: "የማለዳ ፀሎት (በቴሌ ኮንፍራንስ)",
+    day: "Monday & Thursday",
+    amharicDay: "ሰኞ እና ሐሙስ",
+    time: "5:00 AM – 6:00 AM",
+    location: "Teleconference",
+    category: "prayer",
+    phone: "240-451-9754",
+  },
+  {
+    id: 2,
     title: "Prayer (Teleconference)",
     amharicTitle: "የፀሎት ጊዜ (በቴሌ ኮንፍራንስ)",
     day: "Tuesday",
@@ -29,7 +41,7 @@ const ministryItems: MinistryItem[] = [
     category: "prayer",
   },
   {
-    id: 2,
+    id: 3,
     title: "Prayer & Word of God",
     amharicTitle: "የፀሎት እና ተከታታይ ትምህርቶች",
     day: "Wednesday",
@@ -39,33 +51,43 @@ const ministryItems: MinistryItem[] = [
     category: "study",
   },
   {
-    id: 3,
+    id: 4,
     title: "Worship Service",
     amharicTitle: "የአምልኮ ፕሮግራም",
     day: "Sunday",
     amharicDay: "እሁድ",
     time: "10:00 AM – 1:00 PM",
-    location: "Main Sanctuary",
+    location: "Church Sanctuary",
     category: "worship",
-  },
-  {
-    id: 4,
-    title: "Prayer & Consultation",
-    amharicTitle: "የማማከር እና የፀሎት አገልግሎት",
-    day: "Monday & Wednesday",
-    amharicDay: "ሰኞ እና ዕረቡ",
-    time: "2:00 PM – 5:00 PM",
-    location: "Church Office / Prayer Room",
-    category: "consultation",
   },
   {
     id: 5,
     title: "Prayer & Consultation",
     amharicTitle: "የማማከር እና የፀሎት አገልግሎት",
+    day: "Monday",
+    amharicDay: "ሰኞ",
+    time: "2:00 PM – 4:00 PM",
+    location: "Church Sanctuary / Prayer Room",
+    category: "consultation",
+  },
+  {
+    id: 6,
+    title: "Prayer for Healing & Holy Spirit Fulfillment",
+    amharicTitle: "ለመንፈስ ቅዱስ ሙላት እና ለህመምተኞች የሚፀለይበት ጊዜ",
+    day: "Wednesday",
+    amharicDay: "ዕረቡ",
+    time: "11:00 AM – 1:00 PM",
+    location: "Church Sanctuary",
+    category: "prayer",
+  },
+  {
+    id: 7,
+    title: "Prayer & Consultation",
+    amharicTitle: "የማማከር እና የፀሎት አገልግሎት",
     day: "Saturday",
     amharicDay: "ቅዳሜ",
     time: "2:00 PM – 6:00 PM",
-    location: "Church Office / Prayer Room",
+    location: "Church Sanctuary / Prayer Room",
     category: "consultation",
   },
 ]
@@ -84,7 +106,7 @@ export default function WeeklyMinistries() {
         <h2 className="section-title centered">Weekly Ministries / የሳምንቱ አገልግሎቶች</h2>
         <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
           Join us in prayer, worship, and fellowship throughout the week.
-          ይህን አገልግሎቶች ሁሉም ሊሳተፉበት ይችላሉ።
+          አብረውን ያምልኩ ይፀልዩ ቃል ይካፈሉ ሁላችሁም ተጋብዛቹሃል።
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -123,6 +145,12 @@ export default function WeeklyMinistries() {
                     <MapPin className="h-4 w-4 mr-2 text-church-primary" />
                     <span>{item.location}</span>
                   </div>
+                  {item.phone && (
+                    <div className="flex items-center">
+                      <Phone className="h-4 w-4 mr-2 text-church-primary" />
+                      <span>{item.phone}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter />
