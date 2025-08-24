@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import mongoose from "mongoose";
 console.log("MONGODB_URI at runtime:", process.env.MONGODB_URI);
 
