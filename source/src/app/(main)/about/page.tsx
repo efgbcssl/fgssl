@@ -46,10 +46,7 @@ const coreValues = [
 ]
 
 const churchStaff = [
-    { id: 1, name: "Pastor John Smith", role: "Senior Pastor", image: "https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg", bio: "Leading our church since 2010 with wisdom and compassion." },
-    { id: 2, name: "Sarah Johnson", role: "Worship Director", image: "https://images.pexels.com/photos/774095/pexels-photo-774095.jpeg", bio: "Guiding our worship experience with talent and devotion." },
-    { id: 3, name: "Michael Williams", role: "Youth Pastor", image: "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg", bio: "Mentoring the next generation with energy and insight." },
-    { id: 4, name: "Rachel Thompson", role: "Children's Ministry", image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg", bio: "Creating a fun and nurturing environment for our children." }
+    { id: 1, name: "Pastor Fitsum Yab", role: "Pastor", image: "https://res.cloudinary.com/dvdbepqiv/image/upload/v1756056464/fistum_y2jfj5.jpg", bio: "Serving our community with Love and Compassion" },
 ]
 
 const branches = [
@@ -58,7 +55,7 @@ const branches = [
         name: "Main Campus",
         address: "914 Silver Spring Ave, Suite 204 B, Silver Spring, MD 20910, USA",
         services: "Sunday 9:00 AM & 11:00 AM",
-        image: "https://images.pexels.com/photos/2693529/pexels-photo-2693529.jpeg"
+        image: "https://res.cloudinary.com/dvdbepqiv/image/upload/v1756056610/photo_2025-06-14_07-30-54_zci12v.jpg"
     },
 ]
 
@@ -68,7 +65,7 @@ export default function AboutPage() {
             {/* Hero Section */}
             <section className="relative h-[400px] md:h-[500px] overflow-hidden">
                 <Image
-                    src="https://images.pexels.com/photos/175130/pexels-photo-175130.jpeg"
+                    src="https://res.cloudinary.com/dvdbepqiv/image/upload/v1756056554/WhatsApp_Image_2025-08-24_at_20.08.47_0549bcc5_cf8vmx.jpg"
                     alt="A church congregation during worship service"
                     fill
                     priority
@@ -87,39 +84,57 @@ export default function AboutPage() {
             </section>
 
             {/* Vision & Mission */}
+            {/* Vision & Mission */}
             <section className="py-16" role="region" aria-labelledby="vision-mission">
                 <div className="container-custom grid grid-cols-1 md:grid-cols-2 gap-10">
+                    {/* Vision */}
                     <div>
-                        <h2 id="vision-mission" className="section-title">Our Vision</h2>
-                        <p className="text-lg text-gray-700 mb-6">
-                            To be a thriving, Christ-centered community where people of all backgrounds can discover
-                            purpose, find belonging, and make a difference in the world.
-                        </p>
+                        <h2 id="vision-mission" className="section-title">ዓላማ</h2>
+                        <div className="space-y-3 text-lg text-gray-700 mb-6">
+                            <p>
+                                ጌታችን ኢየሱስ ክርስቶስ ለቤተ ክርስቲያን የሰጠውን ታላቁን ተልእኮ፣
+                                ማለትም የወንጌሉን ቃል፣ ላልሰሙት እና ላላመኑት ሰዎች ሁሉ መስበክ፡፡ (ማር. 16፡15)
+                            </p>
+                            <p>
+                                የወንጌሉን ቃል አምነው የዳኑትን እያጠመቁ እና የእግዚአብሔርን ቃል እያስተማሩ ደቀ መዛሙርት ማድረግ፡፡ (ማቴ. 28፡19)
+                            </p>
+                            <p>
+                                ሁለንተናዊ አገልግሎት መስጠት፡፡ (ያዕ. 1፡27)
+                            </p>
+                        </div>
                         <div className="bg-church-primary/5 p-6 rounded-lg border-l-4 border-church-primary">
                             <p className="italic text-gray-700">
-                                "Where there is no vision, the people perish: but he that keepeth the law, happy is he."
+                                "ራእይ ባይኖር ሕዝብ መረን ይሆናል፤ ሕግን የሚጠብቅ ግን የተመሰገነ ነው።"
                             </p>
                             <p className="text-right text-gray-500 mt-2">- Proverbs 29:18</p>
                         </div>
                     </div>
 
+                    {/* Mission */}
                     <div>
-                        <h2 className="section-title">Our Mission</h2>
-                        <p className="text-lg text-gray-700 mb-6">
-                            We exist to love God, love people, and make disciples who transform communities with the
-                            message and love of Jesus Christ.
-                        </p>
-                        <ul className="space-y-3">
-                            {missionPoints.map((item, index) => (
-                                <li key={index} className="flex items-start">
-                                    <Check className="h-5 w-5 text-church-primary mr-2 mt-1 flex-shrink-0" aria-hidden="true" />
-                                    <span>{item}</span>
-                                </li>
-                            ))}
+                        <h2 className="section-title">የአጥቢያ ቤተክርስትያን ተጨማሪ እሴቶች </h2>
+                        <ul className="space-y-3 text-lg text-gray-700 mb-6">
+                            <li className="flex items-start">
+                                <Check className="h-5 w-5 text-church-primary mr-2 mt-1 flex-shrink-0" />
+                                <span>እግዚአብሔርን መውደድ፣ መፍራትና ማምለክ፤</span>
+                            </li>
+                            <li className="flex items-start">
+                                <Check className="h-5 w-5 text-church-primary mr-2 mt-1 flex-shrink-0" />
+                                <span>አገልጋይነት፣ ተዓማኒነትና ግልጽነት፤</span>
+                            </li>
+                            <li className="flex items-start">
+                                <Check className="h-5 w-5 text-church-primary mr-2 mt-1 flex-shrink-0" />
+                                <span>የህይወት ምሳሌነት፤</span>
+                            </li>
+                            <li className="flex items-start">
+                                <Check className="h-5 w-5 text-church-primary mr-2 mt-1 flex-shrink-0" />
+                                <span>የወንጌል ማህበርተኛነት፤</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
             </section>
+
 
             {/* Core Values */}
             <section className="py-16 bg-gray-50" role="region" aria-labelledby="core-values">
