@@ -1,10 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, MapPin } from 'lucide-react'
+import { Check, MapPin, Heart, Users, Cross, BookOpen, Handshake, Droplet, Flame } from 'lucide-react'
 
 const missionPoints = [
     "Worship God authentically and passionately",
@@ -14,14 +13,36 @@ const missionPoints = [
 ]
 
 const coreValues = [
-    { title: "Biblical Truth", description: "We are committed to teaching and living according to God's Word.", icon: "📖" },
-    { title: "Authentic Worship", description: "We worship God with our whole hearts in spirit and truth.", icon: "🙌" },
-    { title: "Loving Community", description: "We foster genuine relationships where everyone belongs.", icon: "❤️" },
-    { title: "Missional Living", description: "We serve others and share Christ's love in our daily lives.", icon: "🌎" },
-    { title: "Grace-Filled Culture", description: "We extend grace and forgiveness as we've received from Christ.", icon: "✝️" },
-    { title: "Spiritual Growth", description: "We encourage continuous growth in faith and character.", icon: "🌱" },
-    { title: "Generosity", description: "We give freely of our time, talents, and resources.", icon: "🎁" },
-    { title: "Excellence", description: "We pursue excellence in all we do, honoring God with our best.", icon: "⭐" }
+    {
+        title: "ፍቅር (Love)",
+        description: "እግዚአብሔር ፍቅር ነው። ያለ እውነተኛ ፍቅር ሁሉ ከንቱ ነው። (1ኛ ቆሮ.13፡1-3; ማቴ.22፡35-40)",
+        icon: <Heart className="h-8 w-8 text-red-500 mx-auto" />
+    },
+    {
+        title: "አንድነት (Unity)",
+        description: "እኛ የመንፈስና የልብ አንድነትን ለመጠበቅ እንተጋለን። (ዮሐ.17፡21-23; ኤፌ.4፡1-3)",
+        icon: <Users className="h-8 w-8 text-blue-500 mx-auto" />
+    },
+    {
+        title: "ጥንታዊ ጴንጠቆስጤያዊነት (Pentecostal Faith)",
+        description: "ዳግም የተወለደ አማኝ በመንፈስ ቅዱስ ይጠመቃል። (ሐዋ.2፡1-4; ሐዋ.10፡44-45)",
+        icon: <Flame className="h-8 w-8 text-orange-500 mx-auto" />
+    },
+    {
+        title: "ቅድስና (Holiness)",
+        description: "ያለ ቅድስና እግዚአብሔርን ማየት አይቻልም። (1ኛ ጴጥ.1፡15-16; ዕብ.12፡14)",
+        icon: <Cross className="h-8 w-8 text-green-600 mx-auto" />
+    },
+    {
+        title: "አጋርነት (Fellowship)",
+        description: "የክርስቶስ አካል አንድ ነው። ሁሉ በመከባበርና በመጋራት እንሰራለን። (ኤፌ.4፡1-6; 1ቆሮ.12፡14-31)",
+        icon: <Handshake className="h-8 w-8 text-purple-500 mx-auto" />
+    },
+    {
+        title: "ጾምና ጸሎት (Fasting & Prayer)",
+        description: "መጾምና መፀለይ መጽሐፍ ቅዱሳዊ ልምምድ ነው። (ሐዋ.1፡14; ሐዋ.13፡1-3)",
+        icon: <Droplet className="h-8 w-8 text-cyan-600 mx-auto" />
+    }
 ]
 
 const churchStaff = [
@@ -39,20 +60,6 @@ const branches = [
         services: "Sunday 9:00 AM & 11:00 AM",
         image: "https://images.pexels.com/photos/2693529/pexels-photo-2693529.jpeg"
     },
-    {
-        id: 2,
-        name: "Downtown Branch",
-        address: "456 Hope Avenue, Grace City, GC 12345",
-        services: "Sunday 10:30 AM",
-        image: "https://images.pexels.com/photos/531321/pexels-photo-531321.jpeg"
-    },
-    {
-        id: 3,
-        name: "Westside Campus",
-        address: "789 Love Boulevard, Grace City, GC 12345",
-        services: "Sunday 9:30 AM & 5:00 PM",
-        image: "https://images.pexels.com/photos/161060/church-dom-monument-italy-161060.jpeg"
-    }
 ]
 
 export default function AboutPage() {
@@ -71,10 +78,10 @@ export default function AboutPage() {
                 <div className="absolute inset-0 bg-black/50" />
                 <div className="container-custom relative z-10 h-full flex flex-col justify-center items-center text-center text-white">
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 font-heading drop-shadow-lg">
-                        About Our Church
+                        ስለ ቤተክርስቲያናችን (About Our Church)
                     </h1>
                     <p className="text-xl max-w-2xl drop-shadow">
-                        A community of believers committed to loving God and serving others
+                        እግዚአብሔርን በፍቅር ለማምለክና ሌሎችን ለማገልገል የተሰጠ ህብረት
                     </p>
                 </div>
             </section>
@@ -115,16 +122,21 @@ export default function AboutPage() {
             </section>
 
             {/* Core Values */}
-            <section className="py-16" role="region" aria-labelledby="core-values">
+            <section className="py-16 bg-gray-50" role="region" aria-labelledby="core-values">
                 <div className="container-custom">
-                    <h2 id="core-values" className="section-title centered">Our Core Values</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+                    <h2 id="core-values" className="section-title centered text-3xl font-bold mb-6">
+                        እሴቶች (Core Values)
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
                         {coreValues.map((value, index) => (
-                            <Card key={index} className="card-hover text-center transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg">
-                                <CardContent className="pt-6">
-                                    <div className="text-4xl mb-4" aria-hidden="true">{value.icon}</div>
-                                    <h3 className="text-xl font-bold mb-2 font-heading text-church-primary">{value.title}</h3>
-                                    <p className="text-gray-600">{value.description}</p>
+                            <Card
+                                key={index}
+                                className="text-center bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition-transform hover:-translate-y-1"
+                            >
+                                <CardContent>
+                                    {value.icon}
+                                    <h3 className="text-xl font-bold mt-4 text-church-primary">{value.title}</h3>
+                                    <p className="text-gray-600 mt-2 text-sm">{value.description}</p>
                                 </CardContent>
                             </Card>
                         ))}
@@ -167,7 +179,7 @@ export default function AboutPage() {
                 <div className="container-custom">
                     <h2 id="our-locations" className="section-title centered">Our Locations</h2>
                     <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-                        With multiple locations across the city, there's always a Grace Church campus near you.
+                        You can find us at the following locations:
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
