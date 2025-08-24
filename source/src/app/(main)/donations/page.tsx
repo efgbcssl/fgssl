@@ -23,37 +23,37 @@ type DonationType = {
 const donationTypes: DonationType[] = [
     {
         id: 'tithe',
-        name: 'Tithe',
+        name: 'Tithe (አስራት)',
         description: 'Regular giving of 10% of your income',
         icon: Heart
     },
     {
         id: 'offering',
-        name: 'Offering',
+        name: 'Offering (የፍቅር ስጦታ)',
         description: 'General donations to support church operations',
         icon: Gift
     },
     {
         id: 'building',
-        name: 'Building Fund',
+        name: 'Building Fund (ህንፃ ማሰሪያ)',
         description: 'Support church facility improvements',
         icon: Building
     },
     {
         id: 'missions',
-        name: 'Missions',
+        name: 'Missions (ወንጌል ስርጭት)',
         description: 'Support our local and global mission work',
         icon: HandHeart
     },
     {
         id: 'education',
-        name: 'Education',
+        name: 'Education (ትምህርት)',
         description: 'Support our Sunday School and Bible study programs',
         icon: GraduationCap
     },
     {
         id: 'special',
-        name: 'Special Projects',
+        name: 'Special Projects (ለልዩ ድጋፎች)',
         description: 'Funding for special community initiatives',
         icon: Lightbulb
     },
@@ -84,7 +84,7 @@ export default function DonationPage() {
             {/* Hero Section */}
             <section className="relative h-[300px] md:h-[400px] overflow-hidden">
                 <Image
-                    src="https://images.pexels.com/photos/6647037/pexels-photo-6647037.jpeg"
+                    src="https://res.cloudinary.com/dvdbepqiv/image/upload/v1756057007/WhatsApp_Image_2025-08-24_at_20.08.47_896eea35_nje22d.jpg"
                     alt="Donation"
                     fill
                     priority
@@ -100,7 +100,8 @@ export default function DonationPage() {
                         transition={{ duration: 0.6 }}
                         className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 font-heading"
                     >
-                        Support Our Ministry
+                        Support Our Ministry<br />
+                        አገልግሎቱን ይደግፉ
                     </motion.h1>
                     <motion.p
                         initial="hidden"
