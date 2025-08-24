@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
     Download, FileText, Video, Music, Search,
-    Grid, List, Star, SortAsc, SortDesc
+    Grid, List, Star, SortAsc, SortDesc, ImageIcon, LinkIcon
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
@@ -29,17 +29,26 @@ const VideoPlayer = dynamic(() => import('@/components/resources/VideoPlayer'))
 const PDFViewer = dynamic(() => import('@/components/resources/PDFViewer'))
 const AudioPlayer = dynamic(() => import('@/components/resources/AudioPlayer'))
 
-const RESOURCE_TYPES = ['all', 'video', 'audio', 'pdf'] as const
+const RESOURCE_TYPES = ['all', 'video', 'audio', 'pdf', 'image', 'link'] as const
 const CATEGORIES = ['all', 'sermons', 'studies', 'events', 'music', 'other'] as const
 const ITEMS_PER_PAGE = 12
 
-const DEFAULT_THUMBNAILS = {
-    video: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTUgMTBsNS4yOTIgNGEuMjY1LjI2NSAwIDAgMSAuMjA4LjQ2M2wtNS4yOTItNGEuMjY1LjI2NSAwIDAgMSAwLS40NjNsNS4yOTItNGEuMjY1LjI2NSAwIDAgMS0uMjA4LjQ2M0wxNSAxMHoiIGZpbGw9IiM2YjcyODAiLz48L3N2Zz4=",
-    audio: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNOSAxOHYtNi4zNGE0IDQgMCAxIDEgNCAwVjE4TTkgMThIN200IDBoLTJNOSAxNHY0bTQgMHYtNCIgZmlsbD0iIzM2NzBmYSIgc3Ryb2tlPSIjMzY3MGZhIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=",
-    pdf: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTQgMnY0YTIgMiAwIDAgMCAyIDJoNE0xNCAydjRhMiAyIDAgMCAxLTIgMkg4YTQgNCAwIDAgMC00IDR2OGE0IDQgMCAwIDAgNCA0aDhhNCA0IDAgMCAwIDQtNFY4YTQgNCAwIDAgMC00LTRoLTRWN3oiIGZpbGw9IiNlMTFlMWUiLz48cGF0aCBkPSJNOSAxMmg2TTkgMTZoNk05IDIwaDQiIGZpbGw9IiNmZjNhNTAiLz48L3N2Zz4=",
-    image: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAxOWExIDEgMCAwIDEtMS0xVjZhMSAxIDAgMCAxIDEtMWgxNGExIDEgMCAwIDEgMSAxdjEyYTEgMSAwIDAgMS0xIDFINXoiIGZpbGw9IiNmMWY1ZjkiLz48Y2lyY2xlIGN4PSI4LjUiIGN5PSI4LjUiIHI9IjEuNSIgZmlsbD0iIzljYTdmZiIvPjxwYXRoIGQ9Im0yMSAxNS01LTUtNSA1IiBzdHJva2U9IiM2NzcyODAiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==",
-    link: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJtMTAgMTQgNC00TTguMDMgMTEuOTNjLTEuMDYgMS4wNi0xLjA2IDIuNzggMCAzLjg0LjUzLjUzIDEuMjIuODIgMS45MS44Mi43IDAgMS4zOS0uMjkgMS45Mi0uODJNMTAuOTUgNi41OGMyLjEyLTIuMTIgNS41Ni0yLjEyIDcuNjggMGMyLjEyIDIuMTIgMi4xMiA1LjU2IDAgNy42OC0uNTMuNTMtMS4yMi44Mi0xLjkxLjgyLS43IDAtMS4zOS0uMjktMS45Mi0uODJaIiBmaWxsPSIjOTBhNmZmIi8+PC9zdmc+",
-    default: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTAgMTBoNGEyIDIgMCAwIDEgMiAydjhhMiAyIDAgMCAxLTIgMkg2YTIgMiAwIDAgMS0yLTJ2LTRhMiAyIDAgMCAxIDItMnoiIGZpbGw9IiNmMWY1ZjkiLz48cGF0aCBkPSJNMTQgMTBoNGEyIDIgMCAwIDEgMiAydjRhMiAyIDAgMCAxLTIgMmgtNGEyIDIgMCAwIDEtMi0ydi00YTIgMiAwIDAgMSAyLTJ6IiBmaWxsPSIjZjFmNWY5Ii8+PHBhdGggZD0iTTYgMTBoNGEyIDIgMCAwIDEgMiAydjRhMiAyIDAgMCAxLTIgMkg2YTIgMiAwIDAgMS0yLTJ2LTRhMiAyIDAgMCAxIDItMnoiIGZpbGw9IiNmMWY1ZjkiLz48L3N2Zz4="
+// Helper function to get appropriate icon for resource type
+const getResourceIcon = (type: string, size = 24) => {
+    switch (type) {
+        case 'video':
+            return <Video size={size} className="text-red-500" />;
+        case 'audio':
+            return <Music size={size} className="text-blue-500" />;
+        case 'pdf':
+            return <FileText size={size} className="text-green-500" />;
+        case 'image':
+            return <ImageIcon size={size} className="text-purple-500" />;
+        case 'link':
+            return <LinkIcon size={size} className="text-orange-500" />;
+        default:
+            return <FileText size={size} className="text-gray-500" />;
+    }
 };
 
 export default function EnhancedResourcesPage() {
@@ -73,7 +82,13 @@ export default function EnhancedResourcesPage() {
                 const data = await res.json()
 
                 const transformed: Resource[] = data.map((item: any) => {
-                    const thumbnail = item.thumbnail || DEFAULT_THUMBNAILS[item.type as keyof typeof DEFAULT_THUMBNAILS] || DEFAULT_THUMBNAILS.default;
+                    // For YouTube videos, use the thumbnail if available
+                    // For other types, we'll use icons instead of broken images
+                    const isYouTubeVideo = item.type === 'video' && item.id && item.id.length === 11;
+                    const thumbnail = isYouTubeVideo
+                        ? (item.thumbnail || `https://img.youtube.com/vi/${item.id}/mqdefault.jpg`)
+                        : null;
+
                     const baseResource = {
                         id: item.id,
                         title: item.title,
@@ -83,7 +98,7 @@ export default function EnhancedResourcesPage() {
                         date: item.date,
                         createdAt: item.date,
                         type: item.type,
-                        downloadable: item.canDownload || false, // API returns 'canDownload'
+                        downloadable: item.canDownload || false,
                         featured: item.featured || false,
                         category: item.category || 'other',
                         tags: item.tags || [],
@@ -94,35 +109,35 @@ export default function EnhancedResourcesPage() {
                         case 'video':
                             return {
                                 ...baseResource,
-                                videoUrl: item.previewUrl, // API returns 'previewUrl'
+                                videoUrl: item.previewUrl,
                                 duration: item.duration,
-                                youtubeId: item.id, // Use the video ID as youtubeId
+                                youtubeId: item.id,
                                 embedUrl: item.embedUrl || `https://www.youtube.com/embed/${item.id}`,
                             };
                         case 'audio':
                             return {
                                 ...baseResource,
-                                audioUrl: item.previewUrl, // API returns 'previewUrl'
-                                fileUrl: item.previewUrl, // alias
+                                audioUrl: item.previewUrl,
+                                fileUrl: item.previewUrl,
                                 downloadUrl: item.downloadUrl,
                                 duration: item.duration,
                             };
                         case 'pdf':
                             return {
                                 ...baseResource,
-                                fileUrl: item.previewUrl, // API returns 'previewUrl'
+                                fileUrl: item.previewUrl,
                                 downloadUrl: item.downloadUrl,
                             };
                         case 'image':
                             return {
                                 ...baseResource,
-                                imageUrl: item.previewUrl, // API returns 'previewUrl'
+                                imageUrl: item.previewUrl,
                                 downloadUrl: item.downloadUrl,
                             };
                         case 'link':
                             return {
                                 ...baseResource,
-                                url: item.previewUrl, // API returns 'previewUrl'
+                                url: item.previewUrl,
                             };
                         default:
                             return baseResource;
@@ -348,6 +363,7 @@ export default function EnhancedResourcesPage() {
                                         variant={viewMode}
                                         onPlay={handleResourcePlay}
                                         onDownload={handleResourceDownload}
+                                        getResourceIcon={getResourceIcon}
                                     />
                                 ))}
                             </div>
@@ -382,4 +398,3 @@ export default function EnhancedResourcesPage() {
         </>
     )
 }
-

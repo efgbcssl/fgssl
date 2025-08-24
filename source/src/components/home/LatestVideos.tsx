@@ -70,7 +70,7 @@ export default async function LatestVideos() {
           <h2 className="section-title mb-4 sm:mb-0">Latest Videos</h2>
           <div className="flex gap-4">
             <Button asChild variant="outline" className="border-church-primary text-church-primary">
-              <Link href="/resources/videos">View All Videos</Link>
+              <Link href="/resources">View All Videos</Link>
             </Button>
             <Button asChild variant="ghost" className="text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-900/20">
               <Link
