@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Facebook, Twitter, Instagram, Youtube, MapPin, Phone, Mail, Clock } from 'lucide-react'
+import { Facebook,  Instagram, Youtube, MapPin, Phone, Mail, Clock } from 'lucide-react'
 import Image from 'next/image'
 
 const navigation = {
@@ -13,7 +13,7 @@ const navigation = {
     ],
     social: [
         { name: 'Facebook', icon: Facebook, href: '#' },
-        { name: 'Twitter', icon: Twitter, href: '#' },
+       // { name: 'TikTok', icon: TikTok, href: 'https://www.tiktok.com/@thewordoflife82?_t=ZP-8zAsSYujGT1&_r=1' },
         { name: 'Instagram', icon: Instagram, href: '#' },
         { name: 'Youtube', icon: Youtube, href: '#' },
     ],

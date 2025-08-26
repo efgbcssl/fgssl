@@ -39,6 +39,7 @@ const ministryItems: MinistryItem[] = [
     time: "7:00 PM – 9:00 PM",
     location: "Teleconference",
     category: "prayer",
+    phone: "https://meetings.dialpad.com/room/efgbcssl"
   },
   {
     id: 3,
@@ -148,7 +149,20 @@ export default function WeeklyMinistries() {
                   {item.phone && (
                     <div className="flex items-center">
                       <Phone className="h-4 w-4 mr-2 text-church-primary" />
-                      <span>{item.phone}</span>
+                      {item.phone.startsWith('http') ? (
+                        <a href={item.phone} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer">
+                          {item.phone}
+                        </a>
+                      ) : (
+                        <a 
+                        href={`tel:${item.phone.replace(/[^\d+]/g, '')}`} 
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer">
+                          <span>{item.phone}</span>
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>
