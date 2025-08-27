@@ -28,7 +28,7 @@ const ministryItems: MinistryItem[] = [
     time: "5:00 AM – 6:00 AM",
     location: "Teleconference",
     category: "prayer",
-    phone: "240-451-9754",
+    phone: "https://meetings.dialpad.com/room/efgbcssl",
   },
   {
     id: 2,
