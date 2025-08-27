@@ -196,7 +196,7 @@ async function renderTemplate(templateName: string, data: Record<string, unknown
 // Enhanced email sending with comprehensive error handling
 async function sendWithResend(
     emailData: {
-        from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+        from: string
         to: string | string[]
         subject: string
         html: string
@@ -242,10 +242,11 @@ async function sendWithResend(
 
             // Prepare Resend payload with correct types
             const payload = {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: emailData.from ?? process.env.FROM_EMAIL ?? "",
                 to: recipients,
                 subject: emailData.subject,
                 html: emailData.html,
+                text: emailData.html.replace(/<[^>]+>/g, ''), // Simple HTML to text fallback
                 ...(emailData.attachments?.length && {
                     attachments: emailData.attachments.map(att => ({
                         filename: att.filename,
@@ -433,7 +434,7 @@ export async function sendDonationEmail(params: DonationEmailParams): Promise<Em
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Donations <donations@efgbcssl.org>",
                 to: params.to,
                 subject: params.isRecurring
                     ? `Thank you for your recurring ${params.donationType} donation`
@@ -488,7 +489,7 @@ export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams): 
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Donations <donations@efgbcssl.org>",
                 to: params.to,
                 subject: `Payment ${params.isRecurring ? 'for recurring donation ' : ''}failed - Action required`,
                 html,
@@ -537,7 +538,7 @@ export async function sendSubscriptionConfirmationEmail(data: SubscriptionConfir
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Donations <donations@efgbcssl.org>",
                 to: data.to,
                 subject: `Thank you for your ${data.frequency} donation commitment!`,
                 html,
@@ -584,7 +585,7 @@ export async function sendSubscriptionUpdateEmail(data: SubscriptionUpdateEmailD
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Donations <donations@efgbcssl.org>",
                 to: data.to,
                 subject: 'Your recurring donation has been updated',
                 html,
@@ -630,7 +631,7 @@ export async function sendSubscriptionCancellationEmail(data: SubscriptionCancel
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Donations <donations@efgbcssl.org>",
                 to: data.to,
                 subject: 'Your recurring donation has been cancelled',
                 html,
@@ -828,7 +829,7 @@ export async function sendMessageNotificationEmail({
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Messages <messages@efgbcssl.org>",
                 to,
                 subject: `New Message: ${subject || 'Contact Form Submission'}`,
                 html,
@@ -890,7 +891,7 @@ export async function sendEventRegistrationEmail({
 
         return await sendWithResend(
             {
-                from: "EFGBCSSL Appointments <appointments@efgbcssl.org>",
+                from: "EFGBCSSL Events <events@efgbcssl.org>",
                 to,
                 subject: `Registration Confirmation: ${eventName}`,
                 html,
