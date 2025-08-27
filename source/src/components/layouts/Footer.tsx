@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Facebook,  Instagram, Youtube, MapPin, Phone, Mail, Clock } from 'lucide-react'
+import { FaTiktok } from 'react-icons/fa';
 import Image from 'next/image'
 
 const navigation = {
@@ -13,7 +14,7 @@ const navigation = {
     ],
     social: [
         { name: 'Facebook', icon: Facebook, href: '#' },
-       // { name: 'TikTok', icon: TikTok, href: 'https://www.tiktok.com/@thewordoflife82?_t=ZP-8zAsSYujGT1&_r=1' },
+        { name: 'TikTok', icon: FaTiktok, href: 'https://www.tiktok.com/@thewordoflife82?_t=ZP-8zAsSYujGT1&_r=1' },
         { name: 'Instagram', icon: Instagram, href: '#' },
         { name: 'Youtube', icon: Youtube, href: '#' },
     ],
@@ -72,11 +73,11 @@ const Footer = () => {
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Phone className="h-5 w-5 text-church-secondary flex-shrink-0" />
-                                <span className="text-gray-300">(240) 821-0361</span>
+                                <span className="text-gray-300"><a href="tel:2408210361">(240) 821-0361</a></span>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Mail className="h-5 w-5 text-church-secondary flex-shrink-0" />
-                                <span className="text-gray-300">info@efgbcssl.org</span>
+                                <span className="text-gray-300"><a href="mailto:info@efgbcssl.org">info@efgbcssl.org</a></span>
                             </div>
                             <div className="flex items-start space-x-3">
                                 <Clock className="h-5 w-5 text-church-secondary flex-shrink-0 mt-0.5" />
