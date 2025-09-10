@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { connectMongoDB } from '@/lib/mongodb';
 import { MenuItemModel } from '@/models/MenuItem';
 
@@ -119,8 +121,14 @@ const menuItems = [
     }
 ];
 
-export async function seedMenuItems() {
+export async function POST(request: NextRequest) {
     try {
+        const session = await auth();
+        
+        if (!session?.user || session.user.role !== 'admin') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
         await connectMongoDB();
         
         // Clear existing menu items
@@ -129,23 +137,12 @@ export async function seedMenuItems() {
         // Insert new menu items
         await MenuItemModel.insertMany(menuItems);
         
-        console.log('Menu items seeded successfully');
-        return true;
+        return NextResponse.json({ 
+            message: 'Menu items seeded successfully',
+            count: menuItems.length
+        });
     } catch (error) {
         console.error('Error seeding menu items:', error);
-        return false;
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-}
-
-// Run the seed function if this file is executed directly
-if (require.main === module) {
-    seedMenuItems().then(success => {
-        if (success) {
-            console.log('Menu items seeding completed');
-            process.exit(0);
-        } else {
-            console.error('Menu items seeding failed');
-            process.exit(1);
-        }
-    });
 }

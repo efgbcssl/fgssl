@@ -17,6 +17,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     settings: Icons.settings,
     fileText: Icons.fileText,
     barChart: Icons.barChart,
+    user: Icons.user,
+    helpCircle: Icons.helpCircle,
     // Add more icons as needed
 };
 

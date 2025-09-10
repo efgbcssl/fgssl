@@ -63,9 +63,9 @@ export default function DonationSection() {
             </Button>
           </div>
 
-          {/*<p className="text-sm text-white/70 mt-6">
+          <p className="text-sm text-white/70 mt-6">
             All donations are tax-deductible. 100% goes directly to ministry work.
-          </p>*/}
+          </p>
         </div>
       </div>
     </section>

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { User as UserReact, Users, DollarSign, BarChart3, Settings, Shield, Activity, LogOut, Calendar, Bell, Search, Menu } from 'lucide-react';
+import { SeedMenuButton } from '@/components/dashboard/SeedMenuButton';
 import { connectMongoDB } from '@/lib/mongodb';
 import Donation from '@/models/Donation';
 import User from '@/models/User';
@@ -179,14 +180,15 @@ export default async function DashboardPage() {
                 <span>Your Member Dashboard</span>
               </CardTitle>
               <CardDescription>
-                You have donated a total of <strong>${totalDonated.toFixed(2)}</strong>
+                Welcome to your personal dashboard. You have donated a total of <strong>${totalDonated.toFixed(2)}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="space-y-1 text-gray-700">
                 <p><strong>User ID:</strong> {session.user?.id}</p>
-                <p><strong>Role:</strong> {userRole}</p>
+                <p><strong>Role:</strong> <Badge className="bg-green-100 text-green-800">{userRole.toUpperCase()}</Badge></p>
                 <p><strong>Email:</strong> {session.user?.email}</p>
+                <p><strong>Access Level:</strong> Personal data and basic features</p>
               </div>
               {session.user?.image && (
                 <div>
@@ -201,15 +203,15 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
-        ) : (
+        ) : userRole === 'manager' ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="h-5 w-5 text-blue-600" />
-                <span>{userRole === 'admin' ? 'Admin' : 'Manager'} Dashboard</span>
+                <span>Manager Dashboard</span>
               </CardTitle>
               <CardDescription>
-                You have <strong>{userRole}</strong> privileges
+                You have <strong>manager</strong> privileges - manage events, resources, and FAQ
               </CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-6">
@@ -219,6 +221,38 @@ export default async function DashboardPage() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <card.icon className="h-5 w-5 text-blue-600" />
+                        {card.title}
+                        {card.count !== undefined && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {card.count}
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>{card.description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-red-600" />
+                <span>Admin Dashboard</span>
+              </CardTitle>
+              <CardDescription>
+                You have <strong>admin</strong> privileges - full access to all features and user management
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              {adminCards.map(card => (
+                <Link key={card.href} href={card.href}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <card.icon className="h-5 w-5 text-red-600" />
                         {card.title}
                         {card.count !== undefined && (
                           <Badge variant="secondary" className="ml-auto">
@@ -271,6 +305,9 @@ export default async function DashboardPage() {
                   <DollarSign className="h-5 w-5 mr-2" /> View Donations
                 </Link>
               </Button>
+            )}
+            {userRole === 'admin' && (
+              <SeedMenuButton />
             )}
             <Button variant="outline" className="h-16" asChild>
               <Link href="/">

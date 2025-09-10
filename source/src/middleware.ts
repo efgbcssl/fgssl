@@ -48,11 +48,23 @@ export default auth((req) => {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Optional: Add role-based checks here if needed
-    // const userRole = req.auth?.user?.role;
-    // if (pathname.startsWith("/dashboard/admin") && userRole !== "admin") {
-    //   return NextResponse.redirect(new URL("/unauthorized", req.url));
-    // }
+    // Role-based access control
+    const userRole = req.auth?.user?.role || 'member';
+    
+    // Admin-only routes
+    if (pathname.startsWith("/dashboard/admin") && userRole !== "admin") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+    
+    // Manager and Admin routes
+    if (pathname.startsWith("/dashboard/manager") && !['admin', 'manager'].includes(userRole)) {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+    
+    // Permissions management - Admin only
+    if (pathname.startsWith("/dashboard/permissions") && userRole !== "admin") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
   }
 
   // 8. Default allow other routes (or redirect if you prefer)
