@@ -13,7 +13,6 @@ import { SeedMenuButton } from '@/components/dashboard/SeedMenuButton';
 import { connectMongoDB } from '@/lib/mongodb';
 import Donation from '@/models/Donation';
 import User from '@/models/User';
-import  { MenuItemModel } from '@/models/MenuItem';
 
 interface DashboardCard {
   title: string;
@@ -24,10 +23,34 @@ interface DashboardCard {
   count?: number;
 }
 
-// Function to get menu items based on role
-async function getMenuItems(role: string) {
-  await connectMongoDB();
-  return await MenuItemModel.find({ roles: role, enabled: true }).sort({ order: 1 });
+// Function to get menu items based on role (fallback implementation)
+function getMenuItems(role: string) {
+  const baseItems = [
+    { _id: '1', title: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
+    { _id: '2', title: 'My Profile', path: '/dashboard/profile', icon: 'user' },
+    { _id: '3', title: 'Appointments', path: '/dashboard/appointments', icon: 'calendar' },
+    { _id: '4', title: 'Donations', path: '/dashboard/donations', icon: 'donate' },
+    { _id: '5', title: 'Messages', path: '/dashboard/messages', icon: 'message' }
+  ];
+
+  if (role === 'manager' || role === 'admin') {
+    baseItems.push(
+      { _id: '6', title: 'Events Management', path: '/dashboard/events', icon: 'calendar' },
+      { _id: '7', title: 'Resources Management', path: '/dashboard/resources', icon: 'fileText' },
+      { _id: '8', title: 'FAQ Management', path: '/dashboard/faq', icon: 'helpCircle' }
+    );
+  }
+
+  if (role === 'admin') {
+    baseItems.push(
+      { _id: '9', title: 'User Management', path: '/dashboard/permissions', icon: 'users' },
+      { _id: '10', title: 'Blog Management', path: '/dashboard/blog', icon: 'fileText' },
+      { _id: '11', title: 'Analytics', path: '/dashboard/analytics', icon: 'barChart' },
+      { _id: '12', title: 'Settings', path: '/dashboard/settings', icon: 'settings' }
+    );
+  }
+
+  return baseItems;
 }
 
 // Function to get user donations
@@ -78,7 +101,7 @@ export default async function DashboardPage() {
 
   try {
     // Get menu items for this role
-    menuItems = await getMenuItems(userRole);
+    menuItems = getMenuItems(userRole);
 
     if (userRole === 'member' && userId) {
       const donationData = await getUserDonations(userId);

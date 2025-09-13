@@ -6,6 +6,7 @@ import Navbar from '@/components/layouts/Navbar';
 import Footer from '@/components/layouts/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import { SessionProvider } from 'next-auth/react';
+import { SessionRefresh } from '@/components/providers/session-refresh';
 
 
 const inter = Inter({
@@ -52,6 +53,7 @@ export default function RootLayout({
                         <Navbar />
                         <main className="flex-1">
                             <SessionProvider>
+                                <SessionRefresh />
                                 {children}
                             </SessionProvider>
                         </main>

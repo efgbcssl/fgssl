@@ -5,6 +5,7 @@ import '@/styles/globals.css';
 import { cn } from '@/lib/utils';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { SessionProvider } from 'next-auth/react';
+import { SessionRefresh } from '@/components/providers/session-refresh';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-body' });
 const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-heading' });
@@ -29,6 +30,7 @@ export default function DashboardRootLayout({
                 )}
             >
                 <SessionProvider>
+                    <SessionRefresh />
                     <DashboardLayout>{children}</DashboardLayout>
                 </SessionProvider>
             </body>

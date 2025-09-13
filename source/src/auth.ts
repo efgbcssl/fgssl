@@ -99,7 +99,7 @@ export const authConfig: NextAuthConfig = {
             }
         },
 
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger }) {
             const [{ connectMongoDB }, { UserModel }] = await Promise.all([
                 import("@/lib/mongodb"),
                 import("@/models/User"),
@@ -115,6 +115,7 @@ export const authConfig: NextAuthConfig = {
                     token.email = dbUser.email;
                     token.name = dbUser.name;
                     token.picture = dbUser.image;
+                    token.lastRefresh = Date.now();
                 }
             }
 
@@ -126,7 +127,17 @@ export const authConfig: NextAuthConfig = {
                     token.role = dbUser.role;
                     token.name = dbUser.name;
                     token.picture = dbUser.image;
+                    
+                    // Update last refresh time
+                    if (!token.lastRefresh) {
+                        token.lastRefresh = Date.now();
+                    }
                 }
+            }
+
+            // Refresh token if it's been more than 7 days since last refresh
+            if (token.lastRefresh && Date.now() - token.lastRefresh > 7 * 24 * 60 * 60 * 1000) {
+                token.lastRefresh = Date.now();
             }
 
             return token;
@@ -140,6 +151,11 @@ export const authConfig: NextAuthConfig = {
                 session.user.email = token.email as string;
                 session.user.image = token.picture as string | null;
             }
+            
+            // Add session metadata
+            (session as any).lastRefresh = token.lastRefresh as number;
+            (session as any).expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+            
             return session;
         },
 
@@ -152,8 +168,8 @@ export const authConfig: NextAuthConfig = {
     },
     session: {
         strategy: "jwt",
-        maxAge: 30 * 24 * 60 * 60,
-        updateAge: 24 * 60 * 60,
+        maxAge: 90 * 24 * 60 * 60, // 3 months (90 days)
+        updateAge: 7 * 24 * 60 * 60, // Update session every 7 days
     },
     cookies: {
         sessionToken: {
@@ -166,6 +182,7 @@ export const authConfig: NextAuthConfig = {
                 sameSite: "lax",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
+                maxAge: 90 * 24 * 60 * 60, // 3 months
                 domain:
                     process.env.NODE_ENV === "production" ? `efgbcssl.org` : undefined,
             },
@@ -179,8 +196,22 @@ export const authConfig: NextAuthConfig = {
                 sameSite: "lax",
                 path: "/",
                 secure: process.env.NODE_ENV === "production",
+                maxAge: 90 * 24 * 60 * 60, // 3 months
                 domain:
                     process.env.NODE_ENV === "production" ? `efgbcssl.org` : undefined,
+            },
+        },
+        csrfToken: {
+            name:
+                process.env.NODE_ENV === "production"
+                    ? "__Host-next-auth.csrf-token"
+                    : "next-auth.csrf-token",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                maxAge: 90 * 24 * 60 * 60, // 3 months
             },
         },
     },

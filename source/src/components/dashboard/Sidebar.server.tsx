@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // components/dashboard/Sidebar.server.tsx
 import { auth } from '@/auth';
-import { MenuItemModel } from '@/models/MenuItem';
-import { connectMongoDB } from '@/lib/mongodb';
 import { SidebarClient } from './Sidebar.client';
 import { Icons } from './Icons';
 
@@ -39,73 +37,53 @@ export async function SidebarServer() {
 
     const userRole = session.user.role || 'member';
 
-    try {
-        await connectMongoDB();
+    // Use fallback menu items for now to avoid client-side rendering issues
+    const fallbackItems = [
+        { _id: '1', name: 'Dashboard', href: '/dashboard', icon: Icons.dashboard },
+    ];
 
-        // Get menu items based on user role
-        const menuItems = await MenuItemModel.find({
-            roles: userRole,
-            enabled: true
-        }).sort({ order: 1 }).lean();
-
-        // Map menu items to include icon components
-        const navItems = menuItems.map(item => {
-            const IconComponent = item.icon && iconMap[item.icon] ? iconMap[item.icon] : Icons.dashboard;
-            return {
-                _id: item._id.toString(),
-                name: item.title,
-                href: item.path,
-                icon: IconComponent
-            };
-        });
-
-        return (
-            <SidebarClient
-                navItems={navItems}
-                user={{
-                    name: session.user.name || '',
-                    email: session.user.email || '',
-                    role: userRole,
-                    image: session.user.image || null
-                }}
-            />
+    if (userRole === 'member') {
+        fallbackItems.push(
+            { _id: '2', name: 'My Profile', href: '/dashboard/profile', icon: Icons.user },
+            { _id: '3', name: 'Appointments', href: '/dashboard/appointments', icon: Icons.calendar },
+            { _id: '4', name: 'Donations', href: '/dashboard/donations', icon: Icons.donate },
+            { _id: '5', name: 'Messages', href: '/dashboard/messages', icon: Icons.message }
         );
-    } catch (error) {
-        console.error('Error fetching menu items:', error);
-
-        // Fallback to basic menu items if database fetch fails
-        const fallbackItems = [
-            { _id: '1', name: 'Dashboard', href: '/dashboard', icon: Icons.dashboard },
-        ];
-
-        if (userRole === 'member') {
-            fallbackItems.push(
-                { _id: '2', name: 'Appointments', href: '/dashboard/appointments', icon: Icons.calendar },
-                { _id: '3', name: 'Donations', href: '/dashboard/donations', icon: Icons.donate }
-            );
-        } else if (userRole === 'manager') {
-            fallbackItems.push(
-                { _id: '4', name: 'Events', href: '/dashboard/events', icon: Icons.calendar },
-                { _id: '5', name: 'Resources', href: '/dashboard/resources', icon: (props: { className?: string }) => <Icons.fileText {...props} /> }
-            );
-        } else if (userRole === 'admin') {
-            fallbackItems.push(
-                { _id: '6', name: 'Users', href: '/dashboard/users', icon: Icons.users },
-                { _id: '7', name: 'Analytics', href: '/dashboard/analytics', icon: (props: { className?: string }) => <Icons.barChart {...props} /> },
-                { _id: '8', name: 'Settings', href: '/dashboard/settings', icon: (props: { className?: string }) => <Icons.settings {...props} /> }
-            );
-        }
-
-        return (
-            <SidebarClient
-                navItems={fallbackItems}
-                user={{
-                    name: session.user.name || '',
-                    email: session.user.email || '',
-                    role: userRole,
-                    image: session.user.image || null
-                }}
-            />
+    } else if (userRole === 'manager') {
+        fallbackItems.push(
+            { _id: '2', name: 'My Profile', href: '/dashboard/profile', icon: Icons.user },
+            { _id: '3', name: 'Appointments', href: '/dashboard/appointments', icon: Icons.calendar },
+            { _id: '4', name: 'Donations', href: '/dashboard/donations', icon: Icons.donate },
+            { _id: '5', name: 'Messages', href: '/dashboard/messages', icon: Icons.message },
+            { _id: '6', name: 'Events Management', href: '/dashboard/events', icon: Icons.calendar },
+            { _id: '7', name: 'Resources Management', href: '/dashboard/resources', icon: Icons.fileText },
+            { _id: '8', name: 'FAQ Management', href: '/dashboard/faq', icon: Icons.helpCircle }
+        );
+    } else if (userRole === 'admin') {
+        fallbackItems.push(
+            { _id: '2', name: 'My Profile', href: '/dashboard/profile', icon: Icons.user },
+            { _id: '3', name: 'Appointments', href: '/dashboard/appointments', icon: Icons.calendar },
+            { _id: '4', name: 'Donations', href: '/dashboard/donations', icon: Icons.donate },
+            { _id: '5', name: 'Messages', href: '/dashboard/messages', icon: Icons.message },
+            { _id: '6', name: 'Events Management', href: '/dashboard/events', icon: Icons.calendar },
+            { _id: '7', name: 'Resources Management', href: '/dashboard/resources', icon: Icons.fileText },
+            { _id: '8', name: 'FAQ Management', href: '/dashboard/faq', icon: Icons.helpCircle },
+            { _id: '9', name: 'User Management', href: '/dashboard/permissions', icon: Icons.users },
+            { _id: '10', name: 'Blog Management', href: '/dashboard/blog', icon: Icons.fileText },
+            { _id: '11', name: 'Analytics', href: '/dashboard/analytics', icon: Icons.barChart },
+            { _id: '12', name: 'Settings', href: '/dashboard/settings', icon: Icons.settings }
         );
     }
+
+    return (
+        <SidebarClient
+            navItems={fallbackItems}
+            user={{
+                name: session.user.name || '',
+                email: session.user.email || '',
+                role: userRole,
+                image: session.user.image || null
+            }}
+        />
+    );
 }
