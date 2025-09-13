@@ -1,39 +1,31 @@
 // app/dashboard/layout.tsx
 import type { Metadata } from 'next';
-import { Inter, Montserrat } from 'next/font/google';
-import '@/styles/globals.css';
-import { cn } from '@/lib/utils';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { SessionProvider } from 'next-auth/react';
 import { SessionRefresh } from '@/components/providers/session-refresh';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-body' });
-const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-heading' });
+import { SessionDebug } from '@/components/debug/session-debug';
+import { SidebarServer } from '@/components/dashboard/Sidebar.server';
 
 export const metadata: Metadata = {
     title: 'Church Dashboard',
     description: 'Administrative dashboard for church management',
 };
 
-export default function DashboardRootLayout({
+export default async function DashboardLayoutWrapper({
     children
 }: {
     children: React.ReactNode
 }) {
+    // Render SidebarServer on the server side
+    const sidebarContent = await SidebarServer();
+
     return (
-        <html lang="en" suppressHydrationWarning>
-            <body
-                className={cn(
-                    'min-h-screen bg-background font-sans antialiased',
-                    inter.variable,
-                    montserrat.variable
-                )}
-            >
-                <SessionProvider>
-                    <SessionRefresh />
-                    <DashboardLayout>{children}</DashboardLayout>
-                </SessionProvider>
-            </body>
-        </html>
+        <SessionProvider>
+            <SessionRefresh />
+            <SessionDebug />
+            <DashboardLayout sidebarContent={sidebarContent}>
+                {children}
+            </DashboardLayout>
+        </SessionProvider>
     );
 }

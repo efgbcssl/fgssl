@@ -43,10 +43,14 @@ export default auth((req) => {
   // 7. Handle protected routes
   if (isProtectedRoute) {
     if (!isLoggedIn) {
+      console.log('User not logged in, redirecting to login');
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
+
+    // Log successful authentication for debugging
+    console.log('User authenticated:', req.auth?.user?.email, 'Role:', req.auth?.user?.role);
 
     // Role-based access control
     const userRole = req.auth?.user?.role || 'member';

@@ -2,26 +2,26 @@
 'use client';
 
 import { useState } from 'react';
-import { SidebarServer } from './Sidebar.server';
 import { Navbar } from './NavBar';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
+    sidebarContent: React.ReactNode;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, sidebarContent }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
         <div className="flex h-screen overflow-hidden bg-background">
             {/* Desktop Sidebar */}
             <div className="hidden md:block">
-                <SidebarServer />
+                {sidebarContent}
             </div>
 
             {/* Mobile Sidebar */}
             <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 md:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <SidebarServer />
+                {sidebarContent}
             </div>
 
             {/* Overlay when mobile sidebar open */}
