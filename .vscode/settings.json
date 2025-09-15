@@ -21,5 +21,8 @@
     "peacock.color": "#1e4b40",
     "cSpell.words": [
         "xata"
+    ],
+    "githubPullRequests.ignoredPullRequestBranches": [
+        "main"
     ]
 }
